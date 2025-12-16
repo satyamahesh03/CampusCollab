@@ -32,15 +32,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center space-x-3 text-gray-300">
                 <Mail size={16} className="text-blue-400" />
-                <span>support@campuscollab.com</span>
+                <span>22331a0575@mvgrce.edu.in</span>
               </li>
               <li className="flex items-center space-x-3 text-gray-300">
                 <Phone size={16} className="text-blue-400" />
-                <span>+1 (555) 123-4567</span>
+                <span>+91 86394 57769</span>
               </li>
               <li className="flex items-center space-x-3 text-gray-300">
                 <MapPin size={16} className="text-blue-400" />
-                <span>University Campus</span>
+                <span>MVGR College of Engineering</span>
               </li>
             </ul>
           </div>
@@ -70,13 +70,13 @@ const Footer = () => {
         <div className="border-t border-white/10 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2 text-gray-300">
-              <span>&copy; 2024 Campus Collab. All rights reserved.</span>
+              <span>&copy; 2025 Campus Collab. All rights reserved.</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-300">
+            {/* <div className="flex items-center space-x-2 text-gray-300">
               <span>Made with</span>
               <Heart size={16} className="text-red-400 fill-current" />
               <span>for students</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
