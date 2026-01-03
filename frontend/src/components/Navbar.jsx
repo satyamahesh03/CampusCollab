@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu,
@@ -30,6 +30,7 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const hasNewReminders = newReminderIds.length > 0;
+  const profileMenuRef = useRef(null);
 
   const handleLogout = () => {
     logout();
@@ -38,6 +39,23 @@ const Navbar = () => {
   };
 
   const isActive = (path) => location.pathname === path;
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   const navigationItems = [
     { name: 'Projects', path: '/projects', icon: KanbanSquare },
@@ -56,15 +74,15 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200/50">
+    <nav className="bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">CC</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
               Campus Collab
             </span>
           </Link>
@@ -80,8 +98,8 @@ const Navbar = () => {
                     to={item.path}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive(item.path)
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50'
                     }`}
                   >
                     <Icon size={16} />
@@ -109,10 +127,10 @@ const Navbar = () => {
                   } : {}}
                 >
                   <Link
-                    to="/reminders"
-                    className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50 inline-flex items-center justify-center"
+                    to="/notifications"
+                    className="relative p-2 text-gray-600 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50 inline-flex items-center justify-center"
                   >
-                    <Bell size={20} className={hasNewReminders ? 'text-blue-600' : ''} />
+                    <Bell size={20} className={hasNewReminders ? 'text-amber-600' : ''} />
                     {reminders.length > 0 && (
                       <span className={`absolute top-0 right-0 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center font-medium ${
                         hasNewReminders ? 'bg-green-500 animate-pulse' : 'bg-red-500'
@@ -126,7 +144,7 @@ const Navbar = () => {
                 {/* Messages */}
                 <Link
                   to="/chats"
-                  className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
+                  className="relative p-2 text-gray-600 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50"
                 >
                   <MessageCircle size={20} />
                   {unreadMessages > 0 && (
@@ -137,12 +155,12 @@ const Navbar = () => {
                 </Link>
 
                 {/* Profile Menu */}
-                <div className="relative">
+                <div className="relative" ref={profileMenuRef}>
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center space-x-2 p-2 text-gray-700 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
+                    className="flex items-center space-x-2 p-2 text-gray-700 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {user?.name?.charAt(0)?.toUpperCase()}
                     </div>
                     <span className="hidden md:block text-sm font-medium">{user?.name}</span>
@@ -155,16 +173,16 @@ const Navbar = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+                        className="absolute right-0 mt-2 w-56 bg-white/60 backdrop-blur-sm rounded-xl border border-amber-100/50 py-2 z-50"
                       >
-                        <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="px-4 py-3 border-b border-amber-100/50">
                           <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                           <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                         </div>
                         <div className="py-1">
                           <Link
                             to="/profile"
-                            className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-amber-50/50 transition-colors"
                             onClick={() => setShowProfileMenu(false)}
                           >
                             <User size={16} />
@@ -187,13 +205,13 @@ const Navbar = () => {
               <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  className="px-4 py-2 text-amber-600 hover:text-amber-700 font-medium transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                 >
                   Register
                 </Link>
@@ -204,45 +222,93 @@ const Navbar = () => {
             {isAuthenticated && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="lg:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors"
+                className="lg:hidden p-2.5 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 active:scale-95"
+                aria-label="Toggle menu"
               >
-                {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+                <motion.div
+                  animate={showMobileMenu ? { rotate: 180 } : { rotate: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {showMobileMenu ? (
+                    <X size={24} className="text-amber-600" />
+                  ) : (
+                    <Menu size={24} />
+                  )}
+                </motion.div>
               </button>
             )}
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - Overlay */}
         <AnimatePresence>
           {showMobileMenu && isAuthenticated && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="lg:hidden border-t border-gray-200 py-4"
-            >
-              <div className="space-y-1">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        isActive(item.path)
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <Icon size={18} />
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
+            <>
+              {/* Backdrop - closes menu when clicked */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                onClick={() => setShowMobileMenu(false)}
+              />
+              {/* Mobile Menu */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-2xl border-b border-gray-200 z-[60] max-h-screen overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close Button Header */}
+                <div className="flex justify-between items-center px-6 py-4 border-b border-amber-100/50 bg-transparent">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">CC</span>
+                    </div>
+                    <h2 className="text-lg font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
+                      Menu
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setShowMobileMenu(false)}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110"
+                    aria-label="Close menu"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                {/* Navigation Items */}
+                <div className="px-4 py-4 space-y-2">
+                  {navigationItems.map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <motion.div
+                        key={item.path}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Link
+                          to={item.path}
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                            isActive(item.path)
+                              ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 transform scale-105'
+                              : 'text-gray-700 hover:text-amber-600 hover:bg-amber-50/80 hover:shadow-md'
+                          }`}
+                          onClick={() => setShowMobileMenu(false)}
+                        >
+                          <Icon size={20} className={isActive(item.path) ? 'text-white' : 'text-gray-600'} />
+                          <span className="font-semibold">{item.name}</span>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

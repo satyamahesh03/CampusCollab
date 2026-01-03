@@ -63,6 +63,14 @@ const projectSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    upvotes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    downvotes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
     replies: [{
       user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -76,7 +84,63 @@ const projectSchema = new mongoose.Schema({
       isAbusive: {
         type: Boolean,
         default: false
-      }
+      },
+      upvotes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }],
+      downvotes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }],
+      // Nested replies for tree structure (up to 3 levels)
+      replies: [{
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        text: String,
+        createdAt: {
+          type: Date,
+          default: Date.now
+        },
+        isAbusive: {
+          type: Boolean,
+          default: false
+        },
+        upvotes: [{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        }],
+        downvotes: [{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        }],
+        // Third level replies
+        replies: [{
+          user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+          },
+          text: String,
+          createdAt: {
+            type: Date,
+            default: Date.now
+          },
+          isAbusive: {
+            type: Boolean,
+            default: false
+          },
+          upvotes: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+          }],
+          downvotes: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+          }]
+        }]
+      }]
     }]
   }],
   participants: [{

@@ -15,7 +15,7 @@ import Internships from './pages/Internships';
 import Hackathons from './pages/Hackathons';
 import Drives from './pages/Drives';
 import CourseLinks from './pages/CourseLinks';
-import Reminders from './pages/Reminders';
+import Notifications from './pages/Notifications';
 import Recommendations from './pages/Recommendations';
 import AdminDashboard from './pages/AdminDashboard';
 import Chats from './pages/Chats';
@@ -23,10 +23,15 @@ import Profile from './pages/Profile';
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <AuthProvider>
         <GlobalProvider>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
             <Navbar />
             <Notification />
             <main className="relative">
@@ -118,10 +123,18 @@ function App() {
                   }
                 />
                 <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/reminders"
                   element={
                     <ProtectedRoute>
-                      <Reminders />
+                      <Notifications />
                     </ProtectedRoute>
                   }
                 />

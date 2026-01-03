@@ -6,7 +6,7 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaBookmark, FaTrash, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaShare, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaBookmark, FaTrash, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaArrowLeft } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Hackathons = () => {
@@ -23,6 +23,9 @@ const Hackathons = () => {
   useEffect(() => {
     if (hackathonId) {
       fetchSingleHackathon(hackathonId);
+    } else {
+      // Clear selected hackathon when navigating back (browser back button)
+      setSelectedHackathon(null);
     }
   }, [hackathonId]);
 
@@ -57,14 +60,6 @@ const Hackathons = () => {
     }
   };
 
-  const handleShare = (hackathon) => {
-    const url = `${window.location.origin}/hackathons/${hackathon._id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      addNotification({ type: 'success', message: 'Link copied to clipboard!' });
-    }).catch(() => {
-      addNotification({ type: 'error', message: 'Failed to copy link' });
-    });
-  };
 
   const handleSave = async (id, e) => {
     if (e) e.stopPropagation();
@@ -116,43 +111,44 @@ const Hackathons = () => {
     }
   };
 
+  // If viewing a specific hackathon, show only the hackathon detail page
+  if ((hackathonId || selectedHackathon) && selectedHackathon) {
+    return (
+      <>
+        {/* Hackathon Detail View - Full Page */}
+        <HackathonDetailView
+          hackathon={selectedHackathon}
+          onClose={() => {
+            setSelectedHackathon(null);
+            navigate('/hackathons');
+          }}
+          onSave={handleSave}
+          userId={user?.id}
+        />
+        {/* Create Modal */}
+        {showCreateModal && (
+          <CreateHackathonModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={fetchHackathons}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Otherwise, show the hackathons list
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center space-x-4">
-          {(hackathonId || selectedHackathon) && (
-            <button
-              onClick={() => {
-                setSelectedHackathon(null);
-                navigate('/hackathons');
-              }}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
-            >
-              <FaArrowLeft />
-              <span>Back to Hackathons</span>
-            </button>
-          )}
-          {!(hackathonId || selectedHackathon) && (
-            <div>
-              <h1 className="text-3xl font-bold">Hackathons</h1>
-              <p className="text-gray-600 mt-1">Discover and participate in hackathons</p>
-            </div>
-          )}
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Hackathons</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Discover and participate in hackathons</p>
         </div>
-        <div className="flex items-center space-x-3">
-          {(hackathonId || selectedHackathon) && (
-            <button
-              onClick={() => handleShare(selectedHackathon)}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <FaShare />
-              <span>Share</span>
-            </button>
-          )}
-          {(user?.role === 'student' || user?.role === 'faculty') && !(hackathonId || selectedHackathon) && (
+        <div className="flex items-center space-x-3 w-full sm:w-auto">
+          {(user?.role === 'student' || user?.role === 'faculty') && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+              className="flex items-center space-x-2 bg-amber-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-amber-600 transition text-sm sm:text-base flex-1 sm:flex-initial justify-center"
             >
               <FaPlus />
               <span>Post Hackathon</span>
@@ -180,24 +176,24 @@ const Hackathons = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all cursor-pointer p-6"
+                className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
                 onClick={() => navigate(`/hackathons/${hackathon._id}`)}
               >
                 {/* Header with Title and Actions */}
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900 hover:text-primary-600 transition flex-1">
+                <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-amber-600 transition flex-1">
                     {hackathon.title}
                   </h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <button
                       onClick={(e) => handleSave(hackathon._id, e)}
-                      className={`p-2 ${
+                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
                         hackathon.likes?.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())
-                          ? 'text-primary-600' 
+                          ? 'text-amber-600' 
                           : 'text-gray-400'
-                      } hover:text-primary-600 transition`}
+                      } hover:text-amber-600 transition`}
                     >
-                      <FaBookmark size={20} />
+                      <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
                     {isOwner && (
                       <button
@@ -219,39 +215,39 @@ const Hackathons = () => {
                             });
                           }
                         }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition min-w-[32px] min-h-[32px] flex items-center justify-center"
                         title="Delete hackathon"
                       >
-                        <FaTrash size={18} />
+                        <FaTrash size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
                     )}
                   </div>
                 </div>
 
                 {/* Organizer */}
-                <p className="text-primary-600 font-medium mb-3">{hackathon.organizer}</p>
+                <p className="text-amber-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">{hackathon.organizer}</p>
 
                 {/* Domain Badge */}
-                <div className="mb-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDomainColor(hackathon.domain)}`}>
+                <div className="mb-2 sm:mb-3">
+                  <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(hackathon.domain)}`}>
                     {hackathon.domain}
                   </span>
                 </div>
 
                 {/* Info */}
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <FaCalendarAlt className="text-gray-400" />
-                    <span>{timePeriod}</span>
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaCalendarAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span className="break-words">{timePeriod}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <FaMapMarkerAlt className="text-gray-400" />
-                    <span>{hackathon.location} • {hackathon.mode}</span>
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaMapMarkerAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span className="break-words">{hackathon.location} • {hackathon.mode}</span>
                   </div>
                   {hackathon.prizes && (
-                    <div className="flex items-center space-x-2">
-                      <FaTrophy className="text-yellow-500" />
-                      <span className="font-medium text-gray-900">{hackathon.prizes}</span>
+                    <div className="flex items-center space-x-1.5 sm:space-x-2">
+                      <FaTrophy className="text-yellow-500 text-xs sm:text-sm flex-shrink-0" />
+                      <span className="font-medium text-gray-900 break-words">{hackathon.prizes}</span>
                     </div>
                   )}
                 </div>
@@ -267,18 +263,6 @@ const Hackathons = () => {
           onSuccess={fetchHackathons}
         />
       )}
-
-      {selectedHackathon && (
-        <HackathonDetailView
-          hackathon={selectedHackathon}
-          onClose={() => {
-            setSelectedHackathon(null);
-            navigate('/hackathons');
-          }}
-          onSave={handleSave}
-          userId={user?.id}
-        />
-      )}
     </div>
   );
 };
@@ -290,32 +274,29 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
   const isRegistrationClosed = new Date(hackathon.registrationDeadline) < new Date();
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-lg w-full max-w-4xl my-8 relative"
-        >
-          {/* Close Button */}
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Header with Back button */}
+        <div className="flex justify-start items-center mb-4 sm:mb-6">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition z-10"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition text-sm sm:text-base"
           >
-            <FaTimes className="text-xl text-gray-600" />
+            <FaArrowLeft />
+            <span>Back to Hackathons</span>
           </button>
+        </div>
 
-          {/* Content */}
-          <div className="p-8 max-h-[85vh] overflow-y-auto">
-            {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 pr-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        {/* Content */}
+        <div className="bg-transparent rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+                <div className="flex-1 pr-0 sm:pr-8">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                     {hackathon.title}
                   </h2>
-                  <p className="text-xl text-primary-600 font-semibold">
+                  <p className="text-lg sm:text-xl text-amber-600 font-semibold">
                     Organized by {hackathon.organizer}
                   </p>
                 </div>
@@ -323,7 +304,7 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
                   onClick={(e) => onSave(hackathon._id, e)}
                   className={`p-3 rounded-full transition ${
                     isSaved
-                      ? 'bg-primary-100 text-primary-600'
+                      ? 'bg-primary-100 text-amber-600'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -339,10 +320,10 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
               </div>
 
               {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaCalendarAlt />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaCalendarAlt className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Event Period</span>
                   </div>
                   <p className="font-semibold text-gray-900 text-sm">
@@ -354,21 +335,21 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
                   </p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaMapMarkerAlt />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaMapMarkerAlt className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Location</span>
                   </div>
-                  <p className="font-semibold text-gray-900">{hackathon.location}</p>
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{hackathon.location}</p>
                   <p className="text-xs text-gray-600 capitalize">{hackathon.mode}</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaClock />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaClock className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Register By</span>
                   </div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">
                     {formatDate(hackathon.registrationDeadline)}
                   </p>
                 </div>
@@ -386,55 +367,54 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
               )}
             </div>
 
-            {/* Divider */}
-            <hr className="my-6" />
+          {/* Divider */}
+          <hr className="my-6" />
 
-            {/* Description */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">About this Hackathon</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {hackathon.description}
-              </p>
-            </div>
-
-            {/* Divider */}
-            <hr className="my-6" />
-
-            {/* Register Button */}
-            <div className="flex flex-col items-center">
-              {isRegistrationClosed ? (
-                <div className="text-center">
-                  <button
-                    disabled
-                    className="inline-flex items-center space-x-2 bg-gray-400 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg cursor-not-allowed opacity-75"
-                  >
-                    <span>Registration Closed</span>
-                  </button>
-                  <p className="mt-2 text-sm text-red-600">
-                    Registration deadline has passed
-                  </p>
-                </div>
-              ) : (
-                <a
-                  href={hackathon.registrationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-semibold text-lg shadow-lg hover:shadow-xl"
-                >
-                  <span>Register Now</span>
-                  <FaExternalLinkAlt />
-                </a>
-              )}
-            </div>
-
-            {/* Posted By */}
-            <div className="mt-6 text-center text-sm text-gray-500">
-              Posted by {hackathon.postedBy?.name} • {hackathon.postedBy?.department}
-            </div>
+          {/* Description */}
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">About this Hackathon</h3>
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+              {hackathon.description}
+            </p>
           </div>
-        </motion.div>
+
+          {/* Divider */}
+          <hr className="my-6" />
+
+          {/* Register Button */}
+          <div className="flex flex-col items-center">
+            {isRegistrationClosed ? (
+              <div className="text-center">
+                <button
+                  disabled
+                  className="inline-flex items-center space-x-2 bg-gray-400 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg cursor-not-allowed opacity-75"
+                >
+                  <span>Registration Closed</span>
+                </button>
+                <p className="mt-2 text-sm text-red-600">
+                  Registration deadline has passed
+                </p>
+              </div>
+            ) : (
+              <a
+                href={hackathon.registrationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 bg-amber-500 text-white px-8 py-4 rounded-lg hover:bg-amber-600 transition font-semibold text-lg shadow-lg hover:shadow-xl"
+              >
+                <span>Register Now</span>
+                <FaExternalLinkAlt />
+              </a>
+            )}
+          </div>
+
+          {/* Posted By */}
+          <div className="mt-6 text-center text-sm text-gray-500">
+            Posted by {hackathon.postedBy?.name} • {hackathon.postedBy?.department}
+          </div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 };
 
@@ -473,18 +453,28 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
-        <h2 className="text-2xl font-bold mb-6">Post Hackathon</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Close Button - Top Right */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Post Hackathon</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -492,14 +482,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="e.g., Smart India Hackathon 2024"
               />
             </div>
 
             {/* Organizer */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Organizer <span className="text-red-500">*</span>
               </label>
               <input
@@ -507,14 +497,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.organizer}
                 onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="Organization name"
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Location <span className="text-red-500">*</span>
               </label>
               <input
@@ -522,21 +512,21 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="City or Online"
               />
             </div>
 
             {/* Mode */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Mode <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.mode}
                 onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="">Select Mode</option>
                 <option value="online">Online</option>
@@ -547,14 +537,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
 
             {/* Domain */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Domain <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.domain}
                 onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="">Select Domain</option>
                 {domains.map((domain) => (
@@ -567,7 +557,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
 
             {/* Start Date */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Start Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -575,13 +565,13 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
             {/* End Date */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 End Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -589,13 +579,13 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
             {/* Registration Deadline */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Registration Deadline <span className="text-red-500">*</span>
               </label>
               <input
@@ -603,14 +593,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.registrationDeadline}
                 onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -618,26 +608,26 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
               placeholder="Describe the hackathon theme, rules, and requirements..."
             />
           </div>
 
           {/* Prizes */}
           <div>
-            <label className="block text-sm font-medium mb-2">Prizes (Optional)</label>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Prizes (Optional)</label>
             <input
               type="text"
               value={formData.prizes}
               onChange={(e) => setFormData({ ...formData, prizes: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               placeholder="e.g., 1st Prize: ₹1,00,000, 2nd Prize: ₹50,000"
             />
           </div>
 
           {/* Registration Link */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Registration Link <span className="text-red-500">*</span>
             </label>
             <input
@@ -645,25 +635,18 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
               value={formData.registrationLink}
               onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               placeholder="https://..."
             />
           </div>
 
-          {/* Buttons */}
-          <div className="flex space-x-4 pt-4">
+          {/* Submit Button */}
+          <div className="pt-3 sm:pt-4">
             <button
               type="submit"
-              className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition font-medium"
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base"
             >
               Post Hackathon
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium"
-            >
-              Cancel
             </button>
           </div>
         </form>

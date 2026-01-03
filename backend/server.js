@@ -7,6 +7,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const jwt = require('jsonwebtoken');
 const Chat = require('./models/Chat');
 const User = require('./models/User');
 
@@ -44,6 +45,7 @@ app.use('/api/hackathons', require('./routes/hackathons'));
 app.use('/api/drives', require('./routes/drives'));
 app.use('/api/course-links', require('./routes/courseLinks'));
 app.use('/api/reminders', require('./routes/reminders'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/chats', require('./routes/chats'));
@@ -61,11 +63,45 @@ app.get('/', (req, res) => {
 // Socket.io for real-time chat
 const onlineUsers = new Map(); // userId -> { socketId, lastSeen }
 
+// JWT Authentication middleware for Socket.IO
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return next(new Error('Authentication error: No token provided'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return next(new Error('Authentication error: User not found'));
+    }
+
+    if (user.isSuspended) {
+      return next(new Error('Authentication error: Account suspended'));
+    }
+
+    socket.userId = user._id.toString();
+    socket.user = user;
+    next();
+  } catch (error) {
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('New client connected:', socket.id, 'User:', socket.userId);
 
   // User comes online
   socket.on('user-online', (userId) => {
+    // Validate userId matches authenticated user
+    if (userId !== socket.userId) {
+      socket.emit('error', { message: 'Unauthorized: User ID mismatch' });
+      return;
+    }
+    
     onlineUsers.set(userId, { socketId: socket.id, lastSeen: new Date() });
     socket.userId = userId;
     
@@ -96,8 +132,35 @@ io.on('connection', (socket) => {
     try {
       const { chatId, userId, content } = data;
 
+      // Validate userId matches authenticated user
+      if (userId !== socket.userId) {
+        socket.emit('message-error', {
+          message: 'Unauthorized: User ID mismatch'
+        });
+        return;
+      }
+
+      // Find chat and restore if deleted by sender
+      let chat = await Chat.findById(chatId).populate('participants');
+      
+      if (!chat) {
+        socket.emit('message-error', {
+          message: 'Chat not found'
+        });
+        return;
+      }
+
+      // Verify user is a participant
+      if (!chat.participants.some(p => p._id.toString() === userId)) {
+        socket.emit('message-error', {
+          message: 'Unauthorized: Not a participant in this chat'
+        });
+        return;
+      }
+      
+      // No need to restore chat anymore since we're using hard delete
+
       // Check if user is blocked
-      const chat = await Chat.findById(chatId).populate('participants');
       if (chat) {
         const otherParticipant = chat.participants.find(p => !p._id.equals(userId));
         const currentUser = await User.findById(userId);
@@ -158,6 +221,9 @@ io.on('connection', (socket) => {
         
         chat.lastMessage = Date.now();
         await chat.save();
+        
+        // Populate chat messages sender before emitting
+        await chat.populate('messages.sender', 'name profilePicture');
 
         const savedMessage = chat.messages[chat.messages.length - 1];
 
@@ -168,13 +234,22 @@ io.on('connection', (socket) => {
           unreadCount: chat.unreadCount
         });
 
-        // If other user is online, mark as delivered
+
+        // If other user is online, mark as delivered immediately
         if (onlineUsers.has(otherParticipant._id.toString())) {
           savedMessage.status = 'delivered';
           await chat.save();
           io.to(chatId).emit('message-status-update', {
+            chatId: chatId,
             messageId: savedMessage._id,
             status: 'delivered'
+          });
+        } else {
+          // Still emit sent status for offline users
+          io.to(chatId).emit('message-status-update', {
+            chatId: chatId,
+            messageId: savedMessage._id,
+            status: 'sent'
           });
         }
       }
@@ -216,7 +291,19 @@ io.on('connection', (socket) => {
 
         if (updated) {
           await chat.save();
+          // Emit to all participants that messages were read
           io.to(chatId).emit('messages-read', { userId, chatId });
+          
+          // Also emit individual status updates for each message that was marked as read
+          chat.messages.forEach(msg => {
+            if (!msg.sender.equals(userId) && msg.status === 'read') {
+              io.to(chatId).emit('message-status-update', {
+                chatId: chatId,
+                messageId: msg._id,
+                status: 'read'
+              });
+            }
+          });
         }
       }
     } catch (error) {

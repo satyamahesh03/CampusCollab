@@ -5,7 +5,7 @@ import { useGlobal } from '../context/GlobalContext';
 import { departments, formatRelativeTime } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
-import { FaExternalLinkAlt, FaBook, FaPlus, FaUser, FaClock, FaShare, FaArrowLeft } from 'react-icons/fa';
+import { FaExternalLinkAlt, FaBook, FaPlus, FaUser, FaClock, FaArrowLeft } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -57,30 +57,22 @@ const CourseLinks = () => {
     }
   };
 
-  const handleShare = (course) => {
-    const url = `${window.location.origin}/courses/${course._id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      addNotification({ type: 'success', message: 'Link copied to clipboard!' });
-    }).catch(() => {
-      addNotification({ type: 'error', message: 'Failed to copy link' });
-    });
-  };
 
   const handleCourseClick = (course) => {
     navigate(`/courses/${course._id}`);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center space-x-4">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
           {(courseId || selectedCourse) && (
             <button
               onClick={() => {
                 setSelectedCourse(null);
                 navigate('/courses');
               }}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition text-sm sm:text-base"
             >
               <FaArrowLeft />
               <span>Back to Courses</span>
@@ -88,25 +80,16 @@ const CourseLinks = () => {
           )}
           {!(courseId || selectedCourse) && (
             <div>
-              <h1 className="text-3xl font-bold">Course Resources</h1>
-              <p className="text-gray-600 mt-1">Learning materials and resources</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Course Resources</h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Learning materials and resources</p>
             </div>
           )}
         </div>
-        <div className="flex items-center space-x-3">
-          {(courseId || selectedCourse) && (
-            <button
-              onClick={() => handleShare(selectedCourse)}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <FaShare />
-              <span>Share</span>
-            </button>
-          )}
+        <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
           {user?.role === 'faculty' && !(courseId || selectedCourse) && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+              className="flex items-center space-x-2 bg-amber-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-amber-600 transition text-sm sm:text-base flex-1 sm:flex-initial justify-center"
             >
               <FaPlus />
               <span>Add Resource</span>
@@ -126,11 +109,11 @@ const CourseLinks = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all h-full flex flex-col"
+              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
             >
               {/* Course Image */}
               {course.image ? (
-                <div className="h-44 w-full overflow-hidden bg-gray-100">
+                <div className="h-36 sm:h-44 w-full overflow-hidden bg-gray-100">
                   <img 
                     src={course.image} 
                     alt={course.title}
@@ -142,38 +125,38 @@ const CourseLinks = () => {
                   />
                 </div>
               ) : (
-                <div className="h-44 w-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                  <FaBook className="text-5xl text-primary-600 opacity-60" />
+                <div className="h-36 sm:h-44 w-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                  <FaBook className="text-3xl sm:text-5xl text-amber-600 opacity-60" />
                 </div>
               )}
 
               {/* Content */}
-              <div className="p-6 flex flex-col flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
+              <div className="p-4 sm:p-6 flex flex-col flex-1">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
                   {course.title}
                 </h3>
                 
                 {course.description && (
-                  <p className="text-gray-600 mb-4 text-sm line-clamp-3">
+                  <p className="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm line-clamp-3">
                     {course.description}
                   </p>
                 )}
 
                 {/* Faculty Name and Timestamp */}
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <FaUser className="mr-2 text-primary-600" />
+                <div className="mb-3 sm:mb-4 space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                    <FaUser className="mr-1.5 sm:mr-2 text-amber-600 text-xs sm:text-sm" />
                     <span className="font-medium">
                       {course.postedBy?.name || 'Unknown'}
                     </span>
                     {course.postedBy?.department && (
-                      <span className="ml-2 text-gray-500">
+                      <span className="ml-1.5 sm:ml-2 text-gray-500">
                         • {course.postedBy.department}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <FaClock className="mr-2" />
+                  <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                    <FaClock className="mr-1.5 sm:mr-2 text-xs sm:text-sm" />
                     <span>{formatRelativeTime(course.createdAt)}</span>
                   </div>
                 </div>
@@ -183,7 +166,7 @@ const CourseLinks = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="mt-auto flex items-center justify-center space-x-2 bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition font-medium shadow-sm hover:shadow-md w-full"
+                  className="mt-auto flex items-center justify-center space-x-2 bg-amber-500 text-white py-2 sm:py-2.5 rounded-lg hover:bg-amber-600 transition font-medium shadow-sm hover:shadow-md w-full text-xs sm:text-sm"
                 >
                   <span>View Resource</span>
                   <FaExternalLinkAlt />
@@ -286,20 +269,30 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white/60 backdrop-blur-sm rounded-lg p-4 sm:p-6 md:p-8 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative border border-amber-100/50"
       >
-        <h2 className="text-2xl font-bold mb-6">Add Course Resource</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Close Button - Top Right */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Add Course Resource</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Course Link - Primary Input */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Course Link <span className="text-red-500">*</span>
             </label>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="url"
                 value={formData.link}
@@ -308,14 +301,14 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
                   setMetadataFetched(false);
                 }}
                 required
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="https://www.udemy.com/course/... or YouTube link"
               />
               <button
                 type="button"
                 onClick={handleFetchMetadata}
                 disabled={fetchingMetadata || !formData.link}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 sm:px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap"
               >
                 {fetchingMetadata ? 'Fetching...' : 'Fetch Details'}
               </button>
@@ -327,14 +320,14 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
 
           {/* Department - Required */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Department <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
             >
               <option value="">Select Department</option>
               {departments.map((dept) => (
@@ -347,7 +340,7 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
 
           {/* Preview Section - Shown after fetching metadata */}
           {metadataFetched && (
-            <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+            <div className="border-2 border-amber-200 rounded-lg p-4 bg-amber-50">
               <h3 className="font-semibold text-gray-900 mb-3">Preview</h3>
               
               {formData.image && (
@@ -368,7 +361,7 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
@@ -379,27 +372,20 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
                 />
               </div>
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex space-x-4 pt-4">
+          {/* Submit Button */}
+          <div className="pt-3 sm:pt-4">
             <button
               type="submit"
               disabled={!formData.department || !formData.link}
-              className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               Add Resource
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium"
-            >
-              Cancel
             </button>
           </div>
         </form>

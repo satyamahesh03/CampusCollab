@@ -13,7 +13,7 @@ const Notification = () => {
       case 'error':
         return <FaExclamationCircle className="text-red-500" />;
       case 'info':
-        return <FaInfoCircle className="text-blue-500" />;
+        return <FaInfoCircle className="text-amber-500" />;
       default:
         return <FaInfoCircle className="text-gray-500" />;
     }
@@ -28,7 +28,7 @@ const Notification = () => {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
-            className="bg-white rounded-lg shadow-lg p-4 flex items-start space-x-3 max-w-sm"
+            className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 shadow-lg p-4 flex items-start space-x-3 max-w-sm"
           >
             {getIcon(notification.type)}
             <div className="flex-1">

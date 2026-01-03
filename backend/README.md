@@ -36,7 +36,12 @@ MONGODB_URI=mongodb://localhost:27017/campus-collab
 JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRE=7d
 FACULTY_REGISTRATION_CODE=FACULTY2024SECRET
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
+
+**Note:** To use AI summarization feature, you need to:
+1. Get a Google Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Add it to your `.env` file as `GOOGLE_GEMINI_API_KEY`
 
 ## Running the Application
 

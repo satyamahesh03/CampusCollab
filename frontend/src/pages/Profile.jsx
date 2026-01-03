@@ -4,7 +4,7 @@ import { authAPI, chatAPI, projectAPI } from '../utils/api';
 import { getRoleColor } from '../utils/helpers';
 import { useGlobal } from '../context/GlobalContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle } from 'lucide-react';
+import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, FolderKanban } from 'lucide-react';
 import Loading from '../components/Loading';
 
 const Profile = () => {
@@ -20,6 +20,7 @@ const Profile = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [imageInfo, setImageInfo] = useState({ name: '', size: '', type: '' });
   const fileInputRef = useRef(null);
+  const projectsDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     department: '',
@@ -90,6 +91,23 @@ const Profile = () => {
 
     loadProjects();
   }, [displayUser]);
+
+  // Close projects dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (projectsDropdownRef.current && !projectsDropdownRef.current.contains(event.target)) {
+        setShowProjects(false);
+      }
+    };
+
+    if (showProjects) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProjects]);
 
   useEffect(() => {
     if (user && !isViewingOtherUser) {
@@ -415,26 +433,26 @@ const Profile = () => {
   const bioPercentage = (formData.bio.length / 300) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 py-6 md:py-8 px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Back button when viewing another user */}
         {isViewingOtherUser && (
           <button
             onClick={() => window.history.back()}
-            className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors font-medium"
+            className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-amber-600 transition-colors font-medium"
           >
             <ArrowLeft size={20} />
             <span>Back</span>
           </button>
         )}
         {/* Header Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 transform transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 overflow-hidden mb-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
           {/* Profile Info Section */}
-          <div className="px-8 py-8">
-            <div className="flex flex-col md:flex-row md:items-center md:space-x-6">
+          <div className="px-4 md:px-8 py-6 md:py-8">
+            <div className="flex flex-col md:flex-row md:items-center md:space-x-6 relative">
               {/* Profile Picture */}
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-full border-4 border-gray-200 shadow-2xl overflow-hidden bg-gradient-to-br from-primary-600 to-indigo-600 ring-4 ring-primary-100">
+              <div className="relative group mb-4 md:mb-0">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-gray-200 shadow-2xl overflow-hidden bg-gradient-to-br from-amber-500 to-yellow-500 ring-4 ring-amber-100">
                   {(isViewingOtherUser ? displayUser?.profilePicture : imagePreview) ? (
                     <img
                       src={isViewingOtherUser ? displayUser?.profilePicture : imagePreview}
@@ -456,7 +474,7 @@ const Profile = () => {
                         fileInputRef.current?.click();
                         setShowImageUploadHelp(true);
                       }}
-                      className="w-32 h-32 rounded-full bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
                     >
                       <Camera size={24} className="mb-1" />
                       <span className="text-xs font-medium">Change Photo</span>
@@ -501,7 +519,7 @@ const Profile = () => {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="Enter your full name"
-                      className="text-3xl font-bold text-gray-900 border-b-2 border-gray-300 focus:border-primary-600 outline-none bg-transparent pb-2 w-full transition-colors"
+                      className="text-3xl font-bold text-gray-900 border-b-2 border-gray-300 focus:border-amber-600 outline-none bg-transparent pb-2 w-full transition-colors"
                       required
                     />
                     {!formData.name.trim() && (
@@ -512,36 +530,178 @@ const Profile = () => {
                     )}
                   </div>
                 ) : (
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">{displayUser?.name}</h1>
+                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{displayUser?.name}</h1>
                 )}
                 
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold capitalize ${getRoleColor(displayUser?.role)} shadow-sm`}>
                     {displayUser?.role}
                   </span>
-                  {displayUser?.role === 'faculty' && displayUser?.designation && (
-                    <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800 shadow-sm">
-                      <Award size={14} className="mr-1.5" />
-                      {displayUser?.designation}
-                    </span>
-                  )}
-                  {displayUser?.role === 'student' && displayUser?.year && (
-                    <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 shadow-sm">
-                      <Calendar size={14} className="mr-1.5" />
-                      Year {displayUser?.year}
-                    </span>
-                  )}
+                </div>
+
+                {/* Academic Info - Under Name */}
+                <div className="mt-4 md:mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+                    {/* Department */}
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-purple-100 rounded-lg">
+                        <Building2 size={16} className="text-purple-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 font-medium">Department</p>
+                        {isEditing ? (
+                          <select
+                            name="department"
+                            value={formData.department}
+                            onChange={handleChange}
+                            className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
+                            required
+                          >
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Information Technology">Information Technology</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Chemical">Chemical</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        ) : (
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Year (Students) or Designation (Faculty) */}
+                    {displayUser?.role === 'student' ? (
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-amber-100 rounded-lg">
+                          <Calendar size={16} className="text-amber-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500 font-medium">Year of Study</p>
+                          {isEditing ? (
+                            <select
+                              name="year"
+                              value={formData.year}
+                              onChange={handleChange}
+                              className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium"
+                              required
+                            >
+                              <option value="">Select Year</option>
+                              <option value="1">1st Year</option>
+                              <option value="2">2nd Year</option>
+                              <option value="3">3rd Year</option>
+                              <option value="4">4th Year</option>
+                            </select>
+                          ) : (
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                              {displayUser?.year ? `Year ${displayUser.year}` : 'Not specified'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : displayUser?.role === 'faculty' ? (
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-amber-100 rounded-lg">
+                          <Award size={16} className="text-amber-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500 font-medium">Designation</p>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              name="designation"
+                              value={formData.designation}
+                              onChange={handleChange}
+                              placeholder="e.g., Assistant Professor"
+                              className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-transparent outline-none text-sm font-medium"
+                            />
+                          ) : (
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.designation || 'Not specified'}</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
+
+              {/* Joined Projects Icon - Right Side */}
+              {displayUser?.role === 'student' && (
+                <div ref={projectsDropdownRef} className="absolute top-0 right-0 flex flex-col items-end gap-1 z-10">
+                  <button
+                    onClick={() => setShowProjects(prev => !prev)}
+                    className="group relative flex flex-col items-center gap-1"
+                    title="Joined Projects"
+                  >
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-110">
+                      <FolderKanban size={18} className="md:w-5 md:h-5 text-white" />
+                    </div>
+                    <span className="text-[10px] md:text-xs font-medium text-gray-600 group-hover:text-amber-600 transition-colors">
+                      Projects
+                    </span>
+                  </button>
+                  
+                  {/* Projects Dropdown */}
+                  {showProjects && (
+                    <div className="absolute top-14 right-0 w-72 md:w-80 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 z-20 flex flex-col" style={{ maxHeight: '600px' }}>
+                      <div className="p-3 border-b border-amber-100/50 bg-gradient-to-r from-amber-50 to-yellow-50 flex-shrink-0">
+                        <h3 className="text-sm font-semibold text-gray-900">Joined Projects</h3>
+                        <p className="text-xs text-gray-600 mt-0.5">{joinedProjects.length} project{joinedProjects.length !== 1 ? 's' : ''}</p>
+                      </div>
+                      <div 
+                        className="overflow-y-auto overflow-x-hidden"
+                        style={{ 
+                          maxHeight: '520px',
+                          WebkitOverflowScrolling: 'touch',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#cbd5e1 #f1f5f9'
+                        }}
+                      >
+                        {projectsLoading ? (
+                          <div className="p-4 text-center text-gray-500 text-sm">Loading projects...</div>
+                        ) : joinedProjects.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500 text-sm">No joined projects yet.</div>
+                        ) : (
+                          <div className="divide-y divide-gray-100">
+                            {joinedProjects.map((proj) => (
+                              <button
+                                key={proj._id}
+                                onClick={() => {
+                                  navigate(`/projects/${proj._id}`);
+                                  setShowProjects(false);
+                                }}
+                                className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
+                              >
+                                <p className="font-semibold text-sm text-gray-900 mb-1 truncate">{proj.title}</p>
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs text-gray-600 truncate flex-1">
+                                    {proj.domains?.join(', ') || 'General'}
+                                  </p>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 capitalize whitespace-nowrap flex-shrink-0">
+                                    {proj.status}
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Edit/Save/Message Buttons */}
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-4 md:mt-6">
               {isViewingOtherUser ? (
                 <button
                   onClick={handleMessage}
                   disabled={!viewedUser || messageLoading}
-                  className="bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-amber-500 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <MessageCircle size={18} />
                   {messageLoading ? 'Starting...' : 'Message'}
@@ -550,7 +710,7 @@ const Profile = () => {
                 !isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="bg-primary-600 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                    className="bg-amber-500 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
                   >
                     <Edit2 size={18} />
                     Edit Profile
@@ -589,7 +749,7 @@ const Profile = () => {
 
             {/* Image Info Display - Only shown in edit mode with image */}
             {isEditing && imageInfo.name && (
-              <div className="mt-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+              <div className="mt-6 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <ImageIcon size={24} className="text-green-600" />
                 </div>
@@ -658,10 +818,10 @@ const Profile = () => {
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* About Section */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-primary-100 rounded-lg mr-3">
-                  <BookOpen className="text-primary-600" size={24} />
+                <div className="p-2 bg-amber-100 rounded-lg mr-3">
+                  <BookOpen className="text-amber-600" size={24} />
                 </div>
                 About
               </h2>
@@ -675,7 +835,7 @@ const Profile = () => {
                       rows="5"
                       maxLength="300"
                       placeholder="Tell us about yourself... Share your interests, goals, or what makes you unique!"
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none transition-colors ${
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${
                         bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
                       }`}
                     />
@@ -718,7 +878,7 @@ const Profile = () => {
 
             {/* Skills Section (Students Only) */}
             {displayUser?.role === 'student' && (
-              <div className="bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="p-2 bg-amber-100 rounded-lg mr-3">
@@ -741,14 +901,14 @@ const Profile = () => {
                         onChange={(e) => setNewSkill(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
                         placeholder="e.g., React, Python, Design..."
-                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
+                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                         maxLength="30"
                       />
                       <button
                         type="button"
                         onClick={handleAddSkill}
                         disabled={!newSkill.trim()}
-                        className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:from-primary-700 hover:to-indigo-700 transition-all flex items-center gap-2 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                        className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-2 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                       >
                         <Plus size={18} />
                         Add
@@ -764,13 +924,13 @@ const Profile = () => {
                       {formData.skills.map((skill, index) => (
                         <span
                           key={index}
-                          className="px-4 py-2 bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 rounded-full text-sm font-medium flex items-center gap-2 border border-primary-200 shadow-sm hover:shadow-md transition-all"
+                          className="px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 rounded-full text-sm font-medium flex items-center gap-2 border border-amber-200 shadow-sm hover:shadow-md transition-all"
                         >
                           {skill}
                           <button
                             type="button"
                             onClick={() => handleRemoveSkill(skill)}
-                            className="text-primary-900 hover:text-red-600 transition-colors hover:scale-110 transform"
+                            className="text-amber-900 hover:text-red-600 transition-colors hover:scale-110 transform"
                             title="Remove skill"
                           >
                             <X size={16} />
@@ -791,7 +951,7 @@ const Profile = () => {
                       displayUser?.skills.map((skill, index) => (
                         <span
                           key={index}
-                          className="px-4 py-2 bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 rounded-full text-sm font-medium border border-primary-200 shadow-sm hover:shadow-md transition-all transform hover:scale-105"
+                          className="px-4 py-2 bg-gradient-to-r from-primary-50 to-indigo-50 text-amber-700 rounded-full text-sm font-medium border border-amber-200 shadow-sm hover:shadow-md transition-all transform hover:scale-105"
                         >
                           {skill}
                         </span>
@@ -811,16 +971,16 @@ const Profile = () => {
           {/* Right Column - Contact & Info */}
           <div className="space-y-6">
             {/* Contact Information */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Info</h2>
               <div className="space-y-4">
                 {/* Email */}
-                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Mail size={20} className="text-blue-600" />
+                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <Mail size={20} className="text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">Email</p>
+                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Email</p>
                     <p className="text-gray-900 font-medium break-all text-sm">{displayUser?.email}</p>
                   </div>
                 </div>
@@ -861,152 +1021,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Academic Information */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Academic Info</h2>
-              <div className="space-y-4">
-                {/* Department */}
-                <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Building2 size={20} className="text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-purple-600 font-semibold uppercase tracking-wide mb-1">Department</p>
-                    {isEditing ? (
-                      <select
-                        name="department"
-                        value={formData.department}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none font-medium text-sm"
-                        required
-                      >
-                        <option value="">Select Department</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Information Technology">Information Technology</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Mechanical">Mechanical</option>
-                        <option value="Civil">Civil</option>
-                        <option value="Electrical">Electrical</option>
-                        <option value="Chemical">Chemical</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    ) : (
-                      <p className="text-gray-900 font-medium text-sm">{displayUser?.department}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Year (Students) */}
-                {displayUser?.role === 'student' && (
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Calendar size={20} className="text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">Year of Study</p>
-                      {isEditing ? (
-                        <select
-                          name="year"
-                          value={formData.year}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium text-sm"
-                          required
-                        >
-                          <option value="">Select Year</option>
-                          <option value="1">1st Year</option>
-                          <option value="2">2nd Year</option>
-                          <option value="3">3rd Year</option>
-                          <option value="4">4th Year</option>
-                        </select>
-                      ) : (
-                        <p className="text-gray-900 font-medium text-sm">Year {displayUser?.year}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Designation (Faculty) */}
-                {displayUser?.role === 'faculty' && (
-                  <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <Award size={20} className="text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Designation</p>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="designation"
-                          value={formData.designation}
-                          onChange={handleChange}
-                          placeholder="e.g., Assistant Professor"
-                          className="w-full px-3 py-2 border-2 border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none font-medium text-sm"
-                        />
-                      ) : (
-                        <p className="text-gray-900 font-medium text-sm">{displayUser?.designation || 'Not specified'}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Joined Projects (Students) */}
-            {displayUser?.role === 'student' && (
-              <div className="bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="text-primary-600" size={22} />
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Joined Projects</h2>
-                      <p className="text-sm text-gray-500">Your joined and liked work in one place</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowProjects(prev => !prev)}
-                    className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition"
-                  >
-                    {showProjects ? 'Hide' : 'View projects'}
-                  </button>
-                </div>
-
-                {showProjects && (
-                  <>
-                    {projectsLoading && (
-                      <p className="text-gray-500 text-sm">Loading projects...</p>
-                    )}
-
-                    {!projectsLoading && joinedProjects.length === 0 && (
-                      <p className="text-gray-500 text-sm">
-                        No joined projects yet.
-                      </p>
-                    )}
-
-                    {!projectsLoading && joinedProjects.length > 0 && (
-                      <div className="space-y-3">
-                        {joinedProjects.map((proj) => (
-                          <button
-                            key={proj._id}
-                            onClick={() => navigate(`/projects/${proj._id}`)}
-                            className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-4 transition flex justify-between items-center"
-                          >
-                            <div>
-                              <p className="font-semibold text-gray-900">{proj.title}</p>
-                              <p className="text-sm text-gray-600">
-                                {proj.domains?.join(', ') || 'General'}
-                              </p>
-                            </div>
-                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">
-                              {proj.status}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>

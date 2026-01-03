@@ -2,17 +2,27 @@ const express = require('express');
 const router = express.Router();
 const Chat = require('../models/Chat');
 const User = require('../models/User');
+const ChatHistory = require('../models/ChatHistory');
 const { protect } = require('../middleware/auth');
 
+// Generate unique chat code
+const generateChatCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
 // @route   GET /api/chats
-// @desc    Get all chats for the logged-in user (excluding deleted and rejected)
+// @desc    Get all approved chats for the logged-in user (excluding deleted and rejected)
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
     const chats = await Chat.find({ 
       participants: req.user._id,
-      deletedBy: { $ne: req.user._id }, // Exclude chats deleted by this user
-      status: { $in: ['pending', 'accepted'] } // Exclude rejected chats
+      status: 'accepted' // Only approved chats
     })
       .populate('participants', 'name email role department profilePicture')
       .populate('initiatedBy', 'name')
@@ -33,35 +43,98 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/chats/:userId
-// @desc    Get or create a chat request with a specific user
+// @route   GET /api/chats/requests
+// @desc    Get all pending message requests (where user is NOT the initiator)
 // @access  Private
-router.get('/:userId', protect, async (req, res) => {
+router.get('/requests', protect, async (req, res) => {
   try {
-    // First, check if they have ever had an accepted chat before (for approval history)
-    const previousAcceptedChat = await Chat.findOne({
-      participants: { $all: [req.user._id, req.params.userId] },
-      status: 'accepted'
-    });
+    const requests = await Chat.find({ 
+      participants: req.user._id,
+      status: 'pending',
+      initiatedBy: { $ne: req.user._id } // Only requests where user is NOT the initiator
+    })
+      .populate('participants', 'name email role department profilePicture')
+      .populate('initiatedBy', 'name profilePicture')
+      .populate('messages.sender', 'name profilePicture')
+      .sort({ lastMessage: -1 });
 
-    // Find existing ACTIVE chat between the two users (not deleted by current user)
-    let chat = await Chat.findOne({
-      participants: { $all: [req.user._id, req.params.userId] },
-      deletedBy: { $ne: req.user._id }
+    res.json({
+      success: true,
+      count: requests.length,
+      data: requests
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching message requests'
+    });
+  }
+});
+
+// @route   GET /api/chats/code/:chatCode
+// @desc    Get chat by unique code
+// @access  Private
+router.get('/code/:chatCode', protect, async (req, res) => {
+  try {
+    const chat = await Chat.findOne({
+      chatCode: req.params.chatCode,
+      participants: req.user._id
     })
       .populate('participants', 'name email role department profilePicture')
       .populate('initiatedBy', 'name')
       .populate('messages.sender', 'name profilePicture');
 
-    // If no active chat exists
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found'
+      });
+    }
+
+    // Chat is already available if it exists (no soft delete anymore)
+
+    res.json({
+      success: true,
+      data: chat
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching chat'
+    });
+  }
+});
+
+// @route   GET /api/chats/:userId
+// @desc    Get or create a chat request with a specific user
+// @access  Private
+router.get('/:userId', protect, async (req, res) => {
+  try {
+    // Check if they have ever had an approved chat before (even if deleted)
+    const haveChattedBefore = await ChatHistory.haveChattedBefore(req.user._id, req.params.userId);
+
+    // Find existing chat between the two users
+    let chat = await Chat.findOne({
+      participants: { $all: [req.user._id, req.params.userId] },
+      status: { $in: ['pending', 'accepted'] } // Only get pending or accepted chats
+    })
+      .populate('participants', 'name email role department profilePicture')
+      .populate('initiatedBy', 'name')
+      .populate('messages.sender', 'name profilePicture');
+
+    // If no chat exists, create a new one
     if (!chat) {
       // Determine initial status based on chat history
       let initialStatus = 'pending';
+      let chatCode = null;
       
-      // If they've ever had an accepted chat before, skip approval
-      if (previousAcceptedChat) {
+      // If they've ever had an approved chat before (even if deleted), auto-approve
+      if (haveChattedBefore) {
         initialStatus = 'accepted';
-        console.log(`Users have chatted before - auto-approving new chat`);
+        chatCode = generateChatCode();
+        console.log(`Users have chatted before - auto-approving new chat with code: ${chatCode}`);
       }
 
       // Create new chat
@@ -69,16 +142,13 @@ router.get('/:userId', protect, async (req, res) => {
         participants: [req.user._id, req.params.userId],
         initiatedBy: req.user._id,
         status: initialStatus,
+        chatCode: chatCode,
         messages: []
       });
 
       chat = await Chat.findById(chat._id)
         .populate('participants', 'name email role department profilePicture')
         .populate('initiatedBy', 'name');
-    } else if (chat.deletedBy && chat.deletedBy.some(id => id.equals(req.user._id))) {
-      // If user had deleted it, restore it for them
-      chat.deletedBy = chat.deletedBy.filter(id => !id.equals(req.user._id));
-      await chat.save();
     }
 
     res.json({
@@ -116,6 +186,8 @@ router.post('/:chatId/message', protect, async (req, res) => {
       });
     }
 
+    // No need to restore chat anymore since we're using hard delete
+
     // Check if chat is pending and enforce 2-message limit for initiator
     if (chat.status === 'pending') {
       const isInitiator = chat.initiatedBy.equals(req.user._id);
@@ -145,8 +217,7 @@ router.post('/:chatId/message', protect, async (req, res) => {
       status: 'sent'
     });
 
-    // Update unread count for the other participant
-    const otherParticipant = chat.participants.find(p => !p.equals(req.user._id));
+    // Update unread count for the other participant (already declared above)
     if (!chat.unreadCount) chat.unreadCount = new Map();
     const currentUnread = chat.unreadCount.get(otherParticipant.toString()) || 0;
     chat.unreadCount.set(otherParticipant.toString(), currentUnread + 1);
@@ -336,7 +407,26 @@ router.put('/:chatId/approve', protect, async (req, res) => {
     }
 
     chat.status = 'accepted';
+    
+    // Generate unique chat code if not already exists
+    if (!chat.chatCode) {
+      let code;
+      let isUnique = false;
+      while (!isUnique) {
+        code = generateChatCode();
+        const existingChat = await Chat.findOne({ chatCode: code });
+        if (!existingChat) {
+          isUnique = true;
+        }
+      }
+      chat.chatCode = code;
+    }
+    
     await chat.save();
+    
+    // Record in chat history that these users have had an approved chat
+    // This persists even if the chat is later deleted, allowing auto-approval for future chats
+    await ChatHistory.recordChatHistory(chat.participants[0], chat.participants[1]);
 
     res.json({
       success: true,
@@ -398,7 +488,7 @@ router.put('/:chatId/reject', protect, async (req, res) => {
 });
 
 // @route   DELETE /api/chats/:chatId
-// @desc    Delete chat for current user only (keeps in DB for approval history)
+// @desc    Request to delete chat (requires both users' approval)
 // @access  Private
 router.delete('/:chatId', protect, async (req, res) => {
   try {
@@ -419,25 +509,139 @@ router.delete('/:chatId', protect, async (req, res) => {
       });
     }
 
-    // Add user to deletedBy array (soft delete for this user only)
-    if (!chat.deletedBy) chat.deletedBy = [];
-    if (!chat.deletedBy.includes(req.user._id)) {
-      chat.deletedBy.push(req.user._id);
+    // Check if there's already a delete request
+    if (chat.deleteRequestStatus === 'pending') {
+      // If the other user already requested deletion, approve it immediately
+      if (chat.deleteRequestedBy && !chat.deleteRequestedBy.equals(req.user._id)) {
+        // Both users want to delete - delete the chat
+        await Chat.findByIdAndDelete(req.params.chatId);
+        return res.json({
+          success: true,
+          message: 'Chat deleted - both users agreed'
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Delete request already pending'
+        });
+      }
     }
 
-    // NEVER permanently delete - keep for approval history
-    // Even if both users delete, we preserve the 'accepted' status for future re-chats
+    // Create delete request
+    chat.deleteRequestedBy = req.user._id;
+    chat.deleteRequestStatus = 'pending';
     await chat.save();
 
     res.json({
       success: true,
-      message: 'Chat deleted successfully'
+      message: 'Delete request sent. Waiting for other user\'s approval.',
+      data: chat
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Server error deleting chat'
+      message: 'Server error requesting chat deletion'
+    });
+  }
+});
+
+// @route   PUT /api/chats/:chatId/delete-approve
+// @desc    Approve delete request (both users must approve)
+// @access  Private
+router.put('/:chatId/delete-approve', protect, async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.chatId);
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found'
+      });
+    }
+
+    // Verify user is a participant and not the one who requested deletion
+    if (!chat.participants.includes(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized'
+      });
+    }
+
+    if (!chat.deleteRequestedBy || chat.deleteRequestStatus !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending delete request'
+      });
+    }
+
+    if (chat.deleteRequestedBy.equals(req.user._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot approve your own delete request'
+      });
+    }
+
+    // Both users have agreed - delete the chat
+    await Chat.findByIdAndDelete(req.params.chatId);
+
+    res.json({
+      success: true,
+      message: 'Chat deleted - both users agreed'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error approving delete request'
+    });
+  }
+});
+
+// @route   PUT /api/chats/:chatId/delete-decline
+// @desc    Decline delete request
+// @access  Private
+router.put('/:chatId/delete-decline', protect, async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.chatId);
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found'
+      });
+    }
+
+    // Verify user is a participant
+    if (!chat.participants.includes(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized'
+      });
+    }
+
+    if (!chat.deleteRequestedBy || chat.deleteRequestStatus !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending delete request'
+      });
+    }
+
+    // Cancel the delete request
+    chat.deleteRequestedBy = null;
+    chat.deleteRequestStatus = null;
+    await chat.save();
+
+    res.json({
+      success: true,
+      message: 'Delete request declined',
+      data: chat
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error declining delete request'
     });
   }
 });

@@ -15,6 +15,45 @@ export const formatRelativeTime = (date) => {
   return formatDistanceToNow(new Date(date), { addSuffix: true });
 };
 
+// Format date for chat messages (like WhatsApp)
+export const formatChatDate = (date) => {
+  if (!date) return '';
+  const messageDate = new Date(date);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  // Reset time to compare dates only
+  const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+  
+  if (messageDateOnly.getTime() === todayOnly.getTime()) {
+    return 'Today';
+  } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
+    return 'Yesterday';
+  } else {
+    // Check if it's within the current year
+    if (messageDate.getFullYear() === today.getFullYear()) {
+      return format(messageDate, 'MMMM d');
+    } else {
+      return format(messageDate, 'MMMM d, yyyy');
+    }
+  }
+};
+
+// Check if two dates are on different days
+export const isDifferentDay = (date1, date2) => {
+  if (!date1 || !date2) return true;
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  return (
+    d1.getFullYear() !== d2.getFullYear() ||
+    d1.getMonth() !== d2.getMonth() ||
+    d1.getDate() !== d2.getDate()
+  );
+};
+
 export const truncateText = (text, maxLength) => {
   if (!text) return '';
   if (text.length <= maxLength) return text;

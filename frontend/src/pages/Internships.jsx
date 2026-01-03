@@ -6,7 +6,7 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaTrash, FaShare, FaArrowLeft } from 'react-icons/fa';
+import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Internships = () => {
@@ -23,6 +23,9 @@ const Internships = () => {
   useEffect(() => {
     if (internshipId) {
       fetchSingleInternship(internshipId);
+    } else {
+      // Clear selected internship when navigating back (browser back button)
+      setSelectedInternship(null);
     }
   }, [internshipId]);
 
@@ -57,14 +60,6 @@ const Internships = () => {
     }
   };
 
-  const handleShare = (internship) => {
-    const url = `${window.location.origin}/internships/${internship._id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      addNotification({ type: 'success', message: 'Link copied to clipboard!' });
-    }).catch(() => {
-      addNotification({ type: 'error', message: 'Failed to copy link' });
-    });
-  };
 
   const handleSave = async (id) => {
     if (!user) {
@@ -111,43 +106,44 @@ const Internships = () => {
     }
   };
 
+  // If viewing a specific internship, show only the internship detail page
+  if ((internshipId || selectedInternship) && selectedInternship) {
+    return (
+      <>
+        {/* Internship Detail View - Full Page */}
+        <InternshipDetailView
+          internship={selectedInternship}
+          onClose={() => {
+            setSelectedInternship(null);
+            navigate('/internships');
+          }}
+          onSave={handleSave}
+          userId={user?.id}
+        />
+        {/* Create Modal */}
+        {showCreateModal && (
+          <CreateInternshipModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={fetchInternships}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Otherwise, show the internships list
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center space-x-4">
-          {(internshipId || selectedInternship) && (
-            <button
-              onClick={() => {
-                setSelectedInternship(null);
-                navigate('/internships');
-              }}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
-            >
-              <FaArrowLeft />
-              <span>Back to Internships</span>
-            </button>
-          )}
-          {!(internshipId || selectedInternship) && (
-            <div>
-              <h1 className="text-3xl font-bold">Internships</h1>
-              <p className="text-gray-600 mt-1">Explore internship opportunities</p>
-            </div>
-          )}
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Internships</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Explore internship opportunities</p>
         </div>
-        <div className="flex items-center space-x-3">
-          {(internshipId || selectedInternship) && (
-            <button
-              onClick={() => handleShare(selectedInternship)}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <FaShare />
-              <span>Share</span>
-            </button>
-          )}
-          {user?.role === 'faculty' && !(internshipId || selectedInternship) && (
+        <div className="flex items-center space-x-3 w-full sm:w-auto">
+          {user?.role === 'faculty' && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+              className="flex items-center space-x-2 bg-amber-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-amber-600 transition text-sm sm:text-base flex-1 sm:flex-initial justify-center"
             >
               <FaPlus />
               <span>Post Internship</span>
@@ -158,12 +154,12 @@ const Internships = () => {
       <FilterBar filters={filters} setFilters={setFilters} showYear={false} />
 
       {/* Mode Filter */}
-      <div className="flex space-x-4 mb-6">
+      <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
         <button
           onClick={() => setFilters({ ...filters, mode: undefined })}
-          className={`px-4 py-2 rounded-lg transition ${
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
             !filters.mode
-              ? 'bg-primary-600 text-white'
+              ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
           }`}
         >
@@ -171,9 +167,9 @@ const Internships = () => {
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'virtual' })}
-          className={`px-4 py-2 rounded-lg transition ${
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
             filters.mode === 'virtual'
-              ? 'bg-primary-600 text-white'
+              ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
           }`}
         >
@@ -181,9 +177,9 @@ const Internships = () => {
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'offline' })}
-          className={`px-4 py-2 rounded-lg transition ${
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
             filters.mode === 'offline'
-              ? 'bg-primary-600 text-white'
+              ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
           }`}
         >
@@ -191,9 +187,9 @@ const Internships = () => {
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'hybrid' })}
-          className={`px-4 py-2 rounded-lg transition ${
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
             filters.mode === 'hybrid'
-              ? 'bg-primary-600 text-white'
+              ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
           }`}
         >
@@ -218,26 +214,26 @@ const Internships = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all cursor-pointer p-6"
+                className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
                 onClick={() => navigate(`/internships/${internship._id}`)}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900 hover:text-primary-600 transition flex-1">
+                <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-amber-600 transition flex-1">
                     {internship.title}
                   </h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSave(internship._id);
                       }}
-                      className={`p-2 ${
+                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
                         internship.likes?.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())
-                          ? 'text-primary-600' 
+                          ? 'text-amber-600' 
                           : 'text-gray-400'
-                      } hover:text-primary-600 transition`}
+                      } hover:text-amber-600 transition`}
                     >
-                      <FaBookmark size={20} />
+                      <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
                     {isOwner && (
                       <button
@@ -259,40 +255,40 @@ const Internships = () => {
                             });
                           }
                         }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition min-w-[32px] min-h-[32px] flex items-center justify-center"
                         title="Delete internship"
                       >
-                        <FaTrash size={18} />
+                        <FaTrash size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
                     )}
                   </div>
                 </div>
 
-              <p className="text-primary-600 font-medium mb-3">{internship.company}</p>
+              <p className="text-amber-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">{internship.company}</p>
 
               {/* Domain Badge */}
-              <div className="mb-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDomainColor(internship.domain)}`}>
+              <div className="mb-2 sm:mb-3">
+                <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(internship.domain)}`}>
                   {internship.domain}
                 </span>
               </div>
 
               {/* Key Info */}
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <FaMapMarkerAlt className="text-gray-400" />
-                  <span>{internship.location} • {internship.mode}</span>
+              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <FaMapMarkerAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                  <span className="break-words">{internship.location} • {internship.mode}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FaClock className="text-gray-400" />
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <FaClock className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
                   <span>{internship.duration}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FaMoneyBillWave className="text-gray-400" />
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <FaMoneyBillWave className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
                   <span>{internship.stipend}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FaCalendarAlt className="text-gray-400" />
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <FaCalendarAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
                   <span>Apply by {formatDate(internship.applicationDeadline)}</span>
                 </div>
               </div>
@@ -308,18 +304,6 @@ const Internships = () => {
           onSuccess={fetchInternships}
         />
       )}
-
-      {selectedInternship && (
-        <InternshipDetailView
-          internship={selectedInternship}
-          onClose={() => {
-            setSelectedInternship(null);
-            navigate('/internships');
-          }}
-          onSave={handleSave}
-          userId={user?.id}
-        />
-      )}
     </div>
   );
 };
@@ -330,32 +314,29 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
   );
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-lg w-full max-w-4xl my-8 relative"
-        >
-          {/* Close Button */}
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Header with Back button */}
+        <div className="flex justify-start items-center mb-4 sm:mb-6">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition z-10"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition text-sm sm:text-base"
           >
-            <FaTimes className="text-xl text-gray-600" />
+            <FaArrowLeft />
+            <span>Back to Internships</span>
           </button>
+        </div>
 
-          {/* Content */}
-          <div className="p-8 max-h-[85vh] overflow-y-auto">
-            {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 pr-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        {/* Content */}
+        <div className="bg-transparent rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
+          {/* Header */}
+          <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+                <div className="flex-1 pr-0 sm:pr-8">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                     {internship.title}
                   </h2>
-                  <p className="text-xl text-primary-600 font-semibold">
+                  <p className="text-lg sm:text-xl text-amber-600 font-semibold">
                     {internship.company}
                   </p>
                 </div>
@@ -366,7 +347,7 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
                   }}
                   className={`p-3 rounded-full transition ${
                     isSaved
-                      ? 'bg-primary-100 text-primary-600'
+                      ? 'bg-primary-100 text-amber-600'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -382,106 +363,105 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
               </div>
 
               {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaMapMarkerAlt />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaMapMarkerAlt className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Location</span>
                   </div>
-                  <p className="font-semibold text-gray-900">{internship.location}</p>
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.location}</p>
                   <p className="text-xs text-gray-600 capitalize">{internship.mode}</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaClock />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaClock className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Duration</span>
                   </div>
-                  <p className="font-semibold text-gray-900">{internship.duration}</p>
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.duration}</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaMoneyBillWave />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaMoneyBillWave className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Stipend</span>
                   </div>
-                  <p className="font-semibold text-gray-900">{internship.stipend}</p>
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.stipend}</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                    <FaCalendarAlt />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                    <FaCalendarAlt className="text-xs sm:text-sm" />
                     <span className="text-xs font-medium">Deadline</span>
                   </div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">
                     {formatDate(internship.applicationDeadline)}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Divider */}
-            <hr className="my-6" />
+          {/* Divider */}
+          <hr className="my-6" />
 
-            {/* Description */}
+          {/* Description */}
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">About this Internship</h3>
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+              {internship.description}
+            </p>
+          </div>
+
+          {/* Requirements */}
+          {internship.requirements && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">About this Internship</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {internship.description}
+                {internship.requirements}
               </p>
             </div>
+          )}
 
-            {/* Requirements */}
-            {internship.requirements && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {internship.requirements}
-                </p>
+          {/* Eligible Departments */}
+          {internship.department && internship.department.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Eligible Departments</h3>
+              <div className="flex flex-wrap gap-2">
+                {internship.department.map((dept) => (
+                  <span
+                    key={dept}
+                    className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium"
+                  >
+                    {dept}
+                  </span>
+                ))}
               </div>
-            )}
-
-            {/* Eligible Departments */}
-            {internship.department && internship.department.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Eligible Departments</h3>
-                <div className="flex flex-wrap gap-2">
-                  {internship.department.map((dept) => (
-                    <span
-                      key={dept}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
-                    >
-                      {dept}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Divider */}
-            <hr className="my-6" />
-
-            {/* Apply Button */}
-            <div className="flex justify-center">
-              <a
-                href={internship.applyLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-semibold text-lg shadow-lg hover:shadow-xl"
-              >
-                <span>Apply Now</span>
-                <FaExternalLinkAlt />
-              </a>
             </div>
+          )}
 
-            {/* Posted By */}
-            <div className="mt-6 text-center text-sm text-gray-500">
-              Posted by {internship.postedBy?.name} • {internship.postedBy?.department}
-            </div>
+          {/* Divider */}
+          <hr className="my-6" />
+
+          {/* Apply Button */}
+          <div className="flex justify-center">
+            <a
+              href={internship.applyLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 bg-amber-500 text-white px-8 py-4 rounded-lg hover:bg-amber-600 transition font-semibold text-lg shadow-lg hover:shadow-xl"
+            >
+              <span>Apply Now</span>
+              <FaExternalLinkAlt />
+            </a>
           </div>
-        </motion.div>
+
+          {/* Posted By */}
+          <div className="mt-6 text-center text-sm text-gray-500">
+            Posted by {internship.postedBy?.name} • {internship.postedBy?.department}
+          </div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 };
 
@@ -544,18 +524,28 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
-        <h2 className="text-2xl font-bold mb-6">Post Internship Opportunity</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Close Button - Top Right */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Post Internship Opportunity</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -563,14 +553,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="e.g., Summer Internship 2024"
               />
             </div>
 
             {/* Company */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Company <span className="text-red-500">*</span>
               </label>
               <input
@@ -578,21 +568,21 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="Company name"
               />
             </div>
 
             {/* Mode */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Mode <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.mode}
                 onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="">Select Mode</option>
                 <option value="virtual">Virtual</option>
@@ -603,14 +593,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
             {/* Domain */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Domain <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.domain}
                 onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="">Select Domain</option>
                 {domains.map((domain) => (
@@ -623,7 +613,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
             {/* Duration */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Duration <span className="text-red-500">*</span>
               </label>
               <input
@@ -631,38 +621,38 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.duration}
                 onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="e.g., 3 months"
               />
             </div>
 
             {/* Stipend */}
             <div>
-              <label className="block text-sm font-medium mb-2">Stipend (Optional)</label>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Stipend (Optional)</label>
               <input
                 type="text"
                 value={formData.stipend}
                 onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="e.g., ₹20,000/month or leave blank for unpaid"
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-sm font-medium mb-2">Location (Optional)</label>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Location (Optional)</label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="City or leave blank for Remote"
               />
             </div>
 
             {/* Due Date */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Application Deadline <span className="text-red-500">*</span>
               </label>
               <input
@@ -670,14 +660,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.applicationDeadline}
                 onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           {/* Department */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Eligible Departments <span className="text-red-500">*</span>
             </label>
             
@@ -703,20 +693,20 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
             )}
 
             {/* Department Checkboxes */}
-            <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="border rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {departments.map((dept) => (
                   <label
                     key={dept}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded"
                   >
                     <input
                       type="checkbox"
                       checked={formData.department.includes(dept)}
                       onChange={() => toggleDepartment(dept)}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700">{dept}</span>
+                    <span className="text-xs sm:text-sm text-gray-700">{dept}</span>
                   </label>
                 ))}
               </div>
@@ -734,14 +724,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
               placeholder="Describe the internship role and responsibilities..."
             />
           </div>
 
           {/* Apply Link */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Application Link <span className="text-red-500">*</span>
             </label>
             <input
@@ -749,25 +739,18 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
               value={formData.applyLink}
               onChange={(e) => setFormData({ ...formData, applyLink: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
               placeholder="https://..."
             />
           </div>
 
-          {/* Buttons */}
-          <div className="flex space-x-4 pt-4">
+          {/* Submit Button */}
+          <div className="pt-3 sm:pt-4">
             <button
               type="submit"
-              className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition font-medium"
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base"
             >
               Post Internship
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium"
-            >
-              Cancel
             </button>
           </div>
         </form>

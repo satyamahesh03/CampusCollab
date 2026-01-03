@@ -66,7 +66,7 @@ const Reminders = () => {
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       isNew 
                         ? 'bg-green-100 text-green-700 animate-pulse' 
-                        : 'bg-primary-100 text-primary-700'
+                        : 'bg-primary-100 text-amber-700'
                     }`}>
                       {reminder.itemType}
                       {isNew && ' • NEW'}

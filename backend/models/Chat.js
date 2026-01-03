@@ -62,6 +62,21 @@ const chatSchema = new mongoose.Schema({
     of: Number,
     default: {}
   },
+  chatCode: {
+    type: String,
+    unique: true,
+    sparse: true // Allows null values but enforces uniqueness for non-null values
+  },
+  deleteRequestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  deleteRequestStatus: {
+    type: String,
+    enum: [null, 'pending', 'approved', 'declined'],
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

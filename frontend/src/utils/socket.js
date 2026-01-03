@@ -10,9 +10,18 @@ class SocketService {
 
   connect(userId) {
     if (!this.socket) {
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('token');
+      
       this.socket = io(SOCKET_URL, {
         transports: ['websocket'],
         autoConnect: true,
+        auth: {
+          token: token
+        },
+        extraHeaders: token ? {
+          Authorization: `Bearer ${token}`
+        } : {}
       });
 
       this.socket.on('connect', () => {

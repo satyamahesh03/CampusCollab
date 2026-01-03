@@ -40,6 +40,8 @@ api.interceptors.response.use(
 // Auth APIs
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
+  sendOTP: (email) => api.post('/auth/send-otp', { email }),
+  verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/me'),
   getUserProfile: (userId) => api.get(`/auth/user/${userId}`),
@@ -58,12 +60,17 @@ export const projectAPI = {
   like: (id) => api.post(`/projects/${id}/like`),
   comment: (id, data) => api.post(`/projects/${id}/comment`, data),
   addComment: (id, data) => api.post(`/projects/${id}/comment`, data),
-  addReply: (projectId, commentId, data) => api.post(`/projects/${projectId}/comment/${commentId}/reply`, data),
+  addReply: (projectId, commentId, data, parentReplyId = null) => api.post(`/projects/${projectId}/comment/${commentId}/reply`, { ...data, parentReplyId }),
+  voteComment: (projectId, commentId, voteType) => api.post(`/projects/${projectId}/comment/${commentId}/vote`, { voteType }),
+  voteReply: (projectId, commentId, replyId, voteType) => api.post(`/projects/${projectId}/comment/${commentId}/reply/${replyId}/vote`, { voteType }),
+  deleteComment: (projectId, commentId) => api.delete(`/projects/${projectId}/comment/${commentId}`),
+  deleteReply: (projectId, commentId, replyId) => api.delete(`/projects/${projectId}/comment/${commentId}/reply/${replyId}`),
   join: (id, data) => api.post(`/projects/${id}/join`, data),
   approveRequest: (projectId, requestId) => api.post(`/projects/${projectId}/approve-request/${requestId}`),
   rejectRequest: (projectId, requestId) => api.post(`/projects/${projectId}/reject-request/${requestId}`),
   close: (id) => api.put(`/projects/${id}/close`),
   delete: (id) => api.delete(`/projects/${id}`),
+  summarize: (id) => api.post(`/projects/${id}/summarize`),
 };
 
 // Internship APIs
@@ -108,6 +115,14 @@ export const reminderAPI = {
   delete: (id) => api.delete(`/reminders/${id}`),
 };
 
+// Notification APIs
+export const notificationAPI = {
+  getAll: () => api.get('/notifications'),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`),
+};
+
 // Recommendation APIs
 export const recommendationAPI = {
   get: () => api.get('/recommendations'),
@@ -116,12 +131,16 @@ export const recommendationAPI = {
 
 // Chat APIs
 export const chatAPI = {
-  getAll: () => api.get('/chats'),
+  getAll: () => api.get('/chats'), // Get approved chats only
+  getRequests: () => api.get('/chats/requests'), // Get pending message requests
   getChat: (userId) => api.get(`/chats/${userId}`),
+  getChatByCode: (chatCode) => api.get(`/chats/code/${chatCode}`),
   sendMessage: (chatId, data) => api.post(`/chats/${chatId}/message`, data),
   markAsRead: (chatId) => api.put(`/chats/${chatId}/mark-read`),
   deleteMessage: (chatId, messageId) => api.delete(`/chats/${chatId}/message/${messageId}`),
   deleteChat: (chatId) => api.delete(`/chats/${chatId}`),
+  approveDeleteRequest: (chatId) => api.put(`/chats/${chatId}/delete-approve`),
+  declineDeleteRequest: (chatId) => api.put(`/chats/${chatId}/delete-decline`),
   searchUsers: (query) => api.get('/chats/users/search', { params: { query } }),
   approveChat: (chatId) => api.put(`/chats/${chatId}/approve`),
   rejectChat: (chatId) => api.put(`/chats/${chatId}/reject`),

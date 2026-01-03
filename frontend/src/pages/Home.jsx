@@ -136,7 +136,7 @@ const Home = () => {
 
   const features = [
     {
-      icon: <Briefcase className="text-blue-600" size={32} />,
+      icon: <Briefcase className="text-amber-600" size={32} />,
       title: 'Collaborative Projects',
       description: 'Find team members and collaborate on innovative projects across departments.',
       link: '/projects',
@@ -156,7 +156,7 @@ const Home = () => {
       title: 'Hackathons',
       description: 'Stay updated with the latest hackathons and coding competitions.',
       link: '/hackathons',
-      color: 'from-purple-50 to-purple-100',
+      color: 'from-amber-50 to-yellow-100',
       iconBg: 'bg-purple-100',
     },
     {
@@ -164,7 +164,7 @@ const Home = () => {
       title: 'Placement Drives',
       description: 'Get notified about upcoming placement drives and recruitment opportunities.',
       link: '/drives',
-      color: 'from-indigo-50 to-indigo-100',
+      color: 'from-yellow-50 to-amber-100',
       iconBg: 'bg-indigo-100',
     },
     {
@@ -186,291 +186,240 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMy4zMTQgMi42ODYtNiA2LTZzNiAyLjY4NiA2IDYtMi42ODYgNi02IDYtNi0yLjY4Ni02LTZ6TTAgMTZjMC0zLjMxNCAyLjY4Ni02IDYtNnM2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
-          
-          {/* Floating Orbs */}
-          <div className="absolute inset-0">
-            <motion.div 
-              animate={{ 
-                y: [0, -30, 0],
-                x: [0, 20, 0],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{ 
-                duration: 8, 
-                repeat: Infinity,
-                ease: "easeInOut" 
-              }}
-              className="absolute top-20 left-[10%] w-64 h-64 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-3xl opacity-30"
-            ></motion.div>
-            
-            <motion.div 
-              animate={{ 
-                y: [0, 40, 0],
-                x: [0, -30, 0],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{ 
-                duration: 10, 
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1
-              }}
-              className="absolute bottom-20 right-[10%] w-80 h-80 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-3xl opacity-30"
-            ></motion.div>
-            
-            <motion.div 
-              animate={{ 
-                y: [0, -20, 0],
-                x: [0, 15, 0],
-                scale: [1, 1.15, 1]
-              }}
-              transition={{ 
-                duration: 7, 
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 2
-              }}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full blur-3xl opacity-20"
-            ></motion.div>
-          </div>
+      <section className="relative overflow-hidden min-h-[85vh] flex items-center">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(245,158,11,0.1)_1px,transparent_0)] bg-[size:40px_40px]"></div>
+        </div>
+        
+        {/* Simple Color Patches */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-32 right-[15%] w-64 h-64 bg-amber-200/20 rounded-3xl blur-2xl rotate-12"></div>
+          <div className="absolute bottom-40 left-[10%] w-72 h-72 bg-yellow-200/25 rounded-3xl blur-2xl -rotate-12"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-amber-100/15 rounded-3xl blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Text Content */}
-            <div className="text-white">
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-white/20 rounded-full px-5 py-2.5 text-sm font-medium mb-6 shadow-lg">
-                  <Sparkles size={18} className="text-yellow-300 animate-pulse" />
-                  <span className="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent font-semibold">
-                    Empowering Campus Innovation
-                  </span>
-                </div>
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Main Heading */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
+                <span className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent">
+                  Campus Collab
+                </span>
+              </h1>
 
-                <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-                  <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-                    Campus
-                  </span>
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
-                    Collab
-                  </span>
-                </h1>
+              {/* Minimal Tagline */}
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-10 font-medium max-w-2xl mx-auto">
+                Connect. Collaborate. Grow.
+              </p>
 
-                <p className="text-xl md:text-2xl mb-6 text-blue-100 leading-relaxed max-w-xl">
-                  Unite. Innovate. Succeed. Your all-in-one platform for collaborative learning, 
-                  project building, and career growth.
-                </p>
-
-                {/* Total Users Count */}
+              {/* Key Stats - Minimal */}
+              {!loadingProjects && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="mb-8"
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                  className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 mb-10"
                 >
-                  <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3">
-                    <FaUsers className="text-yellow-300" size={24} />
-                    <div>
-                      <div className="text-sm text-blue-200">Total Users</div>
-                      <div className="text-2xl font-bold text-white">
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 0 }}
+                    >
+                      <FaUsers className="text-amber-600" size={20} />
+                    </motion.div>
+                    <div className="text-left">
+                      <motion.div 
+                        className="text-2xl sm:text-3xl font-bold text-gray-900"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                      >
                         {totalUsers > 0 ? `${totalUsers.toLocaleString()}+` : '---'}
-                      </div>
+                      </motion.div>
+                      <div className="text-xs text-gray-600">Users</div>
                     </div>
-                  </div>
+                  </motion.div>
+                  
+                  <motion.div 
+                    className="w-px h-12 bg-gray-300"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, -10, 10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                    >
+                      <Briefcase className="text-yellow-600" size={20} />
+                    </motion.div>
+                    <div className="text-left">
+                      <motion.div 
+                        className="text-2xl sm:text-3xl font-bold text-gray-900"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+                      >
+                        {(stats.activeProjects + stats.completedProjects) > 0 ? `${(stats.activeProjects + stats.completedProjects).toLocaleString()}+` : '0'}
+                      </motion.div>
+                      <div className="text-xs text-gray-600">Projects</div>
+                    </div>
+                  </motion.div>
                 </motion.div>
+              )}
 
-                {!isAuthenticated ? (
-                  <div className="flex flex-col sm:flex-row gap-4">
+              {/* CTA Buttons */}
+              {!isAuthenticated && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                  className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{ 
+                      boxShadow: [
+                        "0 10px 25px rgba(245, 158, 11, 0.3)",
+                        "0 15px 35px rgba(245, 158, 11, 0.4)",
+                        "0 10px 25px rgba(245, 158, 11, 0.3)",
+                      ]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
                     <Link
                       to="/register"
-                      className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 overflow-hidden"
+                      className="group px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-semibold text-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      <span className="relative">Start Your Journey</span>
-                      <ArrowRight size={20} className="relative group-hover:translate-x-2 transition-transform" />
+                      <span>Get Started</span>
+                      <motion.div
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                      </motion.div>
                     </Link>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
                     <Link
                       to="/login"
-                      className="px-8 py-4 bg-white/10 backdrop-blur-md border-2 border-white/30 text-white rounded-2xl font-bold text-lg hover:bg-white/20 transition-all duration-300 hover:border-white/50 flex items-center justify-center"
+                      className="px-8 py-4 bg-white text-gray-700 border-2 border-gray-200 rounded-xl font-semibold text-lg hover:border-amber-300 hover:bg-amber-50 transition-all duration-300 shadow-md hover:shadow-lg"
                     >
                       Sign In
                     </Link>
-                  </div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="bg-gradient-to-r from-yellow-400/20 to-orange-400/20 backdrop-blur-md border border-yellow-400/30 rounded-2xl p-6 inline-block"
-                  >
-                    <p className="text-2xl mb-2">
-                      Welcome back,
-                    </p>
-                    <p className="text-4xl font-black bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                      {user?.name}! 👋
-                    </p>
-                    <p className="text-blue-200 mt-3 text-sm">Ready to make an impact today?</p>
                   </motion.div>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Right Side - Stats Cards */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="hidden lg:block"
-            >
-              <div className="grid grid-cols-2 gap-6">
-                {[
-                  { 
-                    icon: <Briefcase className="text-blue-400" size={32} />,
-                    total: stats.totalProjects,
-                    active: stats.activeProjects,
-                    completed: stats.completedProjects,
-                    label: 'Projects',
-                    color: 'from-blue-500/20 to-cyan-500/20',
-                    border: 'border-blue-400/30'
-                  },
-                  { 
-                    icon: <Code className="text-purple-400" size={32} />,
-                    total: stats.totalHackathons,
-                    label: 'Hackathons',
-                    color: 'from-purple-500/20 to-pink-500/20',
-                    border: 'border-purple-400/30'
-                  },
-                  { 
-                    icon: <GraduationCap className="text-green-400" size={32} />,
-                    total: stats.totalInternships,
-                    label: 'Internships',
-                    color: 'from-green-500/20 to-emerald-500/20',
-                    border: 'border-green-400/30'
-                  },
-                  { 
-                    icon: <BookOpen className="text-orange-400" size={32} />,
-                    total: stats.totalResources,
-                    label: 'Resources',
-                    color: 'from-orange-500/20 to-yellow-500/20',
-                    border: 'border-orange-400/30'
-                  }
-                ].map((stat, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    className={`bg-gradient-to-br ${stat.color} backdrop-blur-md border ${stat.border} rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300`}
-                  >
-                    <div className="mb-3">{stat.icon}</div>
-                    {loadingProjects ? (
-                      <div className="text-3xl font-black mb-1 animate-pulse">---</div>
-                    ) : (
-                      <div>
-                        <motion.div 
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
-                          className="text-3xl font-black mb-1"
-                        >
-                          {stat.total > 0 ? `${stat.total}` : '0'}
-                        </motion.div>
-                        {stat.active !== undefined && stat.completed !== undefined && (
-                          <div className="flex items-center space-x-2 text-xs text-blue-100/80 mt-1">
-                            <span className="flex items-center">
-                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></span>
-                              {stat.active} Active
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></span>
-                              {stat.completed} Done
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="text-sm text-blue-100 font-medium mt-2">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Floating Badge */}
-              <motion.div
-                animate={{ 
-                  y: [0, -10, 0],
-                  rotate: [0, 5, 0, -5, 0]
-                }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="mt-8 bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-md border border-pink-400/30 rounded-2xl p-4 text-center"
-              >
-                <div className="flex items-center justify-center space-x-2 text-white">
-                  <TrendingUp className="text-pink-400" size={24} />
-                  {loadingProjects ? (
-                    <span className="font-bold text-lg animate-pulse">Loading...</span>
-                  ) : (
-                    <motion.span 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.5 }}
-                      className="font-bold text-lg"
-                    >
-                      {(() => {
-                        const total = stats.totalProjects + stats.totalHackathons + stats.totalInternships + stats.totalDrives + stats.totalResources;
-                        return total > 0 ? `${total}+ Total Items` : 'Growing Community';
-                      })()}
-                    </motion.span>
-                  )}
-                </div>
-                <div className="text-blue-200 text-xs mt-2 flex items-center justify-center space-x-3">
-                  <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></span>
-                    {stats.activeProjects} Active Projects
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></span>
-                    {stats.completedProjects} Completed
-                  </span>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
+        {/* Animated Floating Elements - Only for non-authenticated users */}
         {!isAuthenticated && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-          >
+          <>
+            {/* Floating Icons */}
+            {[Briefcase, Code, GraduationCap, BookOpen, Lightbulb].map((Icon, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ 
+                  opacity: [0.3, 0.6, 0.3],
+                  scale: [1, 1.1, 1],
+                  x: [0, Math.sin(index) * 20, 0],
+                  y: [0, Math.cos(index) * 20, 0],
+                }}
+                transition={{
+                  duration: 4 + index,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: index * 0.5,
+                }}
+                className="absolute"
+                style={{
+                  top: `${15 + index * 12}%`,
+                  ...(index % 2 === 0 
+                    ? { left: `${10 + index * 10}%` }
+                    : { right: `${10 + (index - 1) * 10}%` }
+                  ),
+                }}
+              >
+                <Icon 
+                  size={32} 
+                  className="text-amber-300/40" 
+                />
+              </motion.div>
+            ))}
+
+            {/* Animated Circles */}
+            {[...Array(6)].map((_, index) => (
+              <motion.div
+                key={`circle-${index}`}
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: [0.2, 0.4, 0.2],
+                  scale: [1, 1.2, 1],
+                  x: [0, Math.random() * 50 - 25, 0],
+                  y: [0, Math.random() * 50 - 25, 0],
+                }}
+                transition={{
+                  duration: 5 + index * 0.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: index * 0.3,
+                }}
+                className="absolute rounded-full bg-amber-200/20 blur-xl"
+                style={{
+                  width: `${40 + index * 15}px`,
+                  height: `${40 + index * 15}px`,
+                  top: `${20 + index * 12}%`,
+                  left: `${5 + index * 15}%`,
+                }}
+              />
+            ))}
+
+            {/* Pulse Animation on Stats */}
             <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex flex-col items-center text-white/60 hover:text-white/90 transition-colors cursor-pointer"
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-100/10 rounded-full blur-3xl"
+            />
+
+            {/* Minimal Scroll Indicator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
             >
-              <span className="text-sm mb-2">Explore More</span>
-              <ArrowRight size={20} className="rotate-90" />
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <span className="text-xs mb-1 font-medium">Scroll</span>
+                <ArrowRight size={16} className="rotate-90" />
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </section>
 
@@ -486,7 +435,7 @@ const Home = () => {
           >
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Everything you need to
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> succeed</span>
+              <span className="bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent"> succeed</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Discover powerful features designed to enhance your academic journey and professional growth.
@@ -507,11 +456,11 @@ const Home = () => {
                     <div className={`inline-flex p-3 rounded-xl ${feature.iconBg} mb-6 group-hover:scale-110 transition-transform duration-300`}>
                       {feature.icon}
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors">
                       {feature.title}
                     </h3>
                     <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-                    <div className="mt-4 flex items-center text-blue-600 font-medium group-hover:translate-x-2 transition-transform duration-300">
+                    <div className="mt-4 flex items-center text-amber-600 font-medium group-hover:translate-x-2 transition-transform duration-300">
                       <span>Explore</span>
                       <ArrowRight size={16} className="ml-2" />
                     </div>
@@ -525,7 +474,7 @@ const Home = () => {
 
       {/* Trending Projects Section */}
       {isAuthenticated && (
-        <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -557,10 +506,10 @@ const Home = () => {
                     viewport={{ once: true }}
                   >
                     <Link to={`/projects?open=${project._id}`}>
-                      <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-transparent hover:border-blue-200 cursor-pointer h-full flex flex-col">
+                      <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full flex flex-col">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
                               {project.title}
                             </h3>
                             <p className="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -619,22 +568,22 @@ const Home = () => {
               </div>
             )}
 
-            <div className="text-center">
-              <Link
-                to="/projects"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <span>View All Projects</span>
-                <ArrowRight size={20} />
-              </Link>
-            </div>
+                <div className="text-center">
+                  <Link
+                    to="/projects"
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <span>View All Projects</span>
+                    <ArrowRight size={20} />
+                  </Link>
+                </div>
           </div>
         </section>
       )}
 
       {/* Upcoming Drives Section */}
       {isAuthenticated && (
-        <section className="py-20 bg-white">
+        <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -643,9 +592,9 @@ const Home = () => {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full px-4 py-2 mb-4">
-                <Calendar size={20} className="text-indigo-600" />
-                <span className="text-sm font-semibold text-indigo-600">UPCOMING OPPORTUNITIES</span>
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-full px-4 py-2 mb-4">
+                <Calendar size={20} className="text-amber-600" />
+                <span className="text-sm font-semibold text-amber-600">UPCOMING OPPORTUNITIES</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">Upcoming Placement Drives</h2>
               <p className="text-xl text-gray-600">Don't miss out on these upcoming opportunities</p>
@@ -667,33 +616,33 @@ const Home = () => {
                       viewport={{ once: true }}
                     >
                       <Link to={`/drives/${drive._id}`}>
-                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-transparent hover:border-indigo-200 cursor-pointer h-full">
+                        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-indigo-600 transition">
+                              <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
                                 {drive.title}
                               </h3>
-                              <p className="text-sm font-semibold text-indigo-600 mb-2">{drive.company}</p>
+                              <p className="text-sm font-semibold text-amber-600 mb-2">{drive.company}</p>
                             </div>
                           </div>
                           
                           <div className="space-y-2 mb-4">
                             <div className="flex items-center text-sm text-gray-600">
-                              <Calendar size={16} className="mr-2 text-indigo-500" />
+                              <Calendar size={16} className="mr-2 text-amber-500" />
                               <span>{formatDate(drive.driveDate)}</span>
                             </div>
                             <div className="flex items-center text-sm text-gray-600">
-                              <GraduationCap size={16} className="mr-2 text-purple-500" />
+                              <GraduationCap size={16} className="mr-2 text-yellow-500" />
                               <span>{drive.jobRole}</span>
                             </div>
                             <div className="flex items-center text-sm text-gray-600">
-                              <Briefcase size={16} className="mr-2 text-green-500" />
+                              <Briefcase size={16} className="mr-2 text-amber-500" />
                               <span>{drive.package}</span>
                             </div>
                           </div>
 
-                          <div className="pt-4 border-t border-indigo-100">
-                            <div className="text-xs text-indigo-600 font-semibold">View Details →</div>
+                          <div className="pt-4 border-t border-amber-100">
+                            <div className="text-xs text-amber-600 font-semibold">View Details →</div>
                           </div>
                         </div>
                       </Link>
@@ -703,7 +652,7 @@ const Home = () => {
                 <div className="text-center">
                   <Link
                     to="/drives"
-                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     <span>View All Drives</span>
                     <ArrowRight size={20} />
@@ -711,7 +660,7 @@ const Home = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-12 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl">
+              <div className="text-center py-12 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl">
                 <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">No upcoming drives at the moment. Check back soon!</p>
               </div>
@@ -722,7 +671,7 @@ const Home = () => {
 
       {/* Statistics Section */}
       {isAuthenticated && (
-        <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -742,15 +691,15 @@ const Home = () => {
               viewport={{ once: true }}
               className="max-w-6xl mx-auto"
             >
-              <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-4 sm:p-6 md:p-8">
                 {/* Period Toggle */}
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-6 sm:mb-8">
                   <div className="inline-flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setStatsPeriod('week')}
-                      className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${
                         statsPeriod === 'week'
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -758,9 +707,9 @@ const Home = () => {
                     </button>
                     <button
                       onClick={() => setStatsPeriod('month')}
-                      className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${
                         statsPeriod === 'month'
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -770,31 +719,33 @@ const Home = () => {
                 </div>
 
                 {/* Category Filter Buttons */}
-                <div className="flex flex-wrap justify-center gap-3 mb-8">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
                   {[
-                    { key: 'Projects', color: '#3b82f6', icon: <Briefcase size={16} /> },
-                    { key: 'Internships', color: '#10b981', icon: <GraduationCap size={16} /> },
-                    { key: 'Hackathons', color: '#a855f7', icon: <Code size={16} /> },
-                    { key: 'Drives', color: '#6366f1', icon: <Target size={16} /> },
-                    { key: 'Courses', color: '#f97316', icon: <BookOpen size={16} /> },
+                    { key: 'Projects', color: '#fef3c7', icon: <Briefcase size={14} /> },
+                    { key: 'Internships', color: '#fde68a', icon: <GraduationCap size={14} /> },
+                    { key: 'Hackathons', color: '#fcd34d', icon: <Code size={14} /> },
+                    { key: 'Drives', color: '#fbbf24', icon: <Target size={14} /> },
+                    { key: 'Courses', color: '#f59e0b', icon: <BookOpen size={14} /> },
                   ].map((cat) => (
                     <button
                       key={cat.key}
                       onClick={() => toggleCategory(cat.key)}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                      className={`flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 ${
                         activeCategories[cat.key]
-                          ? 'bg-white shadow-md border-2'
-                          : 'bg-gray-100 border-2 border-transparent opacity-50'
+                          ? 'bg-white/60 backdrop-blur-sm border-2 border-amber-200/50'
+                          : 'bg-gray-100/50 border-2 border-transparent opacity-50'
                       }`}
                       style={{
                         borderColor: activeCategories[cat.key] ? cat.color : 'transparent',
                         color: activeCategories[cat.key] ? cat.color : '#6b7280'
                       }}
                     >
-                      <div style={{ color: cat.color }}>{cat.icon}</div>
-                        <span>{cat.key}</span>
+                      <div style={{ color: cat.color }} className="sm:hidden">{cat.icon}</div>
+                      <div style={{ color: cat.color }} className="hidden sm:block">{cat.icon}</div>
+                        <span className="hidden sm:inline">{cat.key}</span>
+                        <span className="sm:hidden">{cat.key.substring(0, 3)}</span>
                       {activeCategories[cat.key] && (
-                        <span className="text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-amber-100 text-amber-700 px-1.5 sm:px-2 py-0.5 rounded-full">
                           {cat.key === 'Projects' ? postedStats.projects :
                            cat.key === 'Internships' ? postedStats.internships :
                            cat.key === 'Hackathons' ? postedStats.hackathons :
@@ -808,83 +759,93 @@ const Home = () => {
 
                 {/* Line Chart */}
                 {chartData.length > 0 ? (
-                  <div className="w-full" style={{ height: '400px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis 
-                          dataKey="label" 
-                          stroke="#6b7280"
-                          style={{ fontSize: '12px' }}
-                        />
-                        <YAxis 
-                          stroke="#6b7280"
-                          style={{ fontSize: '12px' }}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'white', 
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                          }}
-                        />
-                        <Legend 
-                          wrapperStyle={{ paddingTop: '20px' }}
-                          iconType="line"
-                        />
+                  <div className="w-full overflow-x-auto">
+                    <div className="w-full min-w-[300px]" style={{ height: '300px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                          <XAxis 
+                            dataKey="label" 
+                            stroke="#6b7280"
+                            style={{ fontSize: '10px' }}
+                            angle={-45}
+                            textAnchor="end"
+                            height={60}
+                          />
+                          <YAxis 
+                            stroke="#6b7280"
+                            style={{ fontSize: '10px' }}
+                            width={40}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.6)', 
+                              backdropFilter: 'blur(4px)',
+                              border: '1px solid rgba(245, 158, 11, 0.2)',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                              fontSize: '12px',
+                              padding: '8px'
+                            }}
+                          />
+                          <Legend 
+                            wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }}
+                            iconType="line"
+                            iconSize={12}
+                          />
                         {activeCategories.Projects && (
                           <Line 
                             type="monotone" 
                             dataKey="Projects" 
-                            stroke="#3b82f6" 
-                            strokeWidth={3}
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 7 }}
+                            stroke="#fef3c7" 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: '#fef3c7' }}
+                            activeDot={{ r: 5, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Internships && (
                           <Line 
                             type="monotone" 
                             dataKey="Internships" 
-                            stroke="#10b981" 
-                            strokeWidth={3}
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 7 }}
+                            stroke="#fde68a" 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: '#fde68a' }}
+                            activeDot={{ r: 5, fill: '#fde68a', stroke: '#f59e0b', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Hackathons && (
                           <Line 
                             type="monotone" 
                             dataKey="Hackathons" 
-                            stroke="#a855f7" 
-                            strokeWidth={3}
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 7 }}
+                            stroke="#fcd34d" 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: '#fcd34d' }}
+                            activeDot={{ r: 5, fill: '#fcd34d', stroke: '#f59e0b', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Drives && (
                           <Line 
                             type="monotone" 
                             dataKey="Drives" 
-                            stroke="#6366f1" 
-                            strokeWidth={3}
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 7 }}
+                            stroke="#fbbf24" 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: '#fbbf24' }}
+                            activeDot={{ r: 5, fill: '#fbbf24', stroke: '#f59e0b', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Courses && (
                           <Line 
                             type="monotone" 
                             dataKey="Courses" 
-                            stroke="#f97316" 
-                            strokeWidth={3}
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 7 }}
+                            stroke="#f59e0b" 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: '#f59e0b' }}
+                            activeDot={{ r: 5, fill: '#f59e0b', stroke: '#d97706', strokeWidth: 2 }}
                           />
                         )}
                       </LineChart>
                     </ResponsiveContainer>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-gray-500">
@@ -904,7 +865,7 @@ const Home = () => {
 
       {/* Quick Actions for Students */}
       {isAuthenticated && user?.role === 'student' && (
-        <section className="py-20 bg-white">
+        <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -924,7 +885,7 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 {
-                  icon: <Bell className="text-blue-600" size={28} />,
+                  icon: <Bell className="text-amber-600" size={28} />,
                   title: 'My Reminders',
                   description: 'View saved opportunities',
                   link: '/reminders',
@@ -944,7 +905,7 @@ const Home = () => {
                   title: 'Messages',
                   description: 'Connect with peers',
                   link: '/chats',
-                  color: 'from-purple-50 to-purple-100',
+                  color: 'from-amber-50 to-yellow-100',
                   badge: null,
                 },
                 {
@@ -984,48 +945,9 @@ const Home = () => {
         </section>
       )}
 
-      {/* CTA Section */}
-      {!isAuthenticated && (
-        <section className="py-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/20"></div>
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute bottom-10 right-10 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-          </div>
-          
-          <div className="relative z-10 container mx-auto px-4 text-center text-white">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Start Collaborating?</h2>
-              <p className="text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
-                Join thousands of students and faculty already using Campus Collab to achieve their goals.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link
-                  to="/register"
-                  className="group px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
-                >
-                  <span>Create Your Account</span>
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 border border-white/20"
-                >
-                  Sign In
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-      )}
 
       {/* Footer CTA */}
-      <section className="py-16 bg-white border-t border-gray-200">
+      {/* <section className="py-16 bg-white border-t border-gray-200">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1047,7 +969,7 @@ const Home = () => {
             </div>
           </motion.div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

@@ -167,8 +167,8 @@ const AdminDashboard = () => {
   if (loading) return <Loading text="Loading dashboard..." />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
+      <div className="bg-white/60 backdrop-blur-sm border-b border-amber-100/50">
         <div className="container mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         </div>
@@ -176,28 +176,28 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Tabs */}
-        <div className="flex space-x-1 mb-8 bg-white rounded-lg shadow-sm p-1">
+        <div className="flex space-x-1 mb-8 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-1">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'overview' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'overview' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('content')}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'content' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'content' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             Content Management
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'reports' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'reports' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             Reports {stats?.reports?.pending > 0 && <span className="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.reports.pending}</span>}
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 py-2 px-4 rounded-md font-medium transition ${activeTab === 'users' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             Users
           </button>
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <StatCard
-              icon={<FaUsers className="text-3xl text-blue-600" />}
+              icon={<FaUsers className="text-3xl text-amber-600" />}
               title="Total Users"
               value={stats.users?.total || 0}
               subtitle={`${stats.users?.students} students, ${stats.users?.faculty} faculty`}
@@ -235,7 +235,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Recent Reports */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-6">
             <h2 className="text-xl font-semibold mb-4">Recent Reports</h2>
             <div className="space-y-4">
               {stats.recentReports?.slice(0, 5).map((report) => (
@@ -273,9 +273,9 @@ const AdminDashboard = () => {
             hasFilters={true}
           >
             {expandedSection === 'projects' && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-amber-50/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Creator</th>
@@ -286,7 +286,7 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {content.projects.map((project) => (
-                      <tr key={project._id} className="hover:bg-gray-50">
+                      <tr key={project._id} className="hover:bg-amber-50/30">
                         <td className="px-4 py-3">{project.title}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{project.createdBy?.name}</td>
                         <td className="px-4 py-3">
@@ -334,9 +334,9 @@ const AdminDashboard = () => {
             hasFilters={false}
           >
             {expandedSection === 'internships' && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-amber-50/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Company</th>
@@ -391,9 +391,9 @@ const AdminDashboard = () => {
             hasFilters={false}
           >
             {expandedSection === 'hackathons' && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-amber-50/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Organizer</th>
@@ -450,9 +450,9 @@ const AdminDashboard = () => {
             hasFilters={true}
           >
             {expandedSection === 'drives' && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-amber-50/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Company</th>
@@ -511,9 +511,9 @@ const AdminDashboard = () => {
             hasFilters={false}
           >
             {expandedSection === 'courses' && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-amber-50/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
@@ -636,7 +636,7 @@ const AdminDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 capitalize">
                       {user.role}
                     </span>
                   </td>
@@ -687,7 +687,7 @@ const ContentSection = ({ title, type, expanded, onToggle, filter, onFilterChang
       className="p-4 bg-gray-50 hover:bg-gray-100 transition cursor-pointer flex items-center justify-between border-b"
     >
       <div className="flex items-center space-x-3">
-        {expanded ? <FaChevronDown className="text-blue-600" /> : <FaChevronRight className="text-gray-400" />}
+        {expanded ? <FaChevronDown className="text-amber-600" /> : <FaChevronRight className="text-gray-400" />}
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
       {expanded && hasFilters && (
@@ -696,7 +696,7 @@ const ContentSection = ({ title, type, expanded, onToggle, filter, onFilterChang
             onClick={() => onFilterChange('active')}
             className={`px-3 py-1.5 rounded text-sm font-medium transition ${
               filter === 'active'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-amber-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
@@ -706,7 +706,7 @@ const ContentSection = ({ title, type, expanded, onToggle, filter, onFilterChang
             onClick={() => onFilterChange('completed')}
             className={`px-3 py-1.5 rounded text-sm font-medium transition ${
               filter === 'completed'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-amber-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
