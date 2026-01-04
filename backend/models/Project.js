@@ -170,6 +170,20 @@ const projectSchema = new mongoose.Schema({
       default: 'pending'
     }
   }],
+  teamChatMessages: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    content: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   commentsDisabled: {
     type: Boolean,
     default: false

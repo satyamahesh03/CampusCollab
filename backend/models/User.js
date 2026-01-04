@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema({
       return this.role === 'student';
     }
   },
+  rollNumber: {
+    type: String,
+    default: '',
+    maxlength: [10, 'Roll number cannot exceed 10 characters']
+  },
   skills: [{
     type: String
   }],
@@ -91,6 +96,17 @@ userSchema.pre('save', async function(next) {
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Auto-set rollNumber from email if not provided (for students)
+userSchema.pre('save', function(next) {
+  // Only set rollNumber if it's empty and user is a student
+  if (!this.rollNumber && this.role === 'student' && this.email) {
+    const emailLocalPart = this.email.split('@')[0];
+    // Extract first 10 alphanumeric characters and convert to uppercase
+    this.rollNumber = emailLocalPart.replace(/[^A-Za-z0-9]/g, '').substring(0, 10).toUpperCase();
+  }
   next();
 });
 

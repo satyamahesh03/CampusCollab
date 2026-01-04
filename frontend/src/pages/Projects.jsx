@@ -3,10 +3,18 @@ import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
 import { projectAPI } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHeart, FaRegHeart, FaComment, FaUsers, FaUserPlus, FaHandshake, FaPlus, FaTrash, FaCheck, FaTimes, FaPaperPlane, FaExternalLinkAlt, FaSearch, FaReply, FaArrowLeft, FaMagic, FaThumbsUp, FaStar } from 'react-icons/fa';
+import { FaComment, FaUsers, FaUserPlus, FaPlus, FaCheck, FaTimes, FaPaperPlane, FaExternalLinkAlt, FaSearch, FaReply, FaArrowLeft, FaMagic, FaThumbsUp, FaStar } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHeart, faHandshake, faTrashCan } from '@fortawesome/free-regular-svg-icons';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { far } from '@fortawesome/free-regular-svg-icons';
+library.add(far);
 import { formatRelativeTime, getDomainColor, getStatusColor, domains, departments, skills as allSkills } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
+import ProjectAISummarize from '../components/ProjectAISummarize';
+import ProjectTeamChat from '../components/ProjectTeamChat';
+import ProjectDiscussion from '../components/ProjectDiscussion';
 import { useSearchParams, useNavigate, useParams, useLocation } from 'react-router-dom';
 
 const Projects = () => {
@@ -16,6 +24,7 @@ const Projects = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [confirmingDeleteProject, setConfirmingDeleteProject] = useState(null);
   const { user, isStudent } = useAuth();
   const { addNotification } = useGlobal();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,6 +73,11 @@ const Projects = () => {
       const response = await projectAPI.getById(id);
       setSelectedProject(response.data);
       
+      // Handle navigation from notification - open join requests if needed
+      if (location.state?.showJoinRequests) {
+        // This will be handled by ProjectDetailView's initialShowJoinRequests prop
+      }
+      
       // Scroll to specific comment/reply if navigating from notification
       if (location.state?.scrollToComment) {
         setTimeout(() => {
@@ -101,6 +115,38 @@ const Projects = () => {
     }
   };
 
+  const [availableDomains, setAvailableDomains] = useState([]);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+
+  // Fetch all posts to populate filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await projectAPI.getAll({ status: 'open' });
+        
+        // Extract unique domains and departments from all projects
+        const uniqueDomains = [...new Set(
+          response.data.flatMap(project => project.domains || [])
+        )].sort();
+        
+        const uniqueDepartments = [...new Set(
+          response.data
+            .map(project => project.createdBy?.department)
+            .filter(dept => dept)
+        )].sort();
+        
+        setAvailableDomains(uniqueDomains);
+        setAvailableDepartments(uniqueDepartments);
+      } catch (error) {
+        // Silently fail - filters will use defaults
+      }
+    };
+    
+    if (!projectId) {
+      fetchFilterOptions();
+    }
+  }, [projectId]);
+
   const fetchProjects = async () => {
     try {
       setLoading(true);
@@ -124,10 +170,6 @@ const Projects = () => {
     try {
       await projectAPI.like(projectId);
       fetchProjects();
-      addNotification({
-        type: 'success',
-        message: 'Project liked!',
-      });
     } catch (error) {
       addNotification({
         type: 'error',
@@ -140,10 +182,6 @@ const Projects = () => {
     try {
       await projectAPI.join(projectId, { role: 'Member' });
       fetchProjects();
-      addNotification({
-        type: 'success',
-        message: 'Successfully joined project!',
-      });
     } catch (error) {
       addNotification({
         type: 'error',
@@ -152,12 +190,21 @@ const Projects = () => {
     }
   };
 
-  const handleDelete = async (projectId) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
+  const handleDeleteClick = (projectId) => {
+    setConfirmingDeleteProject(projectId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmingDeleteProject) return;
     
     try {
-      await projectAPI.delete(projectId);
+      await projectAPI.delete(confirmingDeleteProject);
+      setConfirmingDeleteProject(null);
       fetchProjects();
+      if (selectedProject && selectedProject._id === confirmingDeleteProject) {
+        setSelectedProject(null);
+        navigate('/projects');
+      }
       addNotification({
         type: 'success',
         message: 'Project deleted successfully!',
@@ -168,6 +215,10 @@ const Projects = () => {
         message: 'Failed to delete project',
       });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmingDeleteProject(null);
   };
 
   const handleComplete = async (projectId) => {
@@ -207,8 +258,11 @@ const Projects = () => {
           onLike={handleLike}
           onJoin={handleJoin}
           onComplete={handleComplete}
-          onDelete={handleDelete}
+          onDelete={handleDeleteClick}
           onUpdate={fetchProjects}
+          confirmingDelete={confirmingDeleteProject}
+          onDeleteConfirm={handleDeleteConfirm}
+          onDeleteCancel={handleDeleteCancel}
           onAutoComplete={async () => {
             // Navigate back and switch to completed filter
             setSelectedProject(null);
@@ -220,6 +274,7 @@ const Projects = () => {
             }, 100);
           }}
           userId={user?.id}
+          initialShowJoinRequests={location.state?.showJoinRequests}
         />
         {/* Create Modal */}
         {showCreateModal && (
@@ -239,7 +294,7 @@ const Projects = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Discover and collaborate on innovative projects</p>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Post your ideas and find your team</p>
         </div>
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           {(user?.role === 'student' || user?.role === 'faculty') && (
@@ -255,7 +310,13 @@ const Projects = () => {
       </div>
 
       {/* Filters */}
-      <FilterBar filters={filters} setFilters={setFilters} showYear={false} />
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        showYear={false}
+        domains={availableDomains.length > 0 ? availableDomains : null}
+        departments={availableDepartments.length > 0 ? availableDepartments : null}
+      />
 
       {/* Sort and Filter Options */}
       <div className="flex space-x-2 sm:space-x-4 mb-4 sm:mb-6">
@@ -289,15 +350,18 @@ const Projects = () => {
           <p className="text-gray-500 text-lg">No projects found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {projects.map((project, index) => (
             <ProjectCard
               key={project._id}
               project={project}
               index={index}
               onClick={() => handleProjectClick(project)}
-              onDelete={handleDelete}
               userId={user?.id}
+              confirmingDelete={confirmingDeleteProject}
+              onDeleteClick={handleDeleteClick}
+              onDeleteConfirm={handleDeleteConfirm}
+              onDeleteCancel={handleDeleteCancel}
             />
           ))}
         </div>
@@ -314,15 +378,16 @@ const Projects = () => {
   );
 };
 
-const ProjectCard = ({ project, index, onClick, onDelete, userId }) => {
+const ProjectCard = ({ project, index, onClick, userId, confirmingDelete, onDeleteClick, onDeleteConfirm, onDeleteCancel }) => {
   const isOwner = project.createdBy?._id === userId || project.createdBy === userId;
+  const isConfirming = confirmingDelete === project._id;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+      className="bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 flex flex-col border border-transparent hover:border-amber-300 h-full"
       onClick={onClick}
     >
       {/* Header */}
@@ -335,16 +400,49 @@ const ProjectCard = ({ project, index, onClick, onDelete, userId }) => {
             {project.status}
           </span>
           {isOwner && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(project._id);
-              }}
-              className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
-              title="Delete project"
-            >
-              <FaTrash className="text-sm sm:text-base" />
-            </button>
+            <div className="relative flex flex-col items-end">
+              {isConfirming && (
+                <div className="flex items-center gap-2 mb-1 -mt-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteConfirm();
+                    }}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteCancel();
+                    }}
+                    className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isConfirming) {
+                    onDeleteClick(project._id);
+                  }
+                }}
+                disabled={isConfirming}
+                className="p-1.5 sm:p-2 text-red-600 rounded-lg transition-all flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                title="Delete project"
+              >
+                <FontAwesomeIcon icon={faTrashCan} className="text-sm sm:text-base transition-transform" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -383,13 +481,13 @@ const ProjectCard = ({ project, index, onClick, onDelete, userId }) => {
 
       {/* Creator */}
       <div className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-2 flex-shrink-0 mt-auto">
-        by {project.createdBy?.name} • {formatRelativeTime(project.createdAt)}
+         {project.createdBy?.name} • {formatRelativeTime(project.createdAt)}
       </div>
 
       {/* Stats */}
       <div className="flex items-center space-x-4 sm:space-x-6 text-gray-600 text-xs sm:text-sm flex-shrink-0">
         <span className="flex items-center space-x-1 sm:space-x-2">
-          <FaHeart className="text-red-500 text-sm sm:text-base" />
+          <FontAwesomeIcon icon={faHeart} className="text-red-500 text-sm sm:text-base" />
           <span>{project.likes?.length || 0}</span>
         </span>
         <span className="flex items-center space-x-1 sm:space-x-2">
@@ -517,23 +615,23 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
           title="Close"
         >
           <FaTimes className="text-lg" />
         </button>
         
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Create New Project</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Create New Project</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -541,14 +639,14 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               placeholder="e.g., AI-Powered Student Assistant"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -556,14 +654,14 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="Describe your project idea..."
             />
           </div>
 
           {/* Team Requirements */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Team Requirements <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -571,10 +669,10 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, teamRequirements: e.target.value })}
               required
               rows={3}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="e.g., 2 Developers, 1 Designer, 1 ML Engineer&#10;Or describe the roles and skills needed for your team..."
             />
-            <p className="text-xs text-gray-500 mt-1">Describe the team composition or requirements in detail</p>
+            <p className="text-xs text-gray-600 mt-1">Describe the team composition or requirements in detail</p>
           </div>
 
           {/* Domain Requirements */}
@@ -585,7 +683,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             
             {/* Selected Domains Display */}
             {formData.domains.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
                 {formData.domains.map((domain) => (
                   <span
                     key={domain}
@@ -605,18 +703,18 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             )}
 
             {/* Predefined Domains Checkboxes */}
-            <div className="border rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto mb-3">
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto mb-3 bg-amber-50 focus-within:border focus-within:border-amber-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {domains.map((domain) => (
                   <label
                     key={domain}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded"
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
                   >
                     <input
                       type="checkbox"
                       checked={formData.domains.includes(domain)}
                       onChange={() => toggleDomain(domain)}
-                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 flex-shrink-0"
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
                     />
                     <span className="text-xs sm:text-sm text-gray-700">{domain}</span>
                   </label>
@@ -637,12 +735,12 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                   }
                 }}
                 placeholder="Add custom domain..."
-                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={addCustomDomain}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
               >
                 <FaPlus />
               </button>
@@ -688,23 +786,23 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                 value={skillSearch}
                 onChange={(e) => setSkillSearch(e.target.value)}
                 placeholder="Search skills (e.g., React, Python, Figma)..."
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
               />
             </div>
-            <div className="border rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto">
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {allSkills
                   .filter((s) => s.toLowerCase().includes(skillSearch.trim().toLowerCase()))
                   .map((skill) => (
                     <label
                       key={skill}
-                      className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded"
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
                     >
                       <input
                         type="checkbox"
                         checked={formData.skills.includes(skill)}
                         onChange={() => toggleSkill(skill)}
-                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 flex-shrink-0"
+                        className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
                       />
                       <span className="text-xs sm:text-sm text-gray-700">{skill}</span>
                     </label>
@@ -728,12 +826,12 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                   }
                 }}
                 placeholder="Add a custom skill (optional)"
-                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={addCustomSkill}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
               >
                 <FaPlus />
               </button>
@@ -743,14 +841,14 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
 
           {/* Department */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Department <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
             >
               <option value="">Select Department</option>
               {departments.map((dept) => (
@@ -763,14 +861,14 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
 
           {/* Git Link (Optional) */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Git Repository Link (Optional)
             </label>
             <input
               type="url"
               value={formData.gitLink}
               onChange={(e) => setFormData({ ...formData, gitLink: e.target.value })}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               placeholder="https://github.com/username/repo"
             />
           </div>
@@ -790,24 +888,55 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
   );
 };
 
-const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDelete, onUpdate, onAutoComplete, userId }) => {
-  const [comment, setComment] = useState('');
+const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDelete, onUpdate, onAutoComplete, userId, displayStatus, initialShowJoinRequests = false, confirmingDelete, onDeleteConfirm, onDeleteCancel }) => {
   const [projectData, setProjectData] = useState(project);
   const [loading, setLoading] = useState(false);
-  const [showJoinRequests, setShowJoinRequests] = useState(false);
-  const [replyingTo, setReplyingTo] = useState(null); // Format: "commentId" or "commentId-replyId"
-  const [replyText, setReplyText] = useState('');
-  const [summary, setSummary] = useState(null);
-  const [summarizing, setSummarizing] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
+  const [showJoinRequests, setShowJoinRequests] = useState(initialShowJoinRequests);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [confirmingRemoveParticipant, setConfirmingRemoveParticipant] = useState(null);
   const { addNotification } = useGlobal();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Refresh project data function
+  const refreshProjectData = async () => {
+    try {
+      const response = await projectAPI.getAll({});
+      const updatedProject = response.data.find(p => p._id === projectData._id);
+      if (updatedProject) {
+        setProjectData(updatedProject);
+      }
+    } catch (error) {
+      console.error('Error refreshing project:', error);
+    }
+  };
   
   const isLiked = projectData.likes?.includes(userId);
   const hasJoined = projectData.participants?.some((p) => p.user?._id === userId || p.user === userId);
   const isOwner = projectData.createdBy?._id === userId || projectData.createdBy === userId;
   const hasPendingRequest = projectData.joinRequests?.some((r) => (r.user?._id === userId || r.user === userId) && r.status === 'pending');
   const pendingRequestsCount = projectData.joinRequests?.filter(r => r.status === 'pending').length || 0;
+
+
+  const handleRemoveParticipant = async (participantId) => {
+    try {
+      setLoading(true);
+      await projectAPI.removeParticipant(projectData._id, participantId);
+      await refreshProjectData();
+      setConfirmingRemoveParticipant(null);
+      addNotification({
+        type: 'success',
+        message: 'Participant removed successfully'
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to remove participant'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate vote score for a comment or reply
   const getVoteScore = (item) => {
@@ -865,12 +994,9 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
 
   // Handle deleting a comment
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       setLoading(true);
+      setConfirmingDeleteComment(null);
       const response = await projectAPI.deleteComment(projectData._id, commentId);
       setProjectData(response.data);
       addNotification({
@@ -889,19 +1015,18 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
 
   // Handle deleting a reply
   const handleDeleteReply = async (commentId, replyId) => {
-    if (!window.confirm('Are you sure you want to delete this reply? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       setLoading(true);
+      setConfirmingDeleteReply(null);
+      console.log('Deleting reply:', { projectId: projectData._id, commentId, replyId });
       const response = await projectAPI.deleteReply(projectData._id, commentId, replyId);
       setProjectData(response.data);
       addNotification({
         type: 'success',
-        message: 'Reply deleted successfully'
+        message: 'Reply deleted'
       });
     } catch (error) {
+      console.error('Error deleting reply:', error);
       addNotification({
         type: 'error',
         message: error.message || 'Failed to delete reply'
@@ -951,10 +1076,6 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       setProjectData(response.data);
       setReplyText('');
       setReplyingTo(null);
-      addNotification({
-        type: 'success',
-        message: 'Reply added!',
-      });
     } catch (error) {
       addNotification({
         type: 'error',
@@ -966,7 +1087,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   };
 
   // Recursive Reply Tree Component
-  const ReplyTree = ({ reply, commentId, depth, userId, loading, projectStatus, onVote, onDelete, onReply, replyingTo, replyText, setReplyText, onAddReply, handleUserClick, formatRelativeTime, getVoteScore, getUserVote }) => {
+  const ReplyTree = ({ reply, commentId, depth, userId, loading, projectStatus, onVote, onDelete, onReply, replyingTo, replyText, setReplyText, onAddReply, handleUserClick, formatRelativeTime, getVoteScore, getUserVote, confirmingDeleteReply, setConfirmingDeleteReply }) => {
     const replyVoteScore = getVoteScore(reply);
     const replyUserVote = getUserVote(reply);
     const isReplyUpvoted = replyUserVote === 'upvote';
@@ -1000,17 +1121,51 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             </div>
             {/* Delete button for reply owner */}
             {(reply.user?._id === userId || reply.user === userId) && (
+              confirmingDeleteReply === `${commentId}-${reply._id}` ? (
+                <div className="flex items-center space-x-1">
               <button
-                onClick={() => onDelete(commentId, reply._id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(commentId, reply._id);
+                    }}
                 disabled={loading}
-                className="text-red-500 hover:text-red-700 transition p-1 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-red-600 hover:text-red-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirmingDeleteReply(null);
+                    }}
+                    disabled={loading}
+                    className="text-gray-600 hover:text-gray-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setConfirmingDeleteReply(`${commentId}-${reply._id}`);
+                  }}
+                  disabled={loading}
+                  className="text-red-500 hover:text-red-700 transition-all p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
                 title="Delete reply"
+                  type="button"
               >
-                <FaTrash className="text-xs" />
+                  <FontAwesomeIcon icon={faTrashCan} className="text-xs transition-transform" />
               </button>
+              )
             )}
           </div>
-          <p className="text-amber-900 text-sm whitespace-pre-wrap leading-relaxed mb-2">{reply.text}</p>
+          <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed mb-2">{reply.text}</p>
           
           {/* Action Buttons */}
           <div className="flex items-center space-x-3 text-xs text-gray-500 mb-2">
@@ -1051,10 +1206,10 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                     setReplyText(e.target.value);
                   }
                 }}
-                placeholder="Write your reply... (max 200 characters)"
+                placeholder="Write your reply..."
                 dir="ltr"
                 maxLength={200}
-                className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white/60 backdrop-blur-sm text-sm"
+                                className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm"
                 rows={2}
                 autoFocus
                 style={{ 
@@ -1123,6 +1278,8 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                     setReplyText={setReplyText}
                     onAddReply={onAddReply}
                     handleUserClick={handleUserClick}
+                    confirmingDeleteReply={confirmingDeleteReply}
+                    setConfirmingDeleteReply={setConfirmingDeleteReply}
                     formatRelativeTime={formatRelativeTime}
                     getVoteScore={getVoteScore}
                     getUserVote={getUserVote}
@@ -1180,15 +1337,45 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
           type: 'success',
           message: 'Join request approved!',
         });
-        // Refresh project data in modal
-        const response = await projectAPI.getAll({});
-        const updatedProject = response.data.find(p => p._id === projectData._id);
-        if (updatedProject) setProjectData(updatedProject);
+        // Refresh project data
+        await refreshProjectData();
       }
     } catch (error) {
       addNotification({
         type: 'error',
         message: 'Failed to approve request',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    try {
+      setLoading(true);
+      // Find the user's pending request
+      const userRequest = projectData.joinRequests?.find(
+        (r) => (r.user?._id === userId || r.user === userId) && r.status === 'pending'
+      );
+
+      if (!userRequest) {
+        addNotification({
+          type: 'error',
+          message: 'No pending request found'
+        });
+        return;
+      }
+
+      await projectAPI.cancelJoinRequest(projectData._id, userRequest._id);
+
+      // Refresh project data
+      const response = await projectAPI.getAll({});
+      const updatedProject = response.data.find(p => p._id === projectData._id);
+      if (updatedProject) setProjectData(updatedProject);
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to cancel request'
       });
     } finally {
       setLoading(false);
@@ -1204,9 +1391,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
         message: 'Join request rejected',
       });
       // Refresh project data
-      const response = await projectAPI.getAll({});
-      const updatedProject = response.data.find(p => p._id === projectData._id);
-      if (updatedProject) setProjectData(updatedProject);
+      await refreshProjectData();
     } catch (error) {
       addNotification({
         type: 'error',
@@ -1314,76 +1499,128 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               {/* Stats */}
               <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-gray-600 text-xs sm:text-sm">
                 <span className="flex items-center space-x-1 sm:space-x-2">
-                  <FaHeart className="text-red-500 text-sm sm:text-base" />
+                  <FontAwesomeIcon icon={faHeart} className="text-red-500 text-sm sm:text-base" />
                   <span>{projectData.likes?.length || 0} likes</span>
                 </span>
                 <span className="flex items-center space-x-1 sm:space-x-2">
                   <FaComment className="text-amber-500 text-sm sm:text-base" />
                   <span>{projectData.comments?.length || 0} comments</span>
                 </span>
-                <span className="flex items-center space-x-1 sm:space-x-2">
+                <button
+                  onClick={() => setShowParticipants(!showParticipants)}
+                  className="flex items-center space-x-1 sm:space-x-2 hover:text-green-600 transition cursor-pointer"
+                >
                   <FaUsers className="text-green-500 text-sm sm:text-base" />
                   <span>{projectData.participants?.length || 0} participants</span>
-                </span>
+                </button>
               </div>
             </div>
+
+            {/* Participants List - Visible when clicked */}
+            {showParticipants && projectData.participants && projectData.participants.length > 0 && (
+              <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100/50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <FaUsers className="text-amber-600" />
+                  Participants ({projectData.participants.length})
+                </h4>
+                <div className="space-y-2">
+                  {projectData.participants.map((participant) => {
+                    const participantUserId = participant.user?._id || participant.user;
+                    const isParticipantOwner = participantUserId?.toString() === projectData.createdBy?.toString() || participantUserId === projectData.createdBy;
+                    return (
+                      <div
+                        key={participant._id || participantUserId}
+                        className="flex items-center justify-between bg-amber-50 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleUserClick(participantUserId)}
+                            className="font-medium text-gray-900 hover:text-amber-600 transition cursor-pointer"
+                          >
+                            {participant.user?.name || 'Unknown User'}
+                          </button>
+                          {isParticipantOwner && (
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Owner</span>
+                          )}
+                          {participant.role && !isParticipantOwner && (
+                            <span className="text-xs text-gray-500">• {participant.role}</span>
+                          )}
+                        </div>
+                        {isOwner && !isParticipantOwner && (
+                          confirmingRemoveParticipant === participantUserId ? (
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleRemoveParticipant(participantUserId);
+                                }}
+                                disabled={loading}
+                                className="text-red-600 hover:text-red-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setConfirmingRemoveParticipant(null);
+                                }}
+                                disabled={loading}
+                                className="text-gray-600 hover:text-gray-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                type="button"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConfirmingRemoveParticipant(participantUserId);
+                              }}
+                              disabled={loading}
+                              className="text-red-600 hover:text-red-800 transition p-1.5 rounded hover:scale-110 disabled:opacity-50"
+                              title="Remove from team"
+                              type="button"
+                            >
+                              <FontAwesomeIcon icon={faTrashCan} className="text-xs" />
+                            </button>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Divider */}
             <hr className="my-6" />
 
-            {/* Description */}
-            <div className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">About this Project</h3>
-                <button
-                  onClick={handleSummarize}
-                  disabled={summarizing}
-                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium w-full sm:w-auto justify-center"
-                  title="Generate AI summary using Google Gemini"
-                >
-                  {summarizing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span>Summarizing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaMagic />
-                      <span>Summarize with AI</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              
-              {showSummary && summary && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="text-base font-semibold text-amber-900 flex items-center gap-2">
-                      <FaMagic className="text-amber-600" />
-                      AI Summary (Powered by Google Gemini)
-                    </h4>
-                    <button
-                      onClick={() => setShowSummary(false)}
-                      className="text-gray-400 hover:text-gray-600 transition"
-                      title="Hide summary"
-                    >
-                      <FaTimes size={14} />
-                    </button>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words text-base">{summary}</p>
-                </motion.div>
-              )}
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 sm:p-6 border border-amber-100/50">
-                <p className={`text-gray-700 whitespace-pre-wrap leading-relaxed text-sm ${showSummary ? 'opacity-60' : ''}`}>
-                  {projectData.description}
-                </p>
-              </div>
-            </div>
+            {/* Team Chat Section - Only for joined participants */}
+            {(hasJoined || isOwner) && (
+              <ProjectTeamChat
+                projectId={projectData._id}
+                projectData={projectData}
+                isOwner={isOwner}
+                userId={userId}
+                pendingRequestsCount={pendingRequestsCount}
+                onApproveRequest={handleApproveRequest}
+                onRejectRequest={handleRejectRequest}
+                onUserClick={handleUserClick}
+                loading={loading}
+                onProjectUpdate={refreshProjectData}
+              />
+            )}
+
+            {/* Description with AI Summarize */}
+            <ProjectAISummarize 
+              projectId={projectData._id}
+              description={projectData.description}
+            />
 
             {/* Team Requirements */}
             {projectData.teamRequirements && (
@@ -1409,81 +1646,132 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 mb-4 sm:mb-6">
+            <div className="flex flex-row gap-2 mb-4 sm:mb-6">
               {projectData.status !== 'closed' && (
                 <button
                   onClick={handleLikeClick}
-                  className={`flex-1 py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm ${
+                  className={`group px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm ${
                     isLiked
                       ? 'bg-red-100 text-red-600 hover:bg-red-200 shadow-sm'
-                      : 'bg-white/60 backdrop-blur-sm text-gray-700 hover:bg-amber-50/50 border border-amber-200/50 hover:border-amber-300/50'
+                      : 'bg-white/60 backdrop-blur-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border border-amber-200/50 hover:border-red-300/50'
                   }`}
                 >
-                  {isLiked ? (
-                    <FaThumbsUp className="text-red-600 text-sm sm:text-base" />
-                  ) : (
-                    <FaThumbsUp className="text-gray-400 text-sm sm:text-base opacity-60" />
-                  )}
+                  <FontAwesomeIcon 
+                    icon={faHeart} 
+                    className={`text-sm sm:text-base transition-colors ${
+                      isLiked 
+                        ? "text-red-600" 
+                        : "text-gray-400 opacity-60 group-hover:text-red-600 group-hover:opacity-100"
+                    }`}
+                  />
                   <span>{isLiked ? 'Liked' : 'Like'}</span>
                 </button>
               )}
               {projectData.status === 'open' && !hasJoined && !hasPendingRequest && !isOwner && (
                 <button
                   onClick={handleJoinClick}
-                  className="flex-1 py-1.5 sm:py-2 px-3 sm:px-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm shadow-sm hover:shadow-md"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm shadow-sm hover:shadow-md"
                 >
-                  <FaHandshake className="text-sm sm:text-base" />
+                  <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
                   <span>Request to Join</span>
                 </button>
               )}
               {hasPendingRequest && !isOwner && (
                 <button
-                  disabled
-                  className="flex-1 py-1.5 sm:py-2 px-3 sm:px-4 bg-yellow-100 text-yellow-700 rounded-lg font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm"
+                  onClick={handleCancelRequest}
+                  disabled={loading}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm transition-colors disabled:opacity-50"
+                  title="Click to cancel request"
                 >
-                  <FaHandshake className="text-sm sm:text-base" />
+                  <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
                   <span>Request Pending</span>
+                  <FaTimes className="text-xs ml-1" />
                 </button>
               )}
               {hasJoined && !isOwner && (
                 <button
                   disabled
-                  className="flex-1 py-1.5 sm:py-2 px-3 sm:px-4 bg-green-100 text-green-600 rounded-lg font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm"
+                  className="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg font-medium flex items-center justify-center space-x-1.5 text-xs"
                 >
-                  <FaCheck className="text-sm sm:text-base" />
+                  <FaCheck className="text-xs" />
                   <span>Joined</span>
                 </button>
               )}
               {isOwner && projectData.status === 'open' && (
                 <>
-                  {pendingRequestsCount > 0 && (
                     <button
                       onClick={() => setShowJoinRequests(!showJoinRequests)}
-                      className="flex-1 py-1.5 sm:py-2 px-3 sm:px-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm shadow-sm hover:shadow-md"
+                    className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 text-xs shadow-sm hover:shadow-md"
                     >
-                      <FaHandshake className="text-sm sm:text-base" />
-                      <span>View Requests ({pendingRequestsCount})</span>
+                    <FontAwesomeIcon icon={faHandshake} className="text-xs" />
+                    <span>View Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount})`}</span>
                     </button>
-                  )}
                   <button
                     onClick={async () => {
                       await onComplete(projectData._id);
                       onClose();
                       onUpdate();
                     }}
-                    className="flex-1 py-1.5 sm:py-2 px-3 sm:px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm"
+                    className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 text-xs"
                   >
-                    <FaCheck className="text-sm sm:text-base" />
+                    <FaCheck className="text-xs" />
                     <span>Mark as Complete</span>
                   </button>
                 </>
               )}
+              {isOwner && (
+                <div className="relative flex flex-col items-end">
+                  {confirmingDelete === projectData._id && (
+                    <div className="flex items-center gap-2 mb-1 -mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeleteConfirm();
+                        }}
+                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeleteCancel();
+                        }}
+                        className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (confirmingDelete !== projectData._id) {
+                        onDelete(projectData._id);
+                      }
+                    }}
+                    disabled={confirmingDelete === projectData._id}
+                    className="px-3 py-1.5 text-red-600 rounded-lg transition-all flex items-center justify-center hover:scale-110 border border-red-200 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    title="Delete project"
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} className="text-xs transition-transform" />
+                    <span className="ml-1 text-xs">Delete</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Join Requests Management (for owner) */}
-            {isOwner && showJoinRequests && pendingRequestsCount > 0 && (
+            {isOwner && showJoinRequests && (
               <div className="mb-8 bg-amber-50 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-4">Pending Join Requests</h4>
+                {pendingRequestsCount > 0 ? (
                 <div className="space-y-3">
                   {projectData.joinRequests
                     ?.filter(r => r.status === 'pending')
@@ -1493,7 +1781,12 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                         className="bg-white rounded-lg p-4 flex items-center justify-between"
                       >
                         <div>
-                          <p className="font-medium text-gray-900">{request.user?.name}</p>
+                          <button
+                            onClick={() => handleUserClick(request.user?._id)}
+                            className="font-medium text-gray-900 hover:text-amber-600 transition cursor-pointer text-left"
+                          >
+                            {request.user?.name}
+                          </button>
                           <p className="text-sm text-gray-600">
                             {request.user?.email} • {request.user?.department}
                           </p>
@@ -1520,258 +1813,29 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                       </div>
                     ))}
                 </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No pending join requests</p>
+                )}
               </div>
             )}
 
             {/* Divider */}
             <hr className="my-8" />
 
-            {/* Comments Section - Reddit Style */}
-            <div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
-                Discussion ({projectData.comments?.length || 0})
-              </h3>
-
-              {/* Add Comment Form - Reddit Style "Join Conversation" */}
-              {projectData.status !== 'closed' ? (
-                <div className="mb-4 sm:mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-amber-100/50">
-                  <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">Join the conversation</h4>
-                  <form onSubmit={handleAddComment} style={{ direction: 'ltr' }}>
-                    <textarea
-                      value={comment}
-                      onChange={(e) => {
-                        setComment(e.target.value);
-                      }}
-                      placeholder="What are your thoughts?"
-                      dir="ltr"
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white/60 backdrop-blur-sm text-sm sm:text-base"
-                      rows={4}
-                      style={{ 
-                        direction: 'ltr', 
-                        textAlign: 'left',
-                        unicodeBidi: 'embed',
-                        writingMode: 'horizontal-tb'
-                      }}
-                      onFocus={(e) => {
-                        const target = e.target;
-                        target.setAttribute('dir', 'ltr');
-                        target.style.direction = 'ltr';
-                        target.style.textAlign = 'left';
-                        // Ensure cursor is at the end
-                        const len = target.value.length;
-                        target.setSelectionRange(len, len);
-                      }}
-                    />
-                    <div className="flex justify-end mt-2 sm:mt-3">
-                      <button
-                        type="submit"
-                        disabled={loading || !comment.trim()}
-                        className="px-4 sm:px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                      >
-                        <FaPaperPlane />
-                        <span>Comment</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              ) : (
-                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-100 rounded-lg text-center">
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    This project is completed. Comments and likes are disabled.
-                  </p>
-                </div>
-              )}
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {projectData.comments?.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FaComment className="mx-auto text-4xl mb-2 opacity-50" />
-                    <p>No comments yet. Be the first to share your thoughts!</p>
-                  </div>
-                ) : (
-                  // Sort comments by vote score (top voted first)
-                  [...(projectData.comments || [])]
-                    .sort((a, b) => {
-                      const scoreA = getVoteScore(a);
-                      const scoreB = getVoteScore(b);
-                      return scoreB - scoreA; // Descending order
-                    })
-                    .map((comment, index) => {
-                      const voteScore = getVoteScore(comment);
-                      const userVote = getUserVote(comment);
-                      const isUpvoted = userVote === 'upvote';
-                      const isDownvoted = userVote === 'downvote';
-                      
-                      return (
-                    <motion.div
-                      key={comment._id || index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition"
-                      data-comment-id={comment._id}
-                    >
-                      {/* Comment Content */}
-                      <div className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => handleUserClick(comment.user?._id)}
-                                className="font-semibold text-sm text-gray-900 hover:text-amber-600 transition cursor-pointer"
-                              >
-                                {comment.user?.name || 'Unknown User'}
-                              </button>
-                              <span className="text-gray-500 text-xs">
-                                {formatRelativeTime(comment.createdAt)}
-                              </span>
-                            </div>
-                            {/* Delete button for comment owner */}
-                            {(comment.user?._id === userId || comment.user === userId) && (
-                              <button
-                                onClick={() => handleDeleteComment(comment._id)}
-                                disabled={loading}
-                                className="text-red-500 hover:text-red-700 transition p-1 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Delete comment"
-                              >
-                                <FaTrash className="text-xs" />
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-amber-900 whitespace-pre-wrap mb-3 leading-relaxed">{comment.text}</p>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            {/* Vote Button */}
-                            <button
-                              onClick={() => handleVoteComment(comment._id, 'upvote')}
-                              disabled={loading || projectData.status === 'closed'}
-                              className={`flex items-center space-x-1.5 transition font-medium ${
-                                isUpvoted 
-                                  ? 'text-orange-500 hover:text-orange-600' 
-                                  : 'text-gray-500 hover:text-orange-500'
-                              } ${projectData.status === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                              title="Vote"
-                            >
-                              <FaThumbsUp className="text-xs" />
-                              <span>Vote</span>
-                              {voteScore > 0 && <span className="text-xs">({voteScore})</span>}
-                            </button>
-                            {projectData.status !== 'closed' && comment._id && (
-                              <button
-                                onClick={() => {
-                                  setReplyingTo(comment._id);
-                                  setReplyText('');
-                                }}
-                                className="flex items-center space-x-1 hover:text-amber-600 transition font-medium"
-                              >
-                                <FaReply className="text-xs" />
-                                <span>Reply</span>
-                              </button>
-                            )}
-                            <span className="flex items-center space-x-1">
-                              <FaComment className="text-xs" />
-                              <span>{comment.replies?.length || 0} replies</span>
-                            </span>
-                          </div>
-
-                          {/* Reply Input */}
-                          {replyingTo === comment._id && comment._id && (
-                            <div className="mt-3" style={{ direction: 'ltr', minHeight: '80px' }}>
-                              <textarea
-                                value={replyText}
-                                onChange={(e) => {
-                                  if (e.target.value.length <= 200) {
-                                    setReplyText(e.target.value);
-                                  }
-                                }}
-                                placeholder="Write your reply... (max 200 characters)"
-                                dir="ltr"
-                                maxLength={200}
-                                className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white/60 backdrop-blur-sm"
-                                rows={2}
-                                autoFocus
-                                style={{ 
-                                  direction: 'ltr', 
-                                  textAlign: 'left',
-                                  unicodeBidi: 'embed',
-                                  writingMode: 'horizontal-tb'
-                                }}
-                                onFocus={(e) => {
-                                  const target = e.target;
-                                  target.setAttribute('dir', 'ltr');
-                                  target.style.direction = 'ltr';
-                                  target.style.textAlign = 'left';
-                                  // Ensure cursor is at the end
-                                  const len = target.value.length;
-                                  target.setSelectionRange(len, len);
-                                }}
-                              />
-                              <div className="flex justify-end space-x-2 mt-2">
-                                <button
-                                  onClick={() => {
-                                    setReplyingTo(null);
-                                    setReplyText('');
-                                  }}
-                                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 transition"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => handleAddReply(comment._id)}
-                                  disabled={loading || !replyText.trim()}
-                                  className="px-4 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <FaPaperPlane className="text-xs" />
-                                  <span>Reply</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Recursive Reply Tree */}
-                          {comment.replies && comment.replies.length > 0 && (
-                            <div className="mt-4 space-y-3">
-                              {comment.replies
-                                .sort((a, b) => {
-                                  const scoreA = getVoteScore(a);
-                                  const scoreB = getVoteScore(b);
-                                  return scoreB - scoreA;
-                                })
-                                .map((reply, replyIndex) => (
-                                  <ReplyTree
-                                    key={reply._id || replyIndex}
-                                    reply={reply}
-                                    commentId={comment._id}
-                                    depth={0}
-                                    userId={userId}
-                                    loading={loading}
-                                    projectStatus={projectData.status}
-                                    onVote={handleVoteReply}
-                                    onDelete={handleDeleteReply}
-                                    onReply={(parentReplyId) => {
-                                      setReplyingTo(`${comment._id}-${parentReplyId}`);
-                                      setReplyText('');
-                                    }}
-                                    replyingTo={replyingTo}
-                                    replyText={replyText}
-                                    setReplyText={setReplyText}
-                                    onAddReply={handleAddReply}
-                                    handleUserClick={handleUserClick}
-                                    formatRelativeTime={formatRelativeTime}
-                                    getVoteScore={getVoteScore}
-                                    getUserVote={getUserVote}
-                                  />
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                    </motion.div>
-                  );
-                  })
-                )}
-              </div>
-            </div>
+            {/* Discussion Section */}
+            <ProjectDiscussion
+              projectId={projectData._id}
+              projectData={projectData}
+              userId={userId}
+              loading={loading}
+              onProjectUpdate={(updatedProject) => {
+                if (updatedProject) {
+                  setProjectData(updatedProject);
+                } else {
+                  refreshProjectData();
+                }
+              }}
+            />
           </div>
       </div>
     </div>

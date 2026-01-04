@@ -25,23 +25,48 @@ const Notification = () => {
         {notifications.map((notification) => (
           <motion.div
             key={notification.id}
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 shadow-lg p-4 flex items-start space-x-3 max-w-sm"
+            initial={{ opacity: 0, x: 100, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className={`rounded-lg shadow-lg p-3 flex items-center space-x-2 max-w-sm ${
+              notification.type === 'success' 
+                ? 'bg-green-50 border border-green-200' 
+                : notification.type === 'error'
+                ? 'bg-red-50 border border-red-200'
+                : 'bg-amber-50 border border-amber-200'
+            }`}
           >
             {getIcon(notification.type)}
             <div className="flex-1">
               {notification.title && (
-                <h4 className="font-semibold text-gray-900">{notification.title}</h4>
+                <h4 className={`font-semibold text-xs ${
+                  notification.type === 'success' 
+                    ? 'text-green-900' 
+                    : notification.type === 'error'
+                    ? 'text-red-900'
+                    : 'text-amber-900'
+                }`}>{notification.title}</h4>
               )}
-              <p className="text-sm text-gray-600">{notification.message}</p>
+              <p className={`text-xs font-medium ${
+                notification.type === 'success' 
+                  ? 'text-green-800' 
+                  : notification.type === 'error'
+                  ? 'text-red-800'
+                  : 'text-amber-800'
+              }`}>{notification.message}</p>
             </div>
             <button
               onClick={() => removeNotification(notification.id)}
-              className="text-gray-400 hover:text-gray-600"
+              className={`hover:opacity-70 transition-opacity ${
+                notification.type === 'success' 
+                  ? 'text-green-600' 
+                  : notification.type === 'error'
+                  ? 'text-red-600'
+                  : 'text-amber-600'
+              }`}
             >
-              <FaTimes />
+              <FaTimes className="text-xs" />
             </button>
           </motion.div>
         ))}

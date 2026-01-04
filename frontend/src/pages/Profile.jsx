@@ -4,7 +4,7 @@ import { authAPI, chatAPI, projectAPI } from '../utils/api';
 import { getRoleColor } from '../utils/helpers';
 import { useGlobal } from '../context/GlobalContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, FolderKanban } from 'lucide-react';
+import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, FolderKanban, Hash } from 'lucide-react';
 import Loading from '../components/Loading';
 
 const Profile = () => {
@@ -25,6 +25,7 @@ const Profile = () => {
     name: '',
     department: '',
     year: '',
+    rollNumber: '',
     skills: [],
     profilePicture: '',
     bio: '',
@@ -115,6 +116,7 @@ const Profile = () => {
         name: user.name || '',
         department: user.department || '',
         year: user.year || '',
+        rollNumber: user.rollNumber || '',
         skills: user.skills || [],
         profilePicture: user.profilePicture || '',
         bio: user.bio || '',
@@ -144,7 +146,16 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let processedValue = value;
+    
+    // Capitalize name (first letter of each word)
+    if (name === 'name') {
+      processedValue = value.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ');
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
   const compressImage = (file, maxWidth = 800, quality = 0.8) => {
@@ -316,6 +327,18 @@ const Profile = () => {
       return;
     }
 
+    // Validate roll number for students (10 alphanumeric characters)
+    if (user.role === 'student' && formData.rollNumber) {
+      if (!/^[A-Z0-9]{10}$/.test(formData.rollNumber)) {
+        addNotification({
+          type: 'error',
+          title: 'Validation Error',
+          message: 'Roll number must be exactly 10 characters'
+        });
+        return;
+      }
+    }
+
     // Validate bio length
     if (formData.bio.length > 300) {
       addNotification({
@@ -393,6 +416,7 @@ const Profile = () => {
       name: user.name || '',
       department: user.department || '',
       year: user.year || '',
+      rollNumber: user.rollNumber || '',
       skills: user.skills || [],
       profilePicture: user.profilePicture || '',
       bio: user.bio || '',
@@ -429,6 +453,14 @@ const Profile = () => {
       .slice(0, 2);
   };
 
+  const capitalizeName = (name) => {
+    if (!name) return '';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const bioCharsRemaining = 300 - formData.bio.length;
   const bioPercentage = (formData.bio.length / 300) * 100;
 
@@ -446,13 +478,13 @@ const Profile = () => {
           </button>
         )}
         {/* Header Card */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 overflow-hidden mb-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 overflow-hidden mb-6">
           {/* Profile Info Section */}
           <div className="px-4 md:px-8 py-6 md:py-8">
             <div className="flex flex-col md:flex-row md:items-center md:space-x-6 relative">
               {/* Profile Picture */}
               <div className="relative group mb-4 md:mb-0">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-gray-200 shadow-2xl overflow-hidden bg-gradient-to-br from-amber-500 to-yellow-500 ring-4 ring-amber-100">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg border-4 border-gray-200 shadow-2xl overflow-hidden bg-gradient-to-br from-amber-500 to-yellow-500 ring-4 ring-amber-100">
                   {(isViewingOtherUser ? displayUser?.profilePicture : imagePreview) ? (
                     <img
                       src={isViewingOtherUser ? displayUser?.profilePicture : imagePreview}
@@ -474,7 +506,7 @@ const Profile = () => {
                         fileInputRef.current?.click();
                         setShowImageUploadHelp(true);
                       }}
-                      className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-lg bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
                     >
                       <Camera size={24} className="mb-1" />
                       <span className="text-xs font-medium">Change Photo</span>
@@ -530,7 +562,7 @@ const Profile = () => {
                     )}
                   </div>
                 ) : (
-                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{displayUser?.name}</h1>
+                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{capitalizeName(displayUser?.name || '')}</h1>
                 )}
                 
                 <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -542,39 +574,38 @@ const Profile = () => {
                 {/* Academic Info - Under Name */}
                 <div className="mt-4 md:mt-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                    {/* Department */}
+                    {displayUser?.role === 'student' ? (
+                      <>
+                        {/* Roll Number (Students - First) */}
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-purple-100 rounded-lg">
-                        <Building2 size={16} className="text-purple-600" />
+                          <div className="p-1.5 bg-blue-100 rounded-lg">
+                            <Hash size={16} className="text-blue-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 font-medium">Department</p>
+                            <p className="text-xs text-gray-500 font-medium">Roll Number</p>
                         {isEditing ? (
-                          <select
-                            name="department"
-                            value={formData.department}
-                            onChange={handleChange}
-                            className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
-                            required
-                          >
-                            <option value="">Select Department</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Information Technology">Information Technology</option>
-                            <option value="Electronics">Electronics</option>
-                            <option value="Mechanical">Mechanical</option>
-                            <option value="Civil">Civil</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Chemical">Chemical</option>
-                            <option value="Other">Other</option>
-                          </select>
+                              <input
+                                type="text"
+                                name="rollNumber"
+                                value={formData.rollNumber}
+                                onChange={(e) => {
+                                  // Allow alphanumeric characters, convert to uppercase, limit to 10 characters
+                                  const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
+                                  setFormData(prev => ({ ...prev, rollNumber: value }));
+                                }}
+                                placeholder="22331a0575"
+                                maxLength="10"
+                                className="w-full mt-0.5 px-2 py-1 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium uppercase"
+                              />
                         ) : (
-                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
+                              <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                                {displayUser?.rollNumber || '-'}
+                              </p>
                         )}
                       </div>
                     </div>
 
-                    {/* Year (Students) or Designation (Faculty) */}
-                    {displayUser?.role === 'student' ? (
+                        {/* Year (Students - Second) */}
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-amber-100 rounded-lg">
                           <Calendar size={16} className="text-amber-600" />
@@ -602,7 +633,41 @@ const Profile = () => {
                           )}
                         </div>
                       </div>
+
+                        {/* Department (Students - Third) */}
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-purple-100 rounded-lg">
+                            <Building2 size={16} className="text-purple-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 font-medium">Department</p>
+                            {isEditing ? (
+                              <select
+                                name="department"
+                                value={formData.department}
+                                onChange={handleChange}
+                                className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
+                                required
+                              >
+                                <option value="">Select Department</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Mechanical">Mechanical</option>
+                                <option value="Civil">Civil</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Chemical">Chemical</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
+                            )}
+                          </div>
+                        </div>
+                      </>
                     ) : displayUser?.role === 'faculty' ? (
+                      <>
+                        {/* Designation (Faculty - First) */}
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-amber-100 rounded-lg">
                           <Award size={16} className="text-amber-600" />
@@ -623,6 +688,38 @@ const Profile = () => {
                           )}
                         </div>
                       </div>
+
+                        {/* Department (Faculty - Second) */}
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-purple-100 rounded-lg">
+                            <Building2 size={16} className="text-purple-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 font-medium">Department</p>
+                            {isEditing ? (
+                              <select
+                                name="department"
+                                value={formData.department}
+                                onChange={handleChange}
+                                className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
+                                required
+                              >
+                                <option value="">Select Department</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Mechanical">Mechanical</option>
+                                <option value="Civil">Civil</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Chemical">Chemical</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
+                            )}
+                          </div>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 </div>
@@ -732,7 +829,7 @@ const Profile = () => {
                   >
                     {loading ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                         Saving...
                       </>
                     ) : (
@@ -817,68 +914,9 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* About Section */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-amber-100 rounded-lg mr-3">
-                  <BookOpen className="text-amber-600" size={24} />
-                </div>
-                About
-              </h2>
-              {isEditing ? (
-                <div>
-                  <div className="relative">
-                    <textarea
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleChange}
-                      rows="5"
-                      maxLength="300"
-                      placeholder="Tell us about yourself... Share your interests, goals, or what makes you unique!"
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${
-                        bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
-                      }`}
-                    />
-                    {/* Character counter with progress bar */}
-                    <div className="mt-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`text-sm font-medium ${
-                          bioPercentage > 90 ? 'text-red-600' : 'text-gray-600'
-                        }`}>
-                          {formData.bio.length} / 300 characters
-                        </span>
-                        <span className={`text-xs ${
-                          bioCharsRemaining < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'
-                        }`}>
-                          {bioCharsRemaining} remaining
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 rounded-full ${
-                            bioPercentage > 90 ? 'bg-red-500' : bioPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}
-                          style={{ width: `${bioPercentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-700 leading-relaxed text-base">
-                  {displayUser?.bio || (
-                    <span className="italic text-gray-400 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      {isViewingOtherUser ? 'No bio added yet.' : 'No bio added yet. Click "Edit Profile" to add one and tell others about yourself!'}
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
-
             {/* Skills Section (Students Only) */}
             {displayUser?.role === 'student' && (
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="p-2 bg-amber-100 rounded-lg mr-3">
@@ -966,12 +1004,71 @@ const Profile = () => {
                 )}
               </div>
             )}
+
+            {/* About Section */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <div className="p-2 bg-amber-100 rounded-lg mr-3">
+                  <BookOpen className="text-amber-600" size={24} />
+                </div>
+                About
+              </h2>
+              {isEditing ? (
+                <div>
+                  <div className="relative">
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
+                      onChange={handleChange}
+                      rows="5"
+                      maxLength="300"
+                      placeholder="Tell us about yourself... Share your interests, goals, or what makes you unique!"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${
+                        bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
+                      }`}
+                    />
+                    {/* Character counter with progress bar */}
+                    <div className="mt-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`text-sm font-medium ${
+                          bioPercentage > 90 ? 'text-red-600' : 'text-gray-600'
+                        }`}>
+                          {formData.bio.length} / 300 characters
+                        </span>
+                        <span className={`text-xs ${
+                          bioCharsRemaining < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'
+                        }`}>
+                          {bioCharsRemaining} remaining
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 rounded-full ${
+                            bioPercentage > 90 ? 'bg-red-500' : bioPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${bioPercentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-700 leading-relaxed text-base">
+                  {displayUser?.bio || (
+                    <span className="italic text-gray-400 flex items-center gap-2">
+                      <AlertCircle size={16} />
+                      {isViewingOtherUser ? 'No bio added yet.' : 'No bio added yet. Click "Edit Profile" to add one and tell others about yourself!'}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Right Column - Contact & Info */}
           <div className="space-y-6">
             {/* Contact Information */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6 transform transition-all duration-300 hover:border-amber-400 hover:shadow-lg">
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Info</h2>
               <div className="space-y-4">
                 {/* Email */}

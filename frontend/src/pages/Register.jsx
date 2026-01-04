@@ -5,6 +5,7 @@ import { useGlobal } from '../context/GlobalContext';
 import { authAPI } from '../utils/api';
 import { departments, years } from '../utils/helpers';
 import { motion } from 'framer-motion';
+import cclogo from '../assets/cclogo.png';
 import { 
   User, 
   Mail, 
@@ -203,7 +204,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-start justify-center bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 pt-24 pb-12 px-4 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-20 left-20 w-72 h-72 bg-amber-400/20 rounded-full blur-3xl"></div>
@@ -222,9 +223,12 @@ const Register = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">CC</span>
-              </div>
+              <img 
+                src={cclogo} 
+                alt="Campus Collab Logo" 
+                className="h-10 w-auto object-contain select-none"
+                draggable="false"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
                 Campus Collab
               </span>
@@ -241,14 +245,20 @@ const Register = () => {
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Mail className="h-5 w-5 text-amber-600" />
                   </div>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !otpSent && formData.email && validateEmailDomain(formData.email) && !sendingOTP) {
+                        e.preventDefault();
+                        handleSendOTP(e);
+                      }
+                    }}
                     required
                     disabled={otpSent}
                     className={`w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
@@ -278,8 +288,8 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Send OTP Button - Show before OTP is sent */}
-              {!otpSent && formData.email && validateEmailDomain(formData.email) && (
+              {/* Send OTP Button - Always visible, disabled until valid email domain */}
+              {!otpSent && (
                 <div className="md:col-span-2">
                   <button
                     type="button"
@@ -289,7 +299,7 @@ const Register = () => {
                   >
                     {sendingOTP ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                         <span>Sending OTP...</span>
                       </>
                     ) : (
@@ -310,13 +320,19 @@ const Register = () => {
                       Enter Verification Code <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <KeyRound className="h-5 w-5 text-gray-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        <KeyRound className="h-5 w-5 text-amber-600" />
                       </div>
                       <input
                         type="text"
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && otp.length === 6 && !verifyingOTP) {
+                            e.preventDefault();
+                            handleVerifyOTP(e);
+                          }
+                        }}
                         maxLength={6}
                         placeholder="000000"
                         className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm text-center text-2xl font-bold tracking-widest"
@@ -334,7 +350,7 @@ const Register = () => {
                     >
                       {verifyingOTP ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                           <span>Verifying...</span>
                         </>
                       ) : (
@@ -398,8 +414,8 @@ const Register = () => {
                   Full Name
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <User className="h-5 w-5 text-amber-600" />
                   </div>
                   <input
                     type="text"
@@ -419,11 +435,11 @@ const Register = () => {
                   Role
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                     {formData.role === 'student' ? (
-                      <GraduationCap className="h-5 w-5 text-gray-400" />
+                      <GraduationCap className="h-5 w-5 text-amber-600" />
                     ) : (
-                      <Shield className="h-5 w-5 text-gray-400" />
+                      <Shield className="h-5 w-5 text-amber-600" />
                     )}
                   </div>
                   <select
@@ -507,8 +523,8 @@ const Register = () => {
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Lock className="h-5 w-5 text-amber-600" />
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -539,8 +555,8 @@ const Register = () => {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Lock className="h-5 w-5 text-amber-600" />
                   </div>
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -579,7 +595,7 @@ const Register = () => {
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     <span>Creating Account...</span>
                   </>
                 ) : (

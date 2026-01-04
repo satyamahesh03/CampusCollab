@@ -6,7 +6,9 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaBookmark, FaTrash, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaArrowLeft } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Hackathons = () => {
@@ -15,10 +17,36 @@ const Hackathons = () => {
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedHackathon, setSelectedHackathon] = useState(null);
+  const [availableDomains, setAvailableDomains] = useState([]);
+  const [confirmingDeleteHackathon, setConfirmingDeleteHackathon] = useState(null);
   const { user } = useAuth();
   const { addNotification, refreshReminders } = useGlobal();
   const { id: hackathonId } = useParams();
   const navigate = useNavigate();
+
+  // Fetch all posts to populate filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await hackathonAPI.getAll({});
+        
+        // Extract unique domains from all hackathons
+        const uniqueDomains = [...new Set(
+          response.data
+            .map(hackathon => hackathon.domain)
+            .filter(domain => domain)
+        )].sort();
+        
+        setAvailableDomains(uniqueDomains);
+      } catch (error) {
+        // Silently fail - filters will use defaults
+      }
+    };
+    
+    if (!hackathonId) {
+      fetchFilterOptions();
+    }
+  }, [hackathonId]);
 
   useEffect(() => {
     if (hackathonId) {
@@ -73,7 +101,8 @@ const Hackathons = () => {
     }
     
     // Find the hackathon and check if it's already saved BEFORE the API call
-    const hackathon = hackathons.find(h => h._id === id);
+    // Check both the list and the selected hackathon (if viewing detail)
+    const hackathon = hackathons.find(h => h._id === id) || (selectedHackathon && selectedHackathon._id === id ? selectedHackathon : null);
     if (!hackathon) {
       addNotification({ 
         type: 'error', 
@@ -99,6 +128,11 @@ const Hackathons = () => {
       
       // Refresh the hackathons list
       fetchHackathons();
+      
+      // If viewing this hackathon's detail, refresh the selected hackathon
+      if (selectedHackathon && selectedHackathon._id === id) {
+        fetchSingleHackathon(id);
+      }
       
       // Refresh reminders in GlobalContext
       refreshReminders();
@@ -156,7 +190,13 @@ const Hackathons = () => {
           )}
         </div>
       </div>
-      <FilterBar filters={filters} setFilters={setFilters} showYear={false} showDepartment={false} />
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        showYear={false} 
+        showDepartment={false}
+        domains={availableDomains.length > 0 ? availableDomains : null}
+      />
       
       {loading ? (
         <Loading />
@@ -165,7 +205,7 @@ const Hackathons = () => {
           <p className="text-gray-500 text-lg">No hackathons found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {hackathons.map((hackathon, index) => {
             const isOwner = hackathon.postedBy?._id === user?.id || hackathon.postedBy === user?.id;
             const timePeriod = `${formatDate(hackathon.startDate)} - ${formatDate(hackathon.endDate)}`;
@@ -176,7 +216,7 @@ const Hackathons = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+                className="bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 border border-transparent hover:border-amber-300 h-full flex flex-col"
                 onClick={() => navigate(`/hackathons/${hackathon._id}`)}
               >
                 {/* Header with Title and Actions */}
@@ -196,30 +236,62 @@ const Hackathons = () => {
                       <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
                     {isOwner && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!window.confirm('Are you sure you want to delete this hackathon?')) return;
-                          
-                          try {
-                            await hackathonAPI.delete(hackathon._id);
-                            addNotification({
-                              type: 'success',
-                              message: 'Hackathon deleted successfully!',
-                            });
-                            fetchHackathons();
-                          } catch (error) {
-                            addNotification({
-                              type: 'error',
-                              message: 'Failed to delete hackathon',
-                            });
-                          }
-                        }}
-                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition min-w-[32px] min-h-[32px] flex items-center justify-center"
-                        title="Delete hackathon"
-                      >
-                        <FaTrash size={16} className="sm:w-[18px] sm:h-[18px]" />
-                      </button>
+                      <div className="relative flex flex-col items-end">
+                        {confirmingDeleteHackathon === hackathon._id && (
+                          <div className="flex items-center gap-2 mb-1 -mt-2">
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await hackathonAPI.delete(hackathon._id);
+                                  setConfirmingDeleteHackathon(null);
+                                  addNotification({
+                                    type: 'success',
+                                    message: 'Hackathon deleted successfully!',
+                                  });
+                                  fetchHackathons();
+                                } catch (error) {
+                                  addNotification({
+                                    type: 'error',
+                                    message: 'Failed to delete hackathon',
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConfirmingDeleteHackathon(null);
+                              }}
+                              className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirmingDeleteHackathon !== hackathon._id) {
+                              setConfirmingDeleteHackathon(hackathon._id);
+                            }
+                          }}
+                          disabled={confirmingDeleteHackathon === hackathon._id}
+                          className="p-1.5 sm:p-2 text-red-600 rounded-lg transition-all min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          title="Delete hackathon"
+                        >
+                          <FontAwesomeIcon icon={faTrashCan} className="text-base sm:text-lg transition-transform" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -235,7 +307,7 @@ const Hackathons = () => {
                 </div>
 
                 {/* Info */}
-                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600 mt-auto">
                   <div className="flex items-center space-x-1.5 sm:space-x-2">
                     <FaCalendarAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
                     <span className="break-words">{timePeriod}</span>
@@ -457,24 +529,24 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
           title="Close"
         >
           <FaTimes className="text-lg" />
         </button>
         
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Post Hackathon</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Post Hackathon</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Title */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -482,14 +554,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., Smart India Hackathon 2024"
               />
             </div>
 
             {/* Organizer */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Organizer <span className="text-red-500">*</span>
               </label>
               <input
@@ -497,14 +569,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.organizer}
                 onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="Organization name"
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Location <span className="text-red-500">*</span>
               </label>
               <input
@@ -512,21 +584,21 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="City or Online"
               />
             </div>
 
             {/* Mode */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Mode <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.mode}
                 onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               >
                 <option value="">Select Mode</option>
                 <option value="online">Online</option>
@@ -537,14 +609,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
 
             {/* Domain */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Domain <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.domain}
                 onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               >
                 <option value="">Select Domain</option>
                 {domains.map((domain) => (
@@ -557,7 +629,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
 
             {/* Start Date */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Start Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -565,13 +637,13 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
 
             {/* End Date */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 End Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -579,13 +651,13 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
 
             {/* Registration Deadline */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Registration Deadline <span className="text-red-500">*</span>
               </label>
               <input
@@ -593,14 +665,14 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
                 value={formData.registrationDeadline}
                 onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -608,26 +680,26 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="Describe the hackathon theme, rules, and requirements..."
             />
           </div>
 
           {/* Prizes */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Prizes (Optional)</label>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Prizes (Optional)</label>
             <input
               type="text"
               value={formData.prizes}
               onChange={(e) => setFormData({ ...formData, prizes: e.target.value })}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
               placeholder="e.g., 1st Prize: ₹1,00,000, 2nd Prize: ₹50,000"
             />
           </div>
 
           {/* Registration Link */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Registration Link <span className="text-red-500">*</span>
             </label>
             <input
@@ -635,7 +707,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
               value={formData.registrationLink}
               onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
               placeholder="https://..."
             />
           </div>

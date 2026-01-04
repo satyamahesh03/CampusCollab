@@ -95,9 +95,9 @@ const Recommendations = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 onClick={() => handleProjectClick(rec.project?._id)}
-                className="bg-white/60 backdrop-blur-sm rounded-xl transition-all duration-300 cursor-pointer overflow-hidden border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 group"
+                className="bg-white/60 backdrop-blur-sm rounded-xl transition-all duration-300 cursor-pointer overflow-hidden border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 group h-full flex flex-col"
               >
-                <div className="p-4 sm:p-6">
+                <div className="p-4 sm:p-6 flex flex-col flex-1">
                   <div className="flex items-start mb-3 sm:mb-4">
                     <div className="bg-yellow-50 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 group-hover:bg-yellow-100 transition-colors flex-shrink-0">
                       <FaLightbulb className="text-yellow-500 text-lg sm:text-xl" />
@@ -106,19 +106,19 @@ const Recommendations = () => {
                       <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-gray-900 group-hover:text-amber-600 transition-colors line-clamp-2">
                         {rec.project?.title}
                       </h3>
-                      <p className="text-xs sm:text-sm text-amber-600 font-medium mb-1 sm:mb-2">{rec.reason}</p>
+                      <p className="text-xs sm:text-sm text-amber-600 font-medium mb-1 sm:mb-2 line-clamp-1">{rec.reason}</p>
                     </div>
                   </div>
                   
-                  <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm leading-relaxed">
-                    {rec.project?.description}
+                  <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm leading-relaxed flex-1">
+                    {rec.project?.description || 'No description available'}
                   </p>
 
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4 min-h-[2.5rem]">
                     {rec.project?.domains?.slice(0, 3).map((domain) => (
                       <span
                         key={domain}
-                        className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium"
+                        className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap"
                       >
                         {domain}
                       </span>
@@ -126,14 +126,14 @@ const Recommendations = () => {
                     {rec.project?.skills?.slice(0, 3).map((skill) => (
                       <span
                         key={skill}
-                        className="px-2 sm:px-3 py-0.5 sm:py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium"
+                        className="px-2 sm:px-3 py-0.5 sm:py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium whitespace-nowrap"
                       >
                         {skill}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-end pt-3 sm:pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-end pt-3 sm:pt-4 border-t border-gray-100 mt-auto">
                     <div className="flex items-center text-amber-600 group-hover:text-amber-700 font-medium text-xs sm:text-sm">
                       <span>View Details</span>
                       <FaArrowRight className="ml-1.5 sm:ml-2 group-hover:translate-x-1 transition-transform" />

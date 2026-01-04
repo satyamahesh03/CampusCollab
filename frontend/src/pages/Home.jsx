@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { projectAPI, hackathonAPI, internshipAPI, driveAPI, courseLinkAPI, statsAPI } from '../utils/api';
 import { motion } from 'framer-motion';
+import cclogo from '../assets/cclogo.png';
 import { 
   Briefcase, 
   Code, 
@@ -24,6 +25,7 @@ import {
 import { getDomainColor, formatDate } from '../utils/helpers';
 import { FaUsers, FaComment } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Loading from '../components/Loading';
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
@@ -209,7 +211,22 @@ const Home = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
+              {/* Logo */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="mb-6 flex justify-center"
+              >
+                <img 
+                  src={cclogo} 
+                  alt="Campus Collab Logo" 
+                  className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain select-none"
+                  draggable="false"
+                />
+              </motion.div>
+              
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent">
                   Campus Collab
                 </span>
@@ -288,7 +305,7 @@ const Home = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5, duration: 0.6 }}
-                  className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                  className="flex flex-col sm:flex-row gap-6 sm:gap-4 justify-center items-center"
                 >
                   <motion.div
                     whileHover={{ scale: 1.05 }}
@@ -492,9 +509,7 @@ const Home = () => {
             </motion.div>
 
             {loadingProjects ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-              </div>
+              <Loading text="Loading trending projects..." />
             ) : trendingProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
                 {trendingProjects.map((project, index) => (
@@ -601,9 +616,7 @@ const Home = () => {
             </motion.div>
 
             {loadingProjects ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
-              </div>
+              <Loading text="Loading upcoming drives..." />
             ) : upcomingDrives.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -760,8 +773,8 @@ const Home = () => {
                 {/* Line Chart */}
                 {chartData.length > 0 ? (
                   <div className="w-full overflow-x-auto">
-                    <div className="w-full min-w-[300px]" style={{ height: '300px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="w-full min-w-[300px] min-h-[300px]" style={{ height: '300px', position: 'relative' }}>
+                      <ResponsiveContainer width="100%" height={300} minHeight={300}>
                         <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis 

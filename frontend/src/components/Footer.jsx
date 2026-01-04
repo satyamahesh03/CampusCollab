@@ -11,34 +11,34 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 mb-8 md:mb-12">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-4 md:mb-6">
           {/* Brand */}
           <div className="flex flex-col">
-            <div className="flex items-center space-x-2 mb-4 sm:mb-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-yellow-400 rounded-lg flex items-center justify-center shadow-sm">
-                <span className="text-white font-bold text-sm sm:text-base">CC</span>
+            <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-400 to-yellow-400 rounded-lg flex items-center justify-center shadow-sm">
+                <span className="text-white font-bold text-xs sm:text-sm">CC</span>
               </div>
-              <span className="text-xl sm:text-2xl font-bold text-gray-900">Campus Collab</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900">Campus Collab</span>
             </div>
-            <p className="text-gray-700 text-sm sm:text-base leading-relaxed max-w-md">
+            <p className="text-gray-700 text-xs sm:text-sm leading-relaxed max-w-md">
               A unified platform for collaboration across every department. Connect, build, and grow together.
             </p>
           </div>
 
           {/* Contact */}
           <div className="flex flex-col">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-900">Contact Us</h3>
-            <ul className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">Contact Us</h3>
+            <ul className="space-y-2 sm:space-y-2.5">
               <li>
                 <a 
                   href="mailto:campuscollabofficial@gmail.com" 
-                  className="flex items-center space-x-3 sm:space-x-4 text-gray-700 hover:text-amber-600 transition-colors group"
+                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
-                  <div className="p-2.5 sm:p-3 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
-                    <Mail size={18} className="text-amber-600" />
+                  <div className="p-1.5 sm:p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
+                    <Mail size={16} className="text-amber-600" />
                   </div>
-                  <span className="text-sm sm:text-base break-all">campuscollabofficial@gmail.com</span>
+                  <span className="text-xs sm:text-sm break-all">campuscollabofficial@gmail.com</span>
                 </a>
               </li>
               <li>
@@ -46,12 +46,12 @@ const Footer = () => {
                   href="https://wa.me/919494252900" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-3 sm:space-x-4 text-gray-700 hover:text-amber-600 transition-colors group"
+                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
-                  <div className="p-2.5 sm:p-3 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
-                    <Phone size={18} className="text-amber-600" />
+                  <div className="p-1.5 sm:p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
+                    <Phone size={16} className="text-amber-600" />
                   </div>
-                  <span className="text-sm sm:text-base">+91 94942 52900</span>
+                  <span className="text-xs sm:text-sm">+91 94942 52900</span>
                 </a>
               </li>
               <li>
@@ -59,12 +59,12 @@ const Footer = () => {
                   href="https://www.google.com/maps/search/MVGR+College+of+Engineering" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-3 sm:space-x-4 text-gray-700 hover:text-amber-600 transition-colors group"
+                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
-                  <div className="p-2.5 sm:p-3 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
-                    <MapPin size={18} className="text-amber-600" />
+                  <div className="p-1.5 sm:p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
+                    <MapPin size={16} className="text-amber-600" />
                   </div>
-                  <span className="text-sm sm:text-base">MVGR College of Engineering</span>
+                  <span className="text-xs sm:text-sm">MVGR College of Engineering</span>
                 </a>
               </li>
             </ul>
@@ -72,9 +72,9 @@ const Footer = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="border-t border-amber-200/50 pt-6 sm:pt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
-            <div className="flex items-center space-x-2 text-gray-700 text-sm sm:text-base">
+        <div className="border-t border-amber-200/50 pt-3 sm:pt-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+            <div className="flex items-center space-x-2 text-gray-700 text-xs sm:text-sm">
               <span>&copy; 2026 Campus Collab. All rights reserved.</span>
             </div>
           </div>

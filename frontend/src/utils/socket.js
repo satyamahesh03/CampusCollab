@@ -192,6 +192,31 @@ class SocketService {
     }
   }
 
+  // Project team chat methods
+  joinProjectChat(projectId) {
+    if (this.socket) {
+      this.socket.emit('join-project-chat', projectId);
+    }
+  }
+
+  leaveProjectChat(projectId) {
+    if (this.socket) {
+      this.socket.emit('leave-project-chat', projectId);
+    }
+  }
+
+  sendProjectChatMessage(projectId, content, userId) {
+    if (this.socket) {
+      this.socket.emit('send-project-chat-message', { projectId, content, userId });
+    }
+  }
+
+  onNewProjectChatMessage(callback) {
+    if (this.socket) {
+      this.socket.on('new-project-chat-message', callback);
+    }
+  }
+
   off(event) {
     if (this.socket) {
       this.socket.off(event);

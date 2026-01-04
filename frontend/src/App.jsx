@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalProvider } from './context/GlobalContext';
 import Navbar from './components/Navbar';
@@ -21,16 +21,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import Chats from './pages/Chats';
 import Profile from './pages/Profile';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isChatPage = location.pathname.startsWith('/chats');
+  
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <AuthProvider>
-        <GlobalProvider>
           <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
             <Navbar />
             <Notification />
@@ -185,8 +180,22 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
-            <Footer />
+      {!isChatPage && <Footer />}
           </div>
+  );
+}
+
+function App() {
+  return (
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
+      <AuthProvider>
+        <GlobalProvider>
+          <AppContent />
         </GlobalProvider>
       </AuthProvider>
     </Router>

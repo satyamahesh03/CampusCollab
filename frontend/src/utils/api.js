@@ -49,6 +49,9 @@ export const authAPI = {
   blockUser: (userId) => api.post(`/auth/block/${userId}`),
   unblockUser: (userId) => api.post(`/auth/unblock/${userId}`),
   getBlockedUsers: () => api.get('/auth/blocked-users'),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  verifyResetOTP: (email, otp) => api.post('/auth/verify-reset-otp', { email, otp }),
+  resetPassword: (email, otp, password) => api.post('/auth/reset-password', { email, otp, password }),
 };
 
 // Project APIs
@@ -66,11 +69,15 @@ export const projectAPI = {
   deleteComment: (projectId, commentId) => api.delete(`/projects/${projectId}/comment/${commentId}`),
   deleteReply: (projectId, commentId, replyId) => api.delete(`/projects/${projectId}/comment/${commentId}/reply/${replyId}`),
   join: (id, data) => api.post(`/projects/${id}/join`, data),
+  cancelJoinRequest: (projectId, requestId) => api.delete(`/projects/${projectId}/join-request/${requestId}`),
   approveRequest: (projectId, requestId) => api.post(`/projects/${projectId}/approve-request/${requestId}`),
   rejectRequest: (projectId, requestId) => api.post(`/projects/${projectId}/reject-request/${requestId}`),
   close: (id) => api.put(`/projects/${id}/close`),
   delete: (id) => api.delete(`/projects/${id}`),
   summarize: (id) => api.post(`/projects/${id}/summarize`),
+  getTeamChat: (id) => api.get(`/projects/${id}/team-chat`),
+  sendTeamChatMessage: (id, content) => api.post(`/projects/${id}/team-chat`, { content }),
+  removeParticipant: (projectId, participantId) => api.delete(`/projects/${projectId}/team-chat/participant/${participantId}`),
 };
 
 // Internship APIs

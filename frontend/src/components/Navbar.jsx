@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import cclogo from '../assets/cclogo.png';
 import { 
   Menu,
   X,
@@ -24,7 +25,7 @@ import {
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
-  const { reminders, unreadMessages, newReminderIds } = useGlobal();
+  const { reminders, unreadMessages, newReminderIds, unreadNotificationCount } = useGlobal();
   const navigate = useNavigate();
   const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -39,6 +40,21 @@ const Navbar = () => {
   };
 
   const isActive = (path) => location.pathname === path;
+
+  // Truncate name at word boundary if longer than 15 characters
+  const truncateName = (name, maxLength = 15) => {
+    if (!name || name.length <= maxLength) return name;
+    
+    // Find the last space before maxLength
+    const truncated = name.substring(0, maxLength);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+    // If space found, truncate at that space; otherwise truncate at maxLength
+    if (lastSpaceIndex > 0) {
+      return name.substring(0, lastSpaceIndex);
+    }
+    return truncated;
+  };
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -78,18 +94,18 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">CC</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-              Campus Collab
-            </span>
+          <Link to="/" className="flex items-center">
+            <img 
+              src={cclogo} 
+              alt="Campus Collab Logo" 
+              className="h-8 sm:h-10 w-auto object-contain select-none"
+              draggable="false"
+            />
           </Link>
 
           {/* Desktop Navigation */}
           {isAuthenticated && (
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="hidden lg:flex items-center gap-2">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -111,7 +127,7 @@ const Navbar = () => {
           )}
 
           {/* Right side actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {isAuthenticated ? (
               <>
                 {/* Notifications */}
@@ -130,12 +146,12 @@ const Navbar = () => {
                     to="/notifications"
                     className="relative p-2 text-gray-600 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50 inline-flex items-center justify-center"
                   >
-                    <Bell size={20} className={hasNewReminders ? 'text-amber-600' : ''} />
-                    {reminders.length > 0 && (
+                    <Bell size={20} className={hasNewReminders || unreadNotificationCount > 0 ? 'text-amber-600' : ''} />
+                    {(reminders.length > 0 || unreadNotificationCount > 0) && (
                       <span className={`absolute top-0 right-0 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center font-medium ${
-                        hasNewReminders ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                        hasNewReminders || unreadNotificationCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'
                       }`}>
-                        {reminders.length}
+                        {reminders.length + unreadNotificationCount}
                       </span>
                     )}
                   </Link>
@@ -160,10 +176,18 @@ const Navbar = () => {
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center space-x-2 p-2 text-gray-700 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {user?.name?.charAt(0)?.toUpperCase()}
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                      {user?.profilePicture ? (
+                        <img 
+                          src={user.profilePicture} 
+                          alt={user?.name || 'User'} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        user?.name?.charAt(0)?.toUpperCase()
+                      )}
                     </div>
-                    <span className="hidden md:block text-sm font-medium">{user?.name}</span>
+                    <span className="hidden md:block text-sm font-medium">{truncateName(user?.name)}</span>
                   </button>
 
                   <AnimatePresence>
@@ -173,11 +197,24 @@ const Navbar = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-56 bg-white/60 backdrop-blur-sm rounded-xl border border-amber-100/50 py-2 z-50"
+                        className="absolute right-0 mt-2 w-56 bg-amber-50/90 backdrop-blur-sm rounded-xl border border-amber-100/50 py-2 z-50"
                       >
-                        <div className="px-4 py-3 border-b border-amber-100/50">
-                          <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+                        <div className="px-4 py-3 border-b border-amber-100/50 flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden flex-shrink-0">
+                            {user?.profilePicture ? (
+                              <img 
+                                src={user.profilePicture} 
+                                alt={user?.name || 'User'} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              user?.name?.charAt(0)?.toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{truncateName(user?.name)}</p>
                           <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                          </div>
                         </div>
                         <div className="py-1">
                           <Link
@@ -265,9 +302,12 @@ const Navbar = () => {
                 {/* Close Button Header */}
                 <div className="flex justify-between items-center px-6 py-4 border-b border-amber-100/50 bg-transparent">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">CC</span>
-                    </div>
+                    <img 
+                      src={cclogo} 
+                      alt="Campus Collab Logo" 
+                      className="h-8 w-auto object-contain select-none"
+                      draggable="false"
+                    />
                     <h2 className="text-lg font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
                       Menu
                     </h2>

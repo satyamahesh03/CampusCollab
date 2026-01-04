@@ -1,8 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { domains, departments, years } from '../utils/helpers';
+import { domains as defaultDomains, departments as defaultDepartments, years as defaultYears } from '../utils/helpers';
 import { FaSearch } from 'react-icons/fa';
 
-const FilterBar = ({ filters, setFilters, showDomain = true, showDepartment = true, showYear = true }) => {
+const FilterBar = ({ 
+  filters, 
+  setFilters, 
+  showDomain = true, 
+  showDepartment = true, 
+  showYear = true,
+  domains: customDomains = null,
+  departments: customDepartments = null,
+  years: customYears = null
+}) => {
+  // Use custom values if provided, otherwise fall back to defaults
+  const domains = customDomains || defaultDomains;
+  const departments = customDepartments || defaultDepartments;
+  const years = customYears || defaultYears;
   const [showSearchInput, setShowSearchInput] = useState(false);
   const searchInputRef = useRef(null);
   const searchContainerRef = useRef(null);

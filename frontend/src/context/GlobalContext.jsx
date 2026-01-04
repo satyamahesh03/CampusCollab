@@ -1,5 +1,5 @@
-import { createContext, useState, useContext, useEffect } from 'react';
-import { reminderAPI, chatAPI } from '../utils/api';
+import { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { reminderAPI, chatAPI, notificationAPI } from '../utils/api';
 import { useAuth } from './AuthContext';
 import socketService from '../utils/socket';
 
@@ -18,14 +18,17 @@ export const GlobalProvider = ({ children }) => {
   const [reminders, setReminders] = useState([]);
   const [newReminderIds, setNewReminderIds] = useState([]); // Track newly added reminder IDs
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const { user, isAuthenticated } = useAuth();
+  const notificationHandlerRef = useRef(null);
 
   // Load reminders and unread messages when user logs in
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchReminders();
       fetchUnreadMessages();
+      fetchUnreadNotificationCount();
       
       // Connect to socket for global message notifications
       socketService.connect(user.id);
@@ -43,19 +46,55 @@ export const GlobalProvider = ({ children }) => {
         });
       });
       
+      // Set up socket listener for new notifications
+      // Use ref to persist handler across renders
+      notificationHandlerRef.current = () => {
+        // Refresh notification count for any new notification
+        fetchUnreadNotificationCount();
+      };
+      
+      // Set up listener when socket is ready
+      const setupNotificationListener = () => {
+        if (socketService.socket && notificationHandlerRef.current) {
+          // Remove old listener if exists
+          socketService.socket.off('new-notification', notificationHandlerRef.current);
+          // Add new listener
+          socketService.socket.on('new-notification', notificationHandlerRef.current);
+        }
+      };
+      
+      // Handler for socket connect event
+      const onConnect = () => {
+        setupNotificationListener();
+      };
+      
+      // Try to set up immediately if socket is connected
+      if (socketService.socket && socketService.socket.connected) {
+        setupNotificationListener();
+      } else if (socketService.socket) {
+        // Also set up when socket connects (in case it's not connected yet)
+        socketService.socket.on('connect', onConnect);
+      }
+      
       // Refresh unread count every 30 seconds
       const interval = setInterval(() => {
         fetchUnreadMessages();
+        fetchUnreadNotificationCount();
       }, 30000);
 
       return () => {
         clearInterval(interval);
         socketService.off('new-message');
+        if (socketService.socket && notificationHandlerRef.current) {
+          socketService.socket.off('new-notification', notificationHandlerRef.current);
+          socketService.socket.off('connect', onConnect);
+        }
       };
     } else {
       setReminders([]);
       setNewReminderIds([]);
       setUnreadMessages(0);
+      setUnreadNotificationCount(0);
     }
   }, [isAuthenticated, user]);
 
@@ -147,6 +186,22 @@ export const GlobalProvider = ({ children }) => {
     }
   };
 
+  const fetchUnreadNotificationCount = async () => {
+    try {
+      const response = await notificationAPI.getAll();
+      const unreadCount = response.data.unreadCount || 0;
+      setUnreadNotificationCount(unreadCount);
+    } catch (error) {
+      console.error('Error fetching unread notification count:', error);
+    }
+  };
+
+  const refreshUnreadNotificationCount = () => {
+    if (isAuthenticated && user) {
+      fetchUnreadNotificationCount();
+    }
+  };
+
   // Play notification sound globally
   const playNotificationSound = () => {
     if (soundEnabled) {
@@ -182,6 +237,8 @@ export const GlobalProvider = ({ children }) => {
     unreadMessages,
     setUnreadMessages,
     refreshUnreadMessages,
+    unreadNotificationCount,
+    refreshUnreadNotificationCount,
     soundEnabled,
     setSoundEnabled,
     playNotificationSound,

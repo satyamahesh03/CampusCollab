@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['comment_reply', 'reminder'],
+    enum: ['comment_reply', 'reminder', 'project_join_request'],
     required: true
   },
   title: {

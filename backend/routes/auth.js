@@ -71,13 +71,14 @@ router.post('/send-otp', [
     // Generate OTP
     const otp = generateOTP();
 
-    // Delete any existing OTP for this email
-    await OTP.deleteMany({ email: normalizedEmail });
+    // Delete any existing registration OTPs for this email
+    await OTP.deleteMany({ email: normalizedEmail, type: 'registration' });
 
     // Save new OTP
     const otpRecord = await OTP.create({
       email: normalizedEmail,
       otp,
+      type: 'registration',
       expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
     });
 
@@ -89,17 +90,17 @@ router.post('/send-otp', [
         to: normalizedEmail,
         subject: 'Campus Collab - Email Verification OTP',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 20px; border-radius: 12px;">
-            <h2 style="color: #d97706; margin-bottom: 16px;">Campus Collab - Email Verification</h2>
-            <p style="color: #374151; line-height: 1.6;">Hello,</p>
-            <p style="color: #374151; line-height: 1.6;">Thank you for registering with Campus Collab. Please use the following OTP to verify your email address:</p>
-            <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 24px; text-align: center; margin: 24px 0; border-radius: 12px; border: 2px solid #fbbf24;">
-              <h1 style="color: #d97706; font-size: 36px; margin: 0; letter-spacing: 8px; font-weight: bold;">${otp}</h1>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
+            <h2 style="color: #d97706; margin-bottom: 20px; text-align: center; font-size: 24px;">Campus Collab - Email Verification</h2>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Hello,</p>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Thank you for registering with Campus Collab. Please use the following OTP to verify your email address:</p>
+            <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #fbbf24;">
+              <p style="color: #d97706; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otp}</p>
             </div>
-            <p style="color: #374151; line-height: 1.6;">This OTP will expire in 10 minutes.</p>
-            <p style="color: #374151; line-height: 1.6;">If you didn't request this OTP, please ignore this email.</p>
-            <hr style="border: none; border-top: 2px solid #fbbf24; margin: 24px 0;">
-            <p style="color: #6b7280; font-size: 12px;">This is an automated message from Campus Collab. Please do not reply to this email.</p>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you didn't request this OTP, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
+            <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message from Campus Collab. Please do not reply to this email.</p>
           </div>
         `
       };
@@ -141,9 +142,11 @@ router.post('/verify-otp', [
     const { email, otp } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Find OTP record
+    // Find OTP record (registration type)
     const otpRecord = await OTP.findOne({ 
       email: normalizedEmail,
+      otp,
+      type: 'registration',
       verified: false
     });
 
@@ -241,6 +244,10 @@ router.post('/register', [
       }
     }
 
+    // Extract first 10 alphanumeric characters from email (local part before @) and convert to uppercase
+    const emailLocalPart = normalizedEmail.split('@')[0];
+    const rollNumber = emailLocalPart.replace(/[^A-Za-z0-9]/g, '').substring(0, 10).toUpperCase();
+
     // Create user
     const user = await User.create({
       name,
@@ -249,6 +256,7 @@ router.post('/register', [
       role: role || 'student',
       department,
       year,
+      rollNumber: rollNumber || '',
       skills: skills || []
     });
 
@@ -268,6 +276,7 @@ router.post('/register', [
         role: user.role,
         department: user.department,
         year: user.year,
+        rollNumber: user.rollNumber,
         skills: user.skills,
         profilePicture: user.profilePicture,
         bio: user.bio,
@@ -334,6 +343,7 @@ router.post('/login', [
         role: user.role,
         department: user.department,
         year: user.year,
+        rollNumber: user.rollNumber,
         skills: user.skills,
         profilePicture: user.profilePicture,
         bio: user.bio,
@@ -372,6 +382,7 @@ router.get('/me', protect, async (req, res) => {
         role: user.role,
         department: user.department,
         year: user.year,
+        rollNumber: user.rollNumber,
         skills: user.skills,
         profilePicture: user.profilePicture,
         bio: user.bio,
@@ -419,6 +430,7 @@ router.get('/user/:userId', protect, async (req, res) => {
         role: user.role,
         department: user.department,
         year: user.year,
+        rollNumber: user.rollNumber,
         skills: user.skills,
         profilePicture: user.profilePicture,
         bio: user.bio,
@@ -440,7 +452,7 @@ router.get('/user/:userId', protect, async (req, res) => {
 // @access  Private
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, department, year, skills, profilePicture, bio, websiteUrl, designation } = req.body;
+    const { name, department, year, rollNumber, skills, profilePicture, bio, websiteUrl, designation } = req.body;
 
     // Validate bio length
     if (bio && bio.length > 300) {
@@ -475,6 +487,7 @@ router.put('/profile', protect, async (req, res) => {
     // Student-specific fields
     if (user.role === 'student') {
       if (year) user.year = year;
+      if (rollNumber !== undefined) user.rollNumber = rollNumber;
       if (skills !== undefined) user.skills = skills;
       if (websiteUrl !== undefined) user.websiteUrl = websiteUrl;
     }
@@ -495,6 +508,7 @@ router.put('/profile', protect, async (req, res) => {
         role: user.role,
         department: user.department,
         year: user.year,
+        rollNumber: user.rollNumber,
         skills: user.skills,
         profilePicture: user.profilePicture,
         bio: user.bio,
@@ -610,6 +624,182 @@ router.get('/blocked-users', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error fetching blocked users'
+    });
+  }
+});
+
+// @route   POST /api/auth/forgot-password
+// @desc    Send password reset OTP to email
+// @access  Public
+router.post('/forgot-password', [
+  body('email').isEmail()
+], async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Validate email domain
+    if (!normalizedEmail.endsWith(ALLOWED_EMAIL_DOMAIN)) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, a password reset OTP has been sent'
+      });
+    }
+
+    // Generate OTP
+    const otpCode = generateOTP();
+
+    // Delete any existing password reset OTPs for this email
+    await OTP.deleteMany({ email: normalizedEmail, type: 'password-reset' });
+
+    // Create new OTP
+    const otp = await OTP.create({
+      email: normalizedEmail,
+      otp: otpCode,
+      type: 'password-reset'
+    });
+
+    // Send email
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: process.env.SMTP_USER || 'noreply@campuscollab.com',
+      to: normalizedEmail,
+      subject: 'Password Reset OTP - Campus Collab',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
+          <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">You have requested to reset your password for Campus Collab.</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Your password reset OTP is:</p>
+          <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #f59e0b;">
+            <p style="color: #f59e0b; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otpCode}</p>
+          </div>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you did not request this password reset, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message. Please do not reply.</p>
+        </div>
+      `
+    });
+
+    res.json({
+      success: true,
+      message: 'Password reset OTP sent to your email'
+    });
+  } catch (error) {
+    console.error('Error sending password reset OTP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error sending password reset OTP'
+    });
+  }
+});
+
+// @route   POST /api/auth/verify-reset-otp
+// @desc    Verify password reset OTP
+// @access  Public
+router.post('/verify-reset-otp', [
+  body('email').isEmail(),
+  body('otp').isLength({ min: 6, max: 6 })
+], async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find OTP
+    const otpRecord = await OTP.findOne({
+      email: normalizedEmail,
+      otp,
+      type: 'password-reset',
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    // Mark as verified
+    otpRecord.verified = true;
+    await otpRecord.save();
+
+    res.json({
+      success: true,
+      message: 'OTP verified successfully'
+    });
+  } catch (error) {
+    console.error('Error verifying reset OTP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error verifying OTP'
+    });
+  }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password with verified OTP
+// @access  Public
+router.post('/reset-password', [
+  body('email').isEmail(),
+  body('otp').isLength({ min: 6, max: 6 }),
+  body('password').isLength({ min: 6 })
+], async (req, res) => {
+  try {
+    const { email, otp, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find verified OTP
+    const otpRecord = await OTP.findOne({
+      email: normalizedEmail,
+      otp,
+      type: 'password-reset',
+      verified: true,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP. Please request a new password reset.'
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update password
+    user.password = password;
+    await user.save();
+
+    // Delete the used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully. You can now login with your new password.'
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error resetting password'
     });
   }
 });

@@ -2,9 +2,15 @@ const Report = require('../models/Report');
 const abusiveWords = require('../config/abusiveWords');
 
 // Simple rule-based abusive content detection.
+// Uses word boundaries to match whole words only, not substrings
 const detectAbusiveContent = (text) => {
   const lowerText = text.toLowerCase();
-  return abusiveWords.some((word) => lowerText.includes(word));
+  return abusiveWords.some((word) => {
+    // Use word boundaries to match whole words only
+    // \b matches word boundaries (start/end of word)
+    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(lowerText);
+  });
 };
 
 // Middleware to check for abusive content

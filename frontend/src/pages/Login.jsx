@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
 import { authAPI } from '../utils/api';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, X, KeyRound, CheckCircle } from 'lucide-react';
+import cclogo from '../assets/cclogo.png';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,13 +13,158 @@ const Login = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPasswordField, setShowResetPasswordField] = useState(false);
+  const [showConfirmResetPasswordField, setShowConfirmResetPasswordField] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetOTP, setResetOTP] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [confirmResetPassword, setConfirmResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const { login } = useAuth();
   const { addNotification } = useGlobal();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Validate email domain
+  const validateEmailDomain = (email) => {
+    return email.toLowerCase().endsWith('@mvgrce.edu.in');
+  };
+
+  // Handle forgot password - Send OTP
+  const handleSendResetOTP = async (e) => {
+    e.preventDefault();
+    
+    if (!forgotEmail) {
+      addNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter your email address',
+      });
+      return;
+    }
+
+    if (!validateEmailDomain(forgotEmail)) {
+      addNotification({
+        type: 'error',
+        title: 'Invalid Email Domain',
+        message: 'Only college mails (@mvgrce.edu.in) are accepted',
+      });
+      return;
+    }
+
+    setSendingOTP(true);
+    try {
+      await authAPI.forgotPassword(forgotEmail);
+      setOtpSent(true);
+      addNotification({
+        type: 'success',
+        title: 'OTP Sent',
+        message: 'Password reset OTP has been sent to your email',
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: 'Failed to Send OTP',
+        message: error.message || 'Could not send OTP. Please try again.',
+      });
+    } finally {
+      setSendingOTP(false);
+    }
+  };
+
+  // Handle verify reset OTP
+  const handleVerifyResetOTP = async (e) => {
+    e.preventDefault();
+    
+    if (!resetOTP || resetOTP.length !== 6) {
+      addNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid 6-digit OTP',
+      });
+      return;
+    }
+
+    setVerifyingOTP(true);
+    try {
+      await authAPI.verifyResetOTP(forgotEmail, resetOTP);
+      setOtpVerified(true);
+      setShowResetPassword(true);
+      addNotification({
+        type: 'success',
+        title: 'OTP Verified',
+        message: 'Please enter your new password',
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: 'OTP Verification Failed',
+        message: error.message || 'Invalid OTP. Please try again.',
+      });
+      setResetOTP('');
+    } finally {
+      setVerifyingOTP(false);
+    }
+  };
+
+  // Handle reset password
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (!resetPassword || resetPassword.length < 6) {
+      addNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Password must be at least 6 characters',
+      });
+      return;
+    }
+
+    if (resetPassword !== confirmResetPassword) {
+      addNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Passwords do not match',
+      });
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      await authAPI.resetPassword(forgotEmail, resetOTP, resetPassword);
+      addNotification({
+        type: 'success',
+        title: 'Password Reset Successful',
+        message: 'Your password has been reset. You can now login.',
+      });
+      // Close modal and reset state
+      setShowForgotPassword(false);
+      setForgotEmail('');
+      setResetOTP('');
+      setResetPassword('');
+      setConfirmResetPassword('');
+      setOtpSent(false);
+      setOtpVerified(false);
+      setShowResetPassword(false);
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: 'Password Reset Failed',
+        message: error.message || 'Failed to reset password. Please try again.',
+      });
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -46,7 +192,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-start justify-center bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 pt-16 pb-12 px-4 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-20 left-20 w-72 h-72 bg-amber-400/20 rounded-full blur-3xl"></div>
@@ -65,9 +211,12 @@ const Login = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">CC</span>
-              </div>
+              <img 
+                src={cclogo} 
+                alt="Campus Collab Logo" 
+                className="h-10 w-auto object-contain select-none"
+                draggable="false"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
                 Campus Collab
               </span>
@@ -83,8 +232,8 @@ const Login = () => {
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <Mail className="h-5 w-5 text-amber-600" />
                 </div>
                 <input
                   type="email"
@@ -100,12 +249,21 @@ const Login = () => {
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-gray-700">
                 Password
               </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <Lock className="h-5 w-5 text-amber-600" />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -140,7 +298,7 @@ const Login = () => {
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   <span>Signing in...</span>
                 </>
               ) : (
@@ -171,6 +329,259 @@ const Login = () => {
         <div className="absolute -top-4 -right-4 w-24 h-24 bg-amber-400/20 rounded-full blur-xl"></div>
         <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-yellow-400/20 rounded-full blur-xl"></div>
       </motion.div>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotPassword && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowForgotPassword(false);
+                setForgotEmail('');
+                setResetOTP('');
+                setResetPassword('');
+                setConfirmResetPassword('');
+                setOtpSent(false);
+                setOtpVerified(false);
+                setShowResetPassword(false);
+              }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8 max-w-md w-full relative">
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail('');
+                    setResetOTP('');
+                    setResetPassword('');
+                    setConfirmResetPassword('');
+                    setOtpSent(false);
+                    setOtpVerified(false);
+                    setShowResetPassword(false);
+                  }}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
+                  <p className="text-gray-600 text-sm">Enter your college email to receive a password reset OTP</p>
+                </div>
+
+                {!otpSent ? (
+                  <form onSubmit={handleSendResetOTP} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <Mail className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <input
+                          type="email"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && forgotEmail && validateEmailDomain(forgotEmail) && !sendingOTP) {
+                              e.preventDefault();
+                              handleSendResetOTP(e);
+                            }
+                          }}
+                          required
+                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
+                            forgotEmail && !validateEmailDomain(forgotEmail)
+                              ? 'border-red-300 focus:ring-red-500'
+                              : forgotEmail && validateEmailDomain(forgotEmail)
+                              ? 'border-green-300 focus:ring-green-500'
+                              : 'border-amber-200/50'
+                          }`}
+                          placeholder="your.email@mvgrce.edu.in"
+                        />
+                      </div>
+                      {forgotEmail && !validateEmailDomain(forgotEmail) && (
+                        <p className="text-red-500 text-xs mt-1">Only college mails are accepted</p>
+                      )}
+                      {forgotEmail && validateEmailDomain(forgotEmail) && (
+                        <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                          <CheckCircle size={12} /> Valid email domain
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={sendingOTP || !forgotEmail || !validateEmailDomain(forgotEmail)}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-3 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {sendingOTP ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          <span>Sending OTP...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mail size={18} />
+                          <span>Send Reset OTP</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : !otpVerified ? (
+                  <form onSubmit={handleVerifyResetOTP} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Enter Verification Code
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <KeyRound className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <input
+                          type="text"
+                          value={resetOTP}
+                          onChange={(e) => setResetOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && resetOTP.length === 6 && !verifyingOTP) {
+                              e.preventDefault();
+                              handleVerifyResetOTP(e);
+                            }
+                          }}
+                          maxLength={6}
+                          placeholder="000000"
+                          className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm text-center text-2xl font-bold tracking-widest"
+                        />
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">Enter the 6-digit code sent to your email</p>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={verifyingOTP || resetOTP.length !== 6}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {verifyingOTP ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={18} />
+                          <span>Verify OTP</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setResetOTP('');
+                      }}
+                      className="w-full text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                    >
+                      Back to email
+                    </button>
+                  </form>
+                ) : showResetPassword ? (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <Lock className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <input
+                          type={showResetPasswordField ? 'text' : 'password'}
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowResetPasswordField(!showResetPasswordField)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          {showResetPasswordField ? (
+                            <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <Lock className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <input
+                          type={showConfirmResetPasswordField ? 'text' : 'password'}
+                          value={confirmResetPassword}
+                          onChange={(e) => setConfirmResetPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmResetPasswordField(!showConfirmResetPasswordField)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          {showConfirmResetPasswordField ? (
+                            <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          )}
+                        </button>
+                      </div>
+                      {confirmResetPassword && resetPassword !== confirmResetPassword && (
+                        <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={resettingPassword || !resetPassword || resetPassword !== confirmResetPassword}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {resettingPassword ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          <span>Resetting Password...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={18} />
+                          <span>Reset Password</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

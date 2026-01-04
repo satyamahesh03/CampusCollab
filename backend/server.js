@@ -39,7 +39,7 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/projects', require('./routes/projects'));
+app.use('/api/projects', require('./routes/projects')(io));
 app.use('/api/internships', require('./routes/internships'));
 app.use('/api/hackathons', require('./routes/hackathons'));
 app.use('/api/drives', require('./routes/drives'));
@@ -104,6 +104,9 @@ io.on('connection', (socket) => {
     
     onlineUsers.set(userId, { socketId: socket.id, lastSeen: new Date() });
     socket.userId = userId;
+    
+    // Join user-specific room for notifications
+    socket.join(`user-${userId}`);
     
     // Broadcast to all clients
     io.emit('user-status-change', { 
@@ -353,6 +356,72 @@ io.on('connection', (socket) => {
       chatId: data.chatId,
       status: 'rejected'
     });
+  });
+
+  // Project team chat events
+  const Project = require('./models/Project');
+
+  // Join project team chat room
+  socket.on('join-project-chat', (projectId) => {
+    socket.join(`project-${projectId}`);
+    console.log(`User joined project chat: ${projectId}`);
+  });
+
+  // Leave project team chat room
+  socket.on('leave-project-chat', (projectId) => {
+    socket.leave(`project-${projectId}`);
+    console.log(`User left project chat: ${projectId}`);
+  });
+
+  // Send message to project team chat
+  socket.on('send-project-chat-message', async (data) => {
+    try {
+      const { projectId, content, userId } = data;
+
+      if (userId !== socket.userId) {
+        socket.emit('error', { message: 'Unauthorized: User ID mismatch' });
+        return;
+      }
+
+      const project = await Project.findById(projectId)
+        .populate('participants.user', 'name profilePicture');
+
+      if (!project) {
+        socket.emit('error', { message: 'Project not found' });
+        return;
+      }
+
+      // Check if user is a participant or owner
+      const isOwner = project.createdBy.toString() === userId;
+      const isParticipant = project.participants.some(
+        p => p.user._id.toString() === userId || p.user.toString() === userId
+      );
+
+      if (!isOwner && !isParticipant) {
+        socket.emit('error', { message: 'Only project participants can send messages' });
+        return;
+      }
+
+      // Add message to team chat
+      project.teamChatMessages.push({
+        user: userId,
+        content: content.trim()
+      });
+
+      await project.save();
+      await project.populate('teamChatMessages.user', 'name profilePicture');
+
+      const newMessage = project.teamChatMessages[project.teamChatMessages.length - 1];
+
+      // Emit to all users in the project chat room
+      io.to(`project-${projectId}`).emit('new-project-chat-message', {
+        projectId,
+        message: newMessage
+      });
+    } catch (error) {
+      console.error('Error sending project chat message:', error);
+      socket.emit('error', { message: 'Error sending message' });
+    }
   });
 
   // Handle disconnect

@@ -6,7 +6,9 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaTrash, FaArrowLeft } from 'react-icons/fa';
+import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaArrowLeft } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Internships = () => {
@@ -15,10 +17,52 @@ const Internships = () => {
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedInternship, setSelectedInternship] = useState(null);
+  const [availableDomains, setAvailableDomains] = useState([]);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [confirmingDeleteInternship, setConfirmingDeleteInternship] = useState(null);
   const { user } = useAuth();
   const { addNotification, refreshReminders } = useGlobal();
   const { id: internshipId } = useParams();
   const navigate = useNavigate();
+
+  // Fetch all posts to populate filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await internshipAPI.getAll({});
+        
+        // Extract unique domains, departments, and years from all internships
+        const uniqueDomains = [...new Set(
+          response.data
+            .map(internship => internship.domain)
+            .filter(domain => domain)
+        )].sort();
+        
+        const uniqueDepartments = [...new Set(
+          response.data
+            .flatMap(internship => internship.department || [])
+            .filter(dept => dept)
+        )].sort();
+        
+        const uniqueYears = [...new Set(
+          response.data
+            .flatMap(internship => internship.eligibleYears || [])
+            .filter(year => year)
+        )].sort((a, b) => a - b);
+        
+        setAvailableDomains(uniqueDomains);
+        setAvailableDepartments(uniqueDepartments);
+        setAvailableYears(uniqueYears);
+      } catch (error) {
+        // Silently fail - filters will use defaults
+      }
+    };
+    
+    if (!internshipId) {
+      fetchFilterOptions();
+    }
+  }, [internshipId]);
 
   useEffect(() => {
     if (internshipId) {
@@ -72,7 +116,8 @@ const Internships = () => {
 
     try {
       // Find the internship to check if it's already saved
-      const internship = internships.find(i => i._id === id);
+      // Check both the list and the selected internship (if viewing detail)
+      const internship = internships.find(i => i._id === id) || (selectedInternship && selectedInternship._id === id ? selectedInternship : null);
       if (!internship) {
         addNotification({ 
           type: 'error', 
@@ -94,6 +139,11 @@ const Internships = () => {
       
       // Refresh the internships list
       fetchInternships();
+      
+      // If viewing this internship's detail, refresh the selected internship
+      if (selectedInternship && selectedInternship._id === id) {
+        fetchSingleInternship(id);
+      }
       
       // Refresh reminders in GlobalContext
       refreshReminders();
@@ -151,7 +201,13 @@ const Internships = () => {
           )}
         </div>
       </div>
-      <FilterBar filters={filters} setFilters={setFilters} showYear={false} />
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        showYear={false}
+        domains={availableDomains.length > 0 ? availableDomains : null}
+        departments={availableDepartments.length > 0 ? availableDepartments : null}
+      />
 
       {/* Mode Filter */}
       <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
@@ -204,7 +260,7 @@ const Internships = () => {
           <p className="text-gray-500 text-lg">No active internships found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {internships.map((internship, index) => {
             const isOwner = internship.postedBy?._id === user?.id || internship.postedBy === user?.id;
             
@@ -214,7 +270,7 @@ const Internships = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+                className="bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 border border-transparent hover:border-amber-300 h-full flex flex-col"
                 onClick={() => navigate(`/internships/${internship._id}`)}
               >
                 <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
@@ -236,30 +292,62 @@ const Internships = () => {
                       <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
                     {isOwner && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!window.confirm('Are you sure you want to delete this internship?')) return;
-                          
-                          try {
-                            await internshipAPI.delete(internship._id);
-                            addNotification({
-                              type: 'success',
-                              message: 'Internship deleted successfully!',
-                            });
-                            fetchInternships();
-                          } catch (error) {
-                            addNotification({
-                              type: 'error',
-                              message: 'Failed to delete internship',
-                            });
-                          }
-                        }}
-                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition min-w-[32px] min-h-[32px] flex items-center justify-center"
-                        title="Delete internship"
-                      >
-                        <FaTrash size={16} className="sm:w-[18px] sm:h-[18px]" />
-                      </button>
+                      <div className="relative flex flex-col items-end">
+                        {confirmingDeleteInternship === internship._id && (
+                          <div className="flex items-center gap-2 mb-1 -mt-2">
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await internshipAPI.delete(internship._id);
+                                  setConfirmingDeleteInternship(null);
+                                  addNotification({
+                                    type: 'success',
+                                    message: 'Internship deleted successfully!',
+                                  });
+                                  fetchInternships();
+                                } catch (error) {
+                                  addNotification({
+                                    type: 'error',
+                                    message: 'Failed to delete internship',
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConfirmingDeleteInternship(null);
+                              }}
+                              className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirmingDeleteInternship !== internship._id) {
+                              setConfirmingDeleteInternship(internship._id);
+                            }
+                          }}
+                          disabled={confirmingDeleteInternship === internship._id}
+                          className="p-1.5 sm:p-2 text-red-600 rounded-lg transition-all min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          title="Delete internship"
+                        >
+                          <FontAwesomeIcon icon={faTrashCan} className="text-base sm:text-lg transition-transform" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -274,7 +362,7 @@ const Internships = () => {
               </div>
 
               {/* Key Info */}
-              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600 mt-auto">
                 <div className="flex items-center space-x-1.5 sm:space-x-2">
                   <FaMapMarkerAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
                   <span className="break-words">{internship.location} • {internship.mode}</span>
@@ -528,24 +616,24 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
           title="Close"
         >
           <FaTimes className="text-lg" />
         </button>
         
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Post Internship Opportunity</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Post Internship Opportunity</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Title */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -553,14 +641,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., Summer Internship 2024"
               />
             </div>
 
             {/* Company */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Company <span className="text-red-500">*</span>
               </label>
               <input
@@ -568,21 +656,21 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="Company name"
               />
             </div>
 
             {/* Mode */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Mode <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.mode}
                 onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               >
                 <option value="">Select Mode</option>
                 <option value="virtual">Virtual</option>
@@ -593,14 +681,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
             {/* Domain */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Domain <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.domain}
                 onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               >
                 <option value="">Select Domain</option>
                 {domains.map((domain) => (
@@ -613,7 +701,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
             {/* Duration */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Duration <span className="text-red-500">*</span>
               </label>
               <input
@@ -621,38 +709,38 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.duration}
                 onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., 3 months"
               />
             </div>
 
             {/* Stipend */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Stipend (Optional)</label>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Stipend (Optional)</label>
               <input
                 type="text"
                 value={formData.stipend}
                 onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., ₹20,000/month or leave blank for unpaid"
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Location (Optional)</label>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Location (Optional)</label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="City or leave blank for Remote"
               />
             </div>
 
             {/* Due Date */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Application Deadline <span className="text-red-500">*</span>
               </label>
               <input
@@ -660,7 +748,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
                 value={formData.applicationDeadline}
                 onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
           </div>
@@ -673,11 +761,11 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
             
             {/* Selected Departments Display */}
             {formData.department.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
                 {formData.department.map((dept) => (
                   <span
                     key={dept}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center space-x-2"
+                    className="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-xs font-medium flex items-center space-x-2"
                   >
                     <span>{dept}</span>
                     <button
@@ -693,18 +781,18 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
             )}
 
             {/* Department Checkboxes */}
-            <div className="border rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto">
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {departments.map((dept) => (
                   <label
                     key={dept}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded"
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
                   >
                     <input
                       type="checkbox"
                       checked={formData.department.includes(dept)}
                       onChange={() => toggleDepartment(dept)}
-                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 flex-shrink-0"
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
                     />
                     <span className="text-xs sm:text-sm text-gray-700">{dept}</span>
                   </label>
@@ -716,7 +804,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-sm font-medium mb-2 text-amber-900">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -724,14 +812,14 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="Describe the internship role and responsibilities..."
             />
           </div>
 
           {/* Apply Link */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Application Link <span className="text-red-500">*</span>
             </label>
             <input
@@ -739,7 +827,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
               value={formData.applyLink}
               onChange={(e) => setFormData({ ...formData, applyLink: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
               placeholder="https://..."
             />
           </div>

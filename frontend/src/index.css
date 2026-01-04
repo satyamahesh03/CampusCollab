@@ -23,22 +23,64 @@ code {
     monospace;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - hidden by default, visible on hover/scroll */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: transparent;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #888;
+}
+
+/* Show scrollbar on hover or when scrolling */
+*:hover::-webkit-scrollbar-thumb,
+*:active::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+*:hover::-webkit-scrollbar-track,
+*:active::-webkit-scrollbar-track {
+  background: rgba(201, 176, 128, 0.1);
+}
+
+/* For chat messages - show scrollbar when scrolling */
+.chat-messages:hover::-webkit-scrollbar-thumb,
+.chat-messages:active::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+.chat-messages:hover::-webkit-scrollbar-track,
+.chat-messages:active::-webkit-scrollbar-track {
+  background: rgba(201, 176, 128, 0.1);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: #888 rgba(201, 176, 128, 0.1);
+}
+
+.chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.chat-messages:hover,
+.chat-messages:active {
+  scrollbar-color: #888 rgba(201, 176, 128, 0.1);
 }
 

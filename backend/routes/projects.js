@@ -8,6 +8,9 @@ const { checkAbusiveContent, analyzeContent } = require('../middleware/abusiveCo
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 
+// Export a function that accepts io
+module.exports = (io) => {
+
 // Helper function to calculate reply depth (maximum depth of nested replies)
 const getReplyDepth = (reply) => {
   if (!reply.replies || reply.replies.length === 0) {
@@ -252,6 +255,164 @@ router.post('/', protect, authorize('student', 'faculty'), async (req, res) => {
   }
 });
 
+// @route   GET /api/projects/:id/team-chat
+// @desc    Get team chat messages for a project
+// @access  Private (Project Participants)
+router.get('/:id/team-chat', protect, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('teamChatMessages.user', 'name profilePicture')
+      .populate('participants.user', 'name profilePicture');
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user is a participant or owner
+    const isOwner = project.createdBy.toString() === req.user._id.toString();
+    const isParticipant = project.participants.some(
+      p => p.user._id.toString() === req.user._id.toString() || p.user.toString() === req.user._id.toString()
+    );
+
+    if (!isOwner && !isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only project participants can access team chat'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        messages: project.teamChatMessages || [],
+        participants: project.participants || []
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching team chat'
+    });
+  }
+});
+
+// @route   POST /api/projects/:id/team-chat
+// @desc    Send a message to project team chat
+// @access  Private (Project Participants)
+router.post('/:id/team-chat', protect, async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message content is required'
+      });
+    }
+
+    const project = await Project.findById(req.params.id)
+      .populate('participants.user', 'name profilePicture');
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user is a participant or owner
+    const isOwner = project.createdBy.toString() === req.user._id.toString();
+    const isParticipant = project.participants.some(
+      p => p.user._id.toString() === req.user._id.toString() || p.user.toString() === req.user._id.toString()
+    );
+
+    if (!isOwner && !isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only project participants can send messages'
+      });
+    }
+
+    // Add message to team chat
+    project.teamChatMessages.push({
+      user: req.user._id,
+      content: content.trim()
+    });
+
+    await project.save();
+    await project.populate('teamChatMessages.user', 'name profilePicture');
+
+    const newMessage = project.teamChatMessages[project.teamChatMessages.length - 1];
+
+    // Emit socket event to all users in the project chat room
+    if (io) {
+      io.to(`project-${req.params.id}`).emit('new-project-chat-message', {
+        projectId: req.params.id,
+        message: newMessage
+      });
+    }
+
+    res.json({
+      success: true,
+      data: newMessage
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error sending message'
+    });
+  }
+});
+
+// @route   DELETE /api/projects/:id/team-chat/participant/:participantId
+// @desc    Remove a participant from project (owner only)
+// @access  Private (Project Owner)
+router.delete('/:id/team-chat/participant/:participantId', protect, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user is the owner
+    if (project.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only project owner can remove participants'
+      });
+    }
+
+    // Remove participant
+    project.participants = project.participants.filter(
+      p => p.user.toString() !== req.params.participantId && p._id.toString() !== req.params.participantId
+    );
+
+    await project.save();
+    await project.populate('participants.user', 'name profilePicture');
+
+    res.json({
+      success: true,
+      message: 'Participant removed successfully',
+      data: project
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error removing participant'
+    });
+  }
+});
+
 // @route   GET /api/projects/:id
 // @desc    Get single project by ID
 // @access  Public
@@ -422,6 +583,21 @@ router.post('/:id/comment/:commentId/vote', protect, async (req, res) => {
   }
 });
 
+// Helper function to recursively find a reply
+const findReplyRecursiveForVote = (repliesArray, replyId) => {
+  for (const reply of repliesArray || []) {
+    if (reply._id.toString() === replyId.toString()) {
+      return reply;
+    }
+    // Recursively check nested replies
+    if (reply.replies && reply.replies.length > 0) {
+      const found = findReplyRecursiveForVote(reply.replies, replyId);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // @route   POST /api/projects/:id/comment/:commentId/reply/:replyId/vote
 // @desc    Vote on a reply (upvote or downvote)
 // @access  Private
@@ -451,7 +627,8 @@ router.post('/:id/comment/:commentId/reply/:replyId/vote', protect, async (req, 
       });
     }
 
-    const reply = comment.replies.id(req.params.replyId);
+    // Recursively find the reply at any nesting level
+    const reply = findReplyRecursiveForVote(comment.replies, req.params.replyId);
     if (!reply) {
       return res.status(404).json({
         success: false,
@@ -560,6 +737,39 @@ router.delete('/:id/comment/:commentId', protect, async (req, res) => {
   }
 });
 
+// Helper function to recursively find and remove a reply
+const removeReplyRecursive = (repliesArray, replyId) => {
+  for (let i = 0; i < repliesArray.length; i++) {
+    const reply = repliesArray[i];
+    if (reply._id.toString() === replyId.toString()) {
+      repliesArray.splice(i, 1);
+      return true;
+    }
+    // Recursively check nested replies
+    if (reply.replies && reply.replies.length > 0) {
+      if (removeReplyRecursive(reply.replies, replyId)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+// Helper function to recursively find a reply
+const findReplyRecursive = (repliesArray, replyId) => {
+  for (const reply of repliesArray || []) {
+    if (reply._id.toString() === replyId.toString()) {
+      return reply;
+    }
+    // Recursively check nested replies
+    if (reply.replies && reply.replies.length > 0) {
+      const found = findReplyRecursive(reply.replies, replyId);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // @route   DELETE /api/projects/:id/comment/:commentId/reply/:replyId
 // @desc    Delete a reply
 // @access  Private
@@ -581,7 +791,8 @@ router.delete('/:id/comment/:commentId/reply/:replyId', protect, async (req, res
       });
     }
 
-    const reply = comment.replies.id(req.params.replyId);
+    // Recursively find the reply at any nesting level
+    const reply = findReplyRecursive(comment.replies, req.params.replyId);
     if (!reply) {
       return res.status(404).json({
         success: false,
@@ -600,8 +811,15 @@ router.delete('/:id/comment/:commentId/reply/:replyId', protect, async (req, res
       });
     }
 
-    // Remove the reply from the array
-    comment.replies.pull(req.params.replyId);
+    // Recursively remove the reply from the array
+    const removed = removeReplyRecursive(comment.replies, req.params.replyId);
+    if (!removed) {
+      return res.status(404).json({
+        success: false,
+        message: 'Reply not found'
+      });
+    }
+
     await project.save();
     await project.populate('comments.user', 'name');
     await project.populate('comments.replies.user', 'name');
@@ -839,7 +1057,7 @@ router.post('/:id/comment/:commentId/vote', protect, async (req, res) => {
 });
 
 // @route   POST /api/projects/:id/comment/:commentId/reply/:replyId/vote
-// @desc    Vote on a reply (upvote or downvote)
+// @desc    Vote on a reply (upvote or downvote) - DUPLICATE ROUTE (should be removed)
 // @access  Private
 router.post('/:id/comment/:commentId/reply/:replyId/vote', protect, async (req, res) => {
   try {
@@ -864,7 +1082,8 @@ router.post('/:id/comment/:commentId/reply/:replyId/vote', protect, async (req, 
         message: 'Comment not found'
       });
     }
-    const reply = comment.replies.id(req.params.replyId);
+    // Recursively find the reply at any nesting level
+    const reply = findReplyRecursiveForVote(comment.replies, req.params.replyId);
     if (!reply) {
       return res.status(404).json({
         success: false,
@@ -1013,14 +1232,40 @@ router.post('/:id/join', protect, authorize('student', 'faculty'), async (req, r
     }
 
     // Create join request
-    project.joinRequests.push({
+    const newRequest = {
       user: req.user._id,
       role: req.body.role || 'Member',
       status: 'pending'
-    });
+    };
+    project.joinRequests.push(newRequest);
 
     await project.save();
     await project.populate('joinRequests.user', 'name email department');
+    await project.populate('createdBy', 'name');
+
+    // Get the newly created request
+    const savedRequest = project.joinRequests[project.joinRequests.length - 1];
+
+    // Create notification for project owner
+    if (project.createdBy && project.createdBy._id.toString() !== req.user._id.toString()) {
+      const notification = new Notification({
+        user: project.createdBy._id,
+        type: 'project_join_request',
+        title: 'New Join Request',
+        message: `${req.user.name} wants to join your project "${project.title}"`,
+        projectId: project._id
+      });
+      await notification.save();
+
+      // Emit socket event to notify the project owner
+      io.to(`user-${project.createdBy._id.toString()}`).emit('new-notification', {
+        type: 'project_join_request',
+        title: 'New Join Request',
+        message: `${req.user.name} wants to join your project "${project.title}"`,
+        projectId: project._id.toString(),
+        requestId: savedRequest._id.toString()
+      });
+    }
 
     res.json({
       success: true,
@@ -1032,6 +1277,67 @@ router.post('/:id/join', protect, authorize('student', 'faculty'), async (req, r
     res.status(500).json({
       success: false,
       message: 'Server error sending join request'
+    });
+  }
+});
+
+// @route   DELETE /api/projects/:id/join-request/:requestId
+// @desc    Cancel/withdraw a join request (user can cancel their own pending request)
+// @access  Private (Request Owner)
+router.delete('/:id/join-request/:requestId', protect, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    const request = project.joinRequests.id(req.params.requestId);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Join request not found'
+      });
+    }
+
+    // Check if the request belongs to the current user
+    if (request.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to cancel this request'
+      });
+    }
+
+    // Check if request is still pending
+    if (request.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a request that has already been processed'
+      });
+    }
+
+    // Remove the request
+    project.joinRequests = project.joinRequests.filter(
+      r => r._id.toString() !== req.params.requestId
+    );
+
+    await project.save();
+    await project.populate('joinRequests.user', 'name email department');
+
+    res.json({
+      success: true,
+      message: 'Join request cancelled successfully',
+      data: project
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error cancelling request'
     });
   }
 });
@@ -1402,5 +1708,6 @@ router.post('/:id/summarize', async (req, res) => {
   }
 });
 
-module.exports = router;
+  return router;
+};
 

@@ -5,7 +5,9 @@ import { useGlobal } from '../context/GlobalContext';
 import { departments, formatRelativeTime } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
-import { FaExternalLinkAlt, FaBook, FaPlus, FaUser, FaClock, FaArrowLeft } from 'react-icons/fa';
+import { FaExternalLinkAlt, FaBook, FaPlus, FaUser, FaClock, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -15,10 +17,36 @@ const CourseLinks = () => {
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [confirmingDeleteCourse, setConfirmingDeleteCourse] = useState(null);
   const { user } = useAuth();
   const { addNotification } = useGlobal();
   const { id: courseId } = useParams();
   const navigate = useNavigate();
+
+  // Fetch all posts to populate filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await courseLinkAPI.getAll({});
+        
+        // Extract unique departments from all course links
+        const uniqueDepartments = [...new Set(
+          response.data
+            .map(course => course.department)
+            .filter(dept => dept)
+        )].sort();
+        
+        setAvailableDepartments(uniqueDepartments);
+      } catch (error) {
+        // Silently fail - filters will use defaults
+      }
+    };
+    
+    if (!courseId) {
+      fetchFilterOptions();
+    }
+  }, [courseId]);
 
   useEffect(() => {
     if (courseId) {
@@ -62,6 +90,37 @@ const CourseLinks = () => {
     navigate(`/courses/${course._id}`);
   };
 
+  const handleDeleteClick = (courseId) => {
+    setConfirmingDeleteCourse(courseId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmingDeleteCourse) return;
+    
+    try {
+      await courseLinkAPI.delete(confirmingDeleteCourse);
+      setConfirmingDeleteCourse(null);
+      fetchCourseLinks();
+      if (selectedCourse && selectedCourse._id === confirmingDeleteCourse) {
+        setSelectedCourse(null);
+        navigate('/courses');
+      }
+      addNotification({
+        type: 'success',
+        message: 'Course deleted successfully!',
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to delete course',
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmingDeleteCourse(null);
+  };
+
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
@@ -97,7 +156,13 @@ const CourseLinks = () => {
           )}
         </div>
       </div>
-      <FilterBar filters={filters} setFilters={setFilters} showDomain={false} showYear={false} />
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        showDomain={false} 
+        showYear={false}
+        departments={availableDepartments.length > 0 ? availableDepartments : null}
+      />
       
       {loading ? (
         <Loading />
@@ -132,9 +197,56 @@ const CourseLinks = () => {
 
               {/* Content */}
               <div className="p-4 sm:p-6 flex flex-col flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {course.title}
-                </h3>
+                <div className="flex justify-between items-start mb-2 gap-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
+                    {course.title}
+                  </h3>
+                  {(course.postedBy?._id === user?.id || course.postedBy === user?.id) && (
+                    <div className="relative flex flex-col items-end">
+                      {confirmingDeleteCourse === course._id && (
+                        <div className="flex items-center gap-2 mb-1 -mt-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteConfirm();
+                            }}
+                            className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteCancel();
+                            }}
+                            className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (confirmingDeleteCourse !== course._id) {
+                            handleDeleteClick(course._id);
+                          }
+                        }}
+                        disabled={confirmingDeleteCourse === course._id}
+                        className="p-1.5 sm:p-2 text-red-600 rounded-lg transition-all flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        title="Delete course"
+                      >
+                        <FontAwesomeIcon icon={faTrashCan} className="text-sm sm:text-base transition-transform" />
+                      </button>
+                    </div>
+                  )}
+                </div>
                 
                 {course.description && (
                   <p className="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm line-clamp-3">

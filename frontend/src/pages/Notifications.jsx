@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { notificationAPI, reminderAPI } from '../utils/api';
 import { useGlobal } from '../context/GlobalContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Loading from '../components/Loading';
 import { formatDate, formatRelativeTime } from '../utils/helpers';
 import { FaTrash, FaBell, FaClock, FaCheck, FaCheckDouble, FaTimes } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import socketService from '../utils/socket';
 
 const Notifications = () => {
   const [loading, setLoading] = useState(false);
@@ -13,12 +15,32 @@ const Notifications = () => {
   const [reminders, setReminders] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeTab, setActiveTab] = useState('notifications'); // 'notifications' or 'reminders'
-  const { addNotification } = useGlobal();
+  const { addNotification, refreshUnreadNotificationCount } = useGlobal();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+    
+    // Connect socket if not already connected
+    if (isAuthenticated && user) {
+      socketService.connect(user.id);
+    }
+    
+    // Set up socket listener for new notifications
+    const handleNewNotification = (data) => {
+      if (data.type === 'project_join_request') {
+        // Refresh notifications when a new join request notification arrives
+        fetchNotifications();
+      }
+    };
+    
+    socketService.socket?.on('new-notification', handleNewNotification);
+    
+    return () => {
+      socketService.socket?.off('new-notification', handleNewNotification);
+    };
+  }, [isAuthenticated, user]);
 
   const fetchNotifications = async () => {
     try {
@@ -31,7 +53,12 @@ const Notifications = () => {
         .slice(0, 10);
       setNotifications(sortedNotifications);
       setReminders(response.data.reminders || []);
-      setUnreadCount(response.data.unreadCount || 0);
+      const unreadCount = response.data.unreadCount || 0;
+      setUnreadCount(unreadCount);
+      // Refresh count in GlobalContext for navbar
+      if (refreshUnreadNotificationCount) {
+        refreshUnreadNotificationCount();
+      }
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to fetch notifications' });
     } finally {
@@ -46,6 +73,8 @@ const Notifications = () => {
         n._id === id ? { ...n, isRead: true } : n
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
+      // Refresh count in GlobalContext for navbar
+      refreshUnreadNotificationCount();
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to mark notification as read' });
     }
@@ -56,6 +85,8 @@ const Notifications = () => {
       await notificationAPI.markAllAsRead();
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
+      // Refresh count in GlobalContext for navbar
+      refreshUnreadNotificationCount();
       addNotification({ type: 'success', message: 'All notifications marked as read' });
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to mark all as read' });
@@ -97,6 +128,15 @@ const Notifications = () => {
         state: {
           scrollToComment: notification.commentId,
           scrollToReply: notification.replyId
+        }
+      });
+    }
+    
+    // Navigate to project and open join requests section
+    if (notification.type === 'project_join_request' && notification.projectId) {
+      navigate(`/projects/${notification.projectId}`, {
+        state: {
+          showJoinRequests: true
         }
       });
     }
@@ -198,9 +238,11 @@ const Notifications = () => {
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         notification.type === 'comment_reply' 
                           ? 'bg-green-100 text-green-700' 
+                          : notification.type === 'project_join_request'
+                          ? 'bg-amber-100 text-amber-700'
                           : 'bg-gray-100 text-gray-700'
                       }`}>
-                        {notification.type === 'comment_reply' ? 'Reply' : notification.type}
+                        {notification.type === 'comment_reply' ? 'Reply' : notification.type === 'project_join_request' ? 'Join Request' : notification.type}
                       </span>
                       {!notification.isRead && (
                         <span className="w-2 h-2 bg-amber-500 rounded-full"></span>

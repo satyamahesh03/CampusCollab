@@ -6,7 +6,9 @@ import { formatDate, departments } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaBookmark, FaTrash, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaBriefcase, FaGraduationCap, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaBriefcase, FaGraduationCap, FaArrowLeft } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Drives = () => {
@@ -15,10 +17,44 @@ const Drives = () => {
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDrive, setSelectedDrive] = useState(null);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [confirmingDeleteDrive, setConfirmingDeleteDrive] = useState(null);
   const { user } = useAuth();
   const { addNotification, refreshReminders } = useGlobal();
   const { id: driveId } = useParams();
   const navigate = useNavigate();
+
+  // Fetch all posts to populate filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await driveAPI.getAll({});
+        
+        // Extract unique departments and years from all drives
+        const uniqueDepartments = [...new Set(
+          response.data
+            .flatMap(drive => drive.department || [])
+            .filter(dept => dept)
+        )].sort();
+        
+        const uniqueYears = [...new Set(
+          response.data
+            .flatMap(drive => drive.eligibleYears || [])
+            .filter(year => year)
+        )].sort((a, b) => a - b);
+        
+        setAvailableDepartments(uniqueDepartments);
+        setAvailableYears(uniqueYears);
+      } catch (error) {
+        // Silently fail - filters will use defaults
+      }
+    };
+    
+    if (!driveId) {
+      fetchFilterOptions();
+    }
+  }, [driveId]);
 
   useEffect(() => {
     if (driveId) {
@@ -71,7 +107,9 @@ const Drives = () => {
     }
 
     try {
-      const drive = drives.find(d => d._id === id);
+      // Find the drive to check if it's already saved
+      // Check both the list and the selected drive (if viewing detail)
+      const drive = drives.find(d => d._id === id) || (selectedDrive && selectedDrive._id === id ? selectedDrive : null);
       if (!drive) {
         addNotification({ 
           type: 'error', 
@@ -92,6 +130,12 @@ const Drives = () => {
       });
       
       fetchDrives();
+      
+      // If viewing this drive's detail, refresh the selected drive
+      if (selectedDrive && selectedDrive._id === id) {
+        fetchSingleDrive(id);
+      }
+      
       refreshReminders();
     } catch (error) {
       console.error('Error saving drive:', error);
@@ -147,7 +191,13 @@ const Drives = () => {
           )}
         </div>
       </div>
-      <FilterBar filters={filters} setFilters={setFilters} showDomain={false} />
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        showDomain={false}
+        departments={availableDepartments.length > 0 ? availableDepartments : null}
+        years={availableYears.length > 0 ? availableYears : null}
+      />
 
       {/* Status Filter Options */}
       <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
@@ -180,7 +230,7 @@ const Drives = () => {
           <p className="text-gray-500 text-lg">No active drives found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {drives.map((drive, index) => {
             const isOwner = drive.postedBy?._id === user?.id || drive.postedBy === user?.id;
             const shortDescription = drive.description?.length > 100 
@@ -193,7 +243,7 @@ const Drives = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/60 backdrop-blur-sm rounded-lg transition-all duration-300 cursor-pointer p-4 sm:p-6 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+                className="bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 border border-transparent hover:border-amber-300 h-full flex flex-col"
                 onClick={() => navigate(`/drives/${drive._id}`)}
               >
                 {/* Header with Title and Actions */}
@@ -216,30 +266,62 @@ const Drives = () => {
                       <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
                     {isOwner && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!window.confirm('Are you sure you want to delete this drive?')) return;
-                          
-                          try {
-                            await driveAPI.delete(drive._id);
-                            addNotification({
-                              type: 'success',
-                              message: 'Drive deleted successfully!',
-                            });
-                            fetchDrives();
-                          } catch (error) {
-                            addNotification({
-                              type: 'error',
-                              message: 'Failed to delete drive',
-                            });
-                          }
-                        }}
-                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition min-w-[32px] min-h-[32px] flex items-center justify-center"
-                        title="Delete drive"
-                      >
-                        <FaTrash size={16} className="sm:w-[18px] sm:h-[18px]" />
-                      </button>
+                      <div className="relative flex flex-col items-end">
+                        {confirmingDeleteDrive === drive._id && (
+                          <div className="flex items-center gap-2 mb-1 -mt-2">
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await driveAPI.delete(drive._id);
+                                  setConfirmingDeleteDrive(null);
+                                  addNotification({
+                                    type: 'success',
+                                    message: 'Drive deleted successfully!',
+                                  });
+                                  fetchDrives();
+                                } catch (error) {
+                                  addNotification({
+                                    type: 'error',
+                                    message: 'Failed to delete drive',
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConfirmingDeleteDrive(null);
+                              }}
+                              className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirmingDeleteDrive !== drive._id) {
+                              setConfirmingDeleteDrive(drive._id);
+                            }
+                          }}
+                          disabled={confirmingDeleteDrive === drive._id}
+                          className="p-1.5 sm:p-2 text-red-600 rounded-lg transition-all min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          title="Delete drive"
+                        >
+                          <FontAwesomeIcon icon={faTrashCan} className="text-base sm:text-lg transition-transform" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -252,7 +334,7 @@ const Drives = () => {
                 <p className="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm">{shortDescription}</p>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm mt-auto">
                   <div className="flex items-center space-x-1 sm:space-x-2 text-gray-600">
                     <FaMoneyBillWave className="text-green-500 text-xs sm:text-sm flex-shrink-0" />
                     <span className="font-medium break-words">{drive.package}</span>
@@ -577,23 +659,23 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
           title="Close"
         >
           <FaTimes className="text-lg" />
         </button>
         
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10">Post Placement Drive</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Post Placement Drive</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -601,7 +683,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               placeholder="e.g., Campus Placement Drive 2024"
             />
           </div>
@@ -609,7 +691,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Company Name */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Company Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -617,14 +699,14 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., Google, Microsoft"
               />
             </div>
 
             {/* Job Role */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Job Role <span className="text-red-500">*</span>
               </label>
               <input
@@ -632,14 +714,14 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.jobRole}
                 onChange={(e) => setFormData({ ...formData, jobRole: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., Software Engineer"
               />
             </div>
 
             {/* Package */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Package <span className="text-red-500">*</span>
               </label>
               <input
@@ -647,14 +729,14 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.package}
                 onChange={(e) => setFormData({ ...formData, package: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., ₹12 LPA"
               />
             </div>
 
             {/* CGPA Criteria */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 CGPA Criteria <span className="text-red-500">*</span>
               </label>
               <input
@@ -663,14 +745,14 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.cgpaCriteria}
                 onChange={(e) => setFormData({ ...formData, cgpaCriteria: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., 7.0"
               />
             </div>
 
             {/* Drive Date */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Drive Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -678,13 +760,13 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.driveDate}
                 onChange={(e) => setFormData({ ...formData, driveDate: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
 
             {/* Registration Deadline */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Registration Deadline <span className="text-red-500">*</span>
               </label>
               <input
@@ -692,13 +774,13 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.registrationDeadline}
                 onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
                 Location <span className="text-red-500">*</span>
               </label>
               <input
@@ -706,7 +788,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
                 placeholder="e.g., On-Campus / Bangalore"
               />
             </div>
@@ -748,11 +830,11 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
             
             {/* Selected Departments Display */}
             {formData.department.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
                 {formData.department.map((dept) => (
                   <span
                     key={dept}
-                    className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium flex items-center space-x-2"
+                    className="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-xs font-medium flex items-center space-x-2"
                   >
                     <span>{dept}</span>
                     <button
@@ -768,18 +850,18 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
             )}
 
             {/* Department Checkboxes */}
-            <div className="border rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto">
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {departments.map((dept) => (
                   <label
                     key={dept}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded"
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
                   >
                     <input
                       type="checkbox"
                       checked={formData.department.includes(dept)}
                       onChange={() => toggleDepartment(dept)}
-                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 flex-shrink-0"
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
                     />
                     <span className="text-xs sm:text-sm text-gray-700">{dept}</span>
                   </label>
@@ -791,7 +873,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -799,28 +881,28 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="Describe the job role, process, and requirements..."
             />
           </div>
 
           {/* Requirements */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Additional Requirements (Optional)
             </label>
             <textarea
               value={formData.requirements}
               onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
               rows={2}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500 resize-y"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
               placeholder="Any additional eligibility criteria..."
             />
           </div>
 
           {/* Registration Link */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
               Registration Link <span className="text-red-500">*</span>
             </label>
             <input
@@ -828,7 +910,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
               value={formData.registrationLink}
               onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
               required
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
               placeholder="https://..."
             />
           </div>
