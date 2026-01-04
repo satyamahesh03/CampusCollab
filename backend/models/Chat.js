@@ -88,7 +88,7 @@ const chatSchema = new mongoose.Schema({
 chatSchema.index({ participants: 1 });
 
 // Ensure chatCode index is sparse (allows multiple null values)
-chatSchema.index({ chatCode: 1 }, { unique: true, sparse: true });
+// chatSchema.index({ chatCode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Chat', chatSchema);
 
