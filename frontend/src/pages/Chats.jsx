@@ -904,13 +904,13 @@ const Chats = () => {
             </div>
             <div className="p-6">
               <div className="relative mb-4">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-500 z-10" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearchUsers(e.target.value)}
                   placeholder="Search by name, email, or department..."
-                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                  className="w-full pl-12 pr-4 py-3 bg-amber-50 border-0 rounded-xl focus:ring-2 focus:ring-amber-300 focus:bg-white transition placeholder:text-gray-400"
                   autoFocus
                 />
               </div>
@@ -930,7 +930,7 @@ const Chats = () => {
                       <div
                         key={searchUser._id}
                         onClick={() => handleStartChat(searchUser)}
-                        className="flex items-center space-x-3 p-4 hover:bg-amber-50 rounded-xl cursor-pointer transition-all border border-transparent hover:border-amber-200"
+                        className="flex items-center space-x-3 p-4 bg-amber-50/50 hover:bg-amber-100 rounded-xl cursor-pointer transition-all border border-amber-200/50 hover:border-amber-300"
                       >
                         <div className="relative w-12 h-12 flex-shrink-0">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold shadow-md">
@@ -942,14 +942,14 @@ const Chats = () => {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900">{searchUser.name}</div>
-                          <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <div className="text-sm font-semibold text-gray-900">{searchUser.name}</div>
+                          <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
                             <span>{searchUser.department}</span>
                             <span>•</span>
                             <span className="capitalize">{searchUser.role}</span>
                           </div>
                         </div>
-                        <MessageCircle className="text-amber-600" size={20} />
+                        <MessageCircle className="text-amber-600 flex-shrink-0" size={20} />
                       </div>
                     ))}
                   </div>
@@ -964,7 +964,7 @@ const Chats = () => {
       <div className="flex-1 container mx-auto px-2 sm:px-4 pt-1 sm:pt-2 pb-2 sm:pb-4 overflow-x-hidden w-full max-w-full">
         <div className="bg-transparent rounded-xl sm:rounded-2xl overflow-hidden overflow-x-hidden flex flex-col sm:flex-row h-full w-full max-w-full">
           {/* Sidebar - Chat List */}
-          <div className={`${selectedChat ? 'hidden sm:flex' : 'flex'} w-full sm:w-96 border-r border-amber-300 flex-col bg-transparent`}>
+          <div className={`${selectedChat || newChatUser ? 'hidden sm:flex' : 'flex'} w-full sm:w-96 border-r border-amber-300 flex-col bg-transparent`}>
             {/* Instagram-like Tabs */}
             <div className="p-5 border-b border-amber-100/50 bg-transparent">
               <div className="flex space-x-1 border-b border-amber-100/50">
