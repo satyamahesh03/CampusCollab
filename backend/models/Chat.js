@@ -65,7 +65,8 @@ const chatSchema = new mongoose.Schema({
   chatCode: {
     type: String,
     unique: true,
-    sparse: true // Allows null values but enforces uniqueness for non-null values
+    sparse: true, // Allows null values but enforces uniqueness for non-null values
+    default: null
   },
   deleteRequestedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -85,6 +86,9 @@ const chatSchema = new mongoose.Schema({
 
 // Index for finding chats between two users
 chatSchema.index({ participants: 1 });
+
+// Ensure chatCode index is sparse (allows multiple null values)
+chatSchema.index({ chatCode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Chat', chatSchema);
 

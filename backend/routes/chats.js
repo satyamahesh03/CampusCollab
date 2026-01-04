@@ -137,12 +137,21 @@ router.get('/:userId', protect, async (req, res) => {
     if (!chat) {
       // Determine initial status based on chat history
       let initialStatus = 'pending';
-      let chatCode = null;
+      
+      // Always generate a chatCode to avoid unique index conflicts with null values
+      let chatCode;
+      let isUnique = false;
+      while (!isUnique) {
+        chatCode = generateChatCode();
+        const existingChat = await Chat.findOne({ chatCode: chatCode });
+        if (!existingChat) {
+          isUnique = true;
+        }
+      }
       
       // If they've ever had an approved chat before (even if deleted), auto-approve
       if (haveChattedBefore) {
         initialStatus = 'accepted';
-        chatCode = generateChatCode();
         console.log(`Users have chatted before - auto-approving new chat with code: ${chatCode}`);
       }
 
