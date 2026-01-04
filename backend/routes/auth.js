@@ -23,8 +23,7 @@ const createTransporter = () => {
     rateLimit: 5
   };
 
-  // For development, you can use Gmail or any SMTP service
-  // Make sure to set these in your .env file
+  // Priority 1: Custom SMTP configuration (for SendGrid, Mailgun, etc.)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -39,18 +38,52 @@ const createTransporter = () => {
       },
       ...connectionOptions
     });
-  } else {
-    // Fallback: Use Gmail with app password (for development)
-    // You'll need to set SMTP_USER and SMTP_PASS in .env
+  }
+  
+  // Priority 2: SendGrid (Recommended for production - works with cloud hosting)
+  if (process.env.SENDGRID_API_KEY) {
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'your-app-password'
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
       },
       ...connectionOptions
     });
   }
+
+  // Priority 3: Resend (Alternative modern email service)
+  if (process.env.RESEND_API_KEY) {
+    return nodemailer.createTransport({
+      host: 'smtp.resend.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY
+      },
+      ...connectionOptions
+    });
+  }
+
+  // Fallback: Gmail (may not work on cloud hosting like Render)
+  // Only use for local development
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    console.warn('⚠️  Using Gmail SMTP. This may not work on cloud hosting. Consider using SendGrid or Resend.');
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      },
+      ...connectionOptions
+    });
+  }
+
+  // No email configuration found
+  throw new Error('Email service not configured. Please set SMTP_HOST/SMTP_USER/SMTP_PASS, SENDGRID_API_KEY, or RESEND_API_KEY in environment variables.');
 };
 
 // Generate 6-digit OTP
@@ -112,8 +145,12 @@ router.post('/send-otp', [
     // Send OTP via email
     try {
       const transporter = createTransporter();
+      
+      // Determine "from" email based on email service
+      let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
+      
       const mailOptions = {
-        from: process.env.SMTP_USER || 'noreply@campuscollab.com',
+        from: fromEmail,
         to: normalizedEmail,
         subject: 'Campus Collab - Email Verification OTP',
         html: `
@@ -132,22 +169,45 @@ router.post('/send-otp', [
         `
       };
 
-      await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
+      // Log email service being used
+      const emailService = process.env.SENDGRID_API_KEY ? 'SendGrid' 
+        : process.env.RESEND_API_KEY ? 'Resend' 
+        : process.env.SMTP_HOST ? 'Custom SMTP' 
+        : 'Gmail';
+      console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
+      console.log(`📧 Email service: ${emailService}`);
+      console.log(`📧 From email: ${fromEmail}`);
+
+      const emailResult = await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
+      console.log(`✅ Email sent successfully! Message ID: ${emailResult.messageId || 'N/A'}`);
       
       res.json({
         success: true,
         message: 'OTP sent successfully to your email'
       });
     } catch (emailError) {
-      console.error('Error sending email:', emailError);
-      // Still return success but log the error
-      // In production, you might want to handle this differently or use a queue system
-      res.json({
-        success: true,
-        message: 'OTP generated. Please check your email. If you don\'t receive it, check your spam folder.',
-        // For development/testing, you might want to return the OTP
-        ...(process.env.NODE_ENV === 'development' && { otp })
-      });
+      console.error('❌ Error sending email:', emailError);
+      console.error('Error code:', emailError.code);
+      console.error('Error command:', emailError.command);
+      console.error('Error message:', emailError.message);
+      
+      // Return error details in development, generic message in production
+      if (process.env.NODE_ENV === 'development') {
+        res.status(500).json({
+          success: false,
+          message: 'Failed to send email',
+          error: emailError.message,
+          errorCode: emailError.code,
+          otp: otp // Return OTP in development for testing
+        });
+      } else {
+        // In production, still return success but log the error
+        // Consider using a queue system for retry
+        res.json({
+          success: true,
+          message: 'OTP generated. Please check your email. If you don\'t receive it, check your spam folder or contact support.',
+        });
+      }
     }
   } catch (error) {
     console.error(error);
