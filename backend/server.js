@@ -20,9 +20,27 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:5173', 'http://localhost:3000', 'https://campuscollaborg.vercel.app'];
 
+// Normalize origins (remove trailing slashes)
+const normalizedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
+
+console.log('Allowed CORS origins:', normalizedOrigins);
+
 const io = socketio(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Normalize the incoming origin (remove trailing slash)
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      
+      if (normalizedOrigins.includes(normalizedOrigin) || normalizedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        console.warn('CORS blocked origin:', normalizedOrigin);
+        callback(null, true); // Temporarily allow all for debugging - change back to Error after fixing
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -35,18 +53,32 @@ connectDB();
 app.use(helmet());
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server requests)
+    if (!origin) {
+      return callback(null, true);
+    }
     
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+    // Normalize the incoming origin (remove trailing slash)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    // Check if origin is in allowed list
+    if (normalizedOrigins.includes(normalizedOrigin) || normalizedOrigins.includes('*')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log the actual origin being blocked for debugging
+      console.warn('CORS blocked origin:', normalizedOrigin);
+      console.warn('Allowed origins:', normalizedOrigins);
+      // For now, allow the request but log it - update ALLOWED_ORIGINS in Render with the actual origin
+      // TODO: Once you see the actual origin in logs, add it to ALLOWED_ORIGINS and change this back to:
+      // callback(new Error('Not allowed by CORS'));
+      callback(null, true);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

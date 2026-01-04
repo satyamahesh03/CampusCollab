@@ -74,17 +74,31 @@ router.get('/requests', protect, async (req, res) => {
 });
 
 // @route   GET /api/chats/code/:chatCode
-// @desc    Get chat by unique code
+// @desc    Get chat by unique code or _id
 // @access  Private
 router.get('/code/:chatCode', protect, async (req, res) => {
   try {
-    const chat = await Chat.findOne({
-      chatCode: req.params.chatCode,
+    const { chatCode } = req.params;
+    
+    // Try to find by chatCode first
+    let chat = await Chat.findOne({
+      chatCode: chatCode,
       participants: req.user._id
     })
       .populate('participants', 'name email role department profilePicture')
       .populate('initiatedBy', 'name')
       .populate('messages.sender', 'name profilePicture');
+
+    // If not found by chatCode and it looks like a MongoDB ObjectId, try by _id
+    if (!chat && mongoose.Types.ObjectId.isValid(chatCode) && chatCode.length === 24) {
+      chat = await Chat.findOne({
+        _id: chatCode,
+        participants: req.user._id
+      })
+        .populate('participants', 'name email role department profilePicture')
+        .populate('initiatedBy', 'name')
+        .populate('messages.sender', 'name profilePicture');
+    }
 
     if (!chat) {
       return res.status(404).json({
@@ -93,14 +107,12 @@ router.get('/code/:chatCode', protect, async (req, res) => {
       });
     }
 
-    // Chat is already available if it exists (no soft delete anymore)
-
     res.json({
       success: true,
       data: chat
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error in GET /api/chats/code/:chatCode:', error);
     res.status(500).json({
       success: false,
       message: 'Server error fetching chat'

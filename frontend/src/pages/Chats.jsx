@@ -101,7 +101,7 @@ const Chats = () => {
           }
         }, 100);
       } else {
-        // Try to fetch by chatCode from backend (this will restore deleted chats)
+        // Try to fetch by chatCode from backend first
         chatAPI.getChatByCode(chatId).then(response => {
           const chat = response.data;
           setSelectedChat(chat);
@@ -116,16 +116,40 @@ const Chats = () => {
           }, 100);
         }).catch(err => {
           // If chatCode doesn't work, try as _id (for backward compatibility)
-          if (chatId.length === 24) { // MongoDB ObjectId length
+          // Check if it looks like a MongoDB ObjectId (24 hex characters)
+          if (chatId.length === 24 && /^[0-9a-fA-F]{24}$/.test(chatId)) {
             chatAPI.getAll().then(response => {
               const allChats = response.data;
-              const foundChat = allChats.find(c => c._id === chatId);
+              const foundChat = allChats.find(c => c._id === chatId || c.chatCode === chatId);
               if (foundChat) {
                 setSelectedChat(foundChat);
                 socketService.joinChat(foundChat._id);
                 fetchChats();
+              } else {
+                // Chat not found, navigate back to chat list
+                console.warn('Chat not found:', chatId);
+                navigate('/chats', { replace: true });
               }
             }).catch(console.error);
+          } else {
+            // Not a valid ObjectId, might be a partial chatCode or invalid
+            // Try to find in all chats one more time
+            chatAPI.getAll().then(response => {
+              const allChats = response.data;
+              const foundChat = allChats.find(c => c.chatCode === chatId || c._id === chatId);
+              if (foundChat) {
+                setSelectedChat(foundChat);
+                socketService.joinChat(foundChat._id);
+                fetchChats();
+              } else {
+                // Chat not found, navigate back to chat list
+                console.warn('Chat not found:', chatId);
+                navigate('/chats', { replace: true });
+              }
+            }).catch(() => {
+              // Final fallback - navigate back to chat list
+              navigate('/chats', { replace: true });
+            });
           }
         });
       }
