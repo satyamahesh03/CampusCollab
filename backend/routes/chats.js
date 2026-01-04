@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 const ChatHistory = require('../models/ChatHistory');
@@ -112,6 +113,14 @@ router.get('/code/:chatCode', protect, async (req, res) => {
 // @access  Private
 router.get('/:userId', protect, async (req, res) => {
   try {
+    // Validate userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format'
+      });
+    }
+
     // Check if they have ever had an approved chat before (even if deleted)
     const haveChattedBefore = await ChatHistory.haveChattedBefore(req.user._id, req.params.userId);
 
@@ -156,10 +165,11 @@ router.get('/:userId', protect, async (req, res) => {
       data: chat
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error in GET /api/chats/:userId:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching chat'
+      message: 'Server error fetching chat',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -217,10 +227,17 @@ router.post('/:chatId/message', protect, async (req, res) => {
       status: 'sent'
     });
 
-    // Update unread count for the other participant (already declared above)
-    if (!chat.unreadCount) chat.unreadCount = new Map();
-    const currentUnread = chat.unreadCount.get(otherParticipant.toString()) || 0;
-    chat.unreadCount.set(otherParticipant.toString(), currentUnread + 1);
+    // Find the other participant
+    const otherParticipant = chat.participants.find(
+      p => !p.equals(req.user._id)
+    );
+
+    // Update unread count for the other participant
+    if (otherParticipant) {
+      if (!chat.unreadCount) chat.unreadCount = new Map();
+      const currentUnread = chat.unreadCount.get(otherParticipant.toString()) || 0;
+      chat.unreadCount.set(otherParticipant.toString(), currentUnread + 1);
+    }
 
     chat.lastMessage = Date.now();
     await chat.save();
