@@ -37,8 +37,11 @@ const io = socketio(server, {
       if (normalizedOrigins.includes(normalizedOrigin) || normalizedOrigins.includes('*')) {
         callback(null, true);
       } else {
-        console.warn('CORS blocked origin:', normalizedOrigin);
-        callback(null, true); // Temporarily allow all for debugging - change back to Error after fixing
+        // Log blocked origin for debugging
+        console.warn('Socket.IO CORS blocked origin:', normalizedOrigin);
+        console.warn('Allowed origins:', normalizedOrigins);
+        // Temporarily allow all for debugging - TODO: Add actual origin to ALLOWED_ORIGINS
+        callback(null, true);
       }
     },
     methods: ['GET', 'POST'],

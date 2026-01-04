@@ -163,6 +163,18 @@ const Chats = () => {
     socketService.onNewMessage((data) => {
       if (selectedChat && data.chatId === selectedChat._id) {
         setSelectedChat((prev) => {
+          // Check if message already exists to prevent duplicates
+          const messageExists = prev.messages.some(
+            msg => msg._id === data.message._id || 
+            (msg.content === data.message.content && 
+             msg.sender?.toString() === data.message.sender?.toString() &&
+             Math.abs(new Date(msg.timestamp) - new Date(data.message.timestamp)) < 1000) // Within 1 second
+          );
+          
+          if (messageExists) {
+            return prev; // Don't add duplicate
+          }
+          
           // Ensure messages are sorted chronologically
           const updatedMessages = [...prev.messages, data.message].sort((a, b) => 
             new Date(a.timestamp) - new Date(b.timestamp)
@@ -181,6 +193,18 @@ const Chats = () => {
       setChats(prevChats => {
         const updatedChats = prevChats.map(chat => {
           if (chat._id === data.chatId || chat._id?.toString() === data.chatId?.toString()) {
+            // Check if message already exists to prevent duplicates
+            const messageExists = (chat.messages || []).some(
+              msg => msg._id === data.message._id || 
+              (msg.content === data.message.content && 
+               msg.sender?.toString() === data.message.sender?.toString() &&
+               Math.abs(new Date(msg.timestamp) - new Date(data.message.timestamp)) < 1000) // Within 1 second
+            );
+            
+            if (messageExists) {
+              return chat; // Don't add duplicate, but update last message info
+            }
+            
             // Ensure messages are sorted chronologically and update last message preview
             const updatedMessages = [...(chat.messages || []), data.message].sort((a, b) => 
               new Date(a.timestamp) - new Date(b.timestamp)
@@ -487,21 +511,29 @@ const Chats = () => {
       const response = await chatAPI.getChat(userId);
       const newChat = response.data;
       
-      setSelectedChat(newChat);
+      // Populate the chat with the first message locally to avoid duplicates
+      const chatWithMessage = {
+        ...newChat,
+        messages: newChat.messages || []
+      };
+      
+      setSelectedChat(chatWithMessage);
       socketService.joinChat(newChat._id);
       
       // Use chatCode if available, otherwise use _id
       const urlId = newChat.chatCode || newChat._id;
       navigate(`/chats/${urlId}`);
       
-      // Now send the first message
+      // Now send the first message via socket
       socketService.sendMessage({
         chatId: newChat._id,
         userId: user.id,
         content: messageContent,
       });
       
-      fetchChats(); // Refresh to show in sidebar
+      // Refresh chats to show in sidebar (will include pending chats where user is initiator)
+      await fetchChats();
+      await fetchMessageRequests(); // Also refresh requests
       setNewChatUser(null);
       
       // Auto-focus input

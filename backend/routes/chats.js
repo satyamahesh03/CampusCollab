@@ -17,13 +17,17 @@ const generateChatCode = () => {
 };
 
 // @route   GET /api/chats
-// @desc    Get all approved chats for the logged-in user (excluding deleted and rejected)
+// @desc    Get all approved chats and pending chats where user is initiator
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
     const chats = await Chat.find({ 
       participants: req.user._id,
-      status: 'accepted' // Only approved chats
+      status: { $in: ['accepted', 'pending'] }, // Include accepted and pending chats
+      $or: [
+        { status: 'accepted' }, // All accepted chats
+        { status: 'pending', initiatedBy: req.user._id } // Pending chats where user is initiator
+      ]
     })
       .populate('participants', 'name email role department profilePicture')
       .populate('initiatedBy', 'name')
