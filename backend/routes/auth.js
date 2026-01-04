@@ -5,11 +5,30 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const { getSignedJwtToken, protect } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 // Email domain validation - only allow @mvgrce.edu.in
 const ALLOWED_EMAIL_DOMAIN = '@mvgrce.edu.in';
 
-// Configure nodemailer transporter
+// Send email using SendGrid API (recommended for cloud hosting)
+const sendEmailViaSendGrid = async (to, subject, html, from) => {
+  if (!process.env.SENDGRID_API_KEY) {
+    throw new Error('SENDGRID_API_KEY not configured');
+  }
+  
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  
+  const msg = {
+    to: to,
+    from: from || process.env.FROM_EMAIL || 'noreply@campuscollab.com',
+    subject: subject,
+    html: html,
+  };
+  
+  return await sgMail.send(msg);
+};
+
+// Configure nodemailer transporter (for non-SendGrid services)
 const createTransporter = () => {
   // Common connection options for better reliability
   const connectionOptions = {
@@ -23,7 +42,7 @@ const createTransporter = () => {
     rateLimit: 5
   };
 
-  // Priority 1: Custom SMTP configuration (for SendGrid, Mailgun, etc.)
+  // Priority 1: Custom SMTP configuration (for Mailgun, etc.)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -39,22 +58,8 @@ const createTransporter = () => {
       ...connectionOptions
     });
   }
-  
-  // Priority 2: SendGrid (Recommended for production - works with cloud hosting)
-  if (process.env.SENDGRID_API_KEY) {
-    return nodemailer.createTransport({
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY
-      },
-      ...connectionOptions
-    });
-  }
 
-  // Priority 3: Resend (Alternative modern email service)
+  // Priority 2: Resend (Alternative modern email service)
   if (process.env.RESEND_API_KEY) {
     return nodemailer.createTransport({
       host: 'smtp.resend.com',
@@ -144,52 +149,74 @@ router.post('/send-otp', [
 
     // Send OTP via email
     try {
-      const transporter = createTransporter();
-      
       // Determine "from" email based on email service
       let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
       
-      const mailOptions = {
-        from: fromEmail,
-        to: normalizedEmail,
-        subject: 'Campus Collab - Email Verification OTP',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
-            <h2 style="color: #d97706; margin-bottom: 20px; text-align: center; font-size: 24px;">Campus Collab - Email Verification</h2>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Hello,</p>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Thank you for registering with Campus Collab. Please use the following OTP to verify your email address:</p>
-            <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #fbbf24;">
-              <p style="color: #d97706; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otp}</p>
-            </div>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you didn't request this OTP, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
-            <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message from Campus Collab. Please do not reply to this email.</p>
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
+          <h2 style="color: #d97706; margin-bottom: 20px; text-align: center; font-size: 24px;">Campus Collab - Email Verification</h2>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Hello,</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Thank you for registering with Campus Collab. Please use the following OTP to verify your email address:</p>
+          <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #fbbf24;">
+            <p style="color: #d97706; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otp}</p>
           </div>
-        `
-      };
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you didn't request this OTP, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message from Campus Collab. Please do not reply to this email.</p>
+        </div>
+      `;
 
-      // Log email service being used
-      const emailService = process.env.SENDGRID_API_KEY ? 'SendGrid' 
-        : process.env.RESEND_API_KEY ? 'Resend' 
-        : process.env.SMTP_HOST ? 'Custom SMTP' 
-        : 'Gmail';
-      console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
-      console.log(`📧 Email service: ${emailService}`);
-      console.log(`📧 From email: ${fromEmail}`);
+      // Use SendGrid API if available (recommended for cloud hosting)
+      if (process.env.SENDGRID_API_KEY) {
+        console.log(`📧 Sending OTP email via SendGrid API to: ${normalizedEmail}`);
+        console.log(`📧 From email: ${fromEmail}`);
+        
+        const emailResult = await sendEmailViaSendGrid(
+          normalizedEmail,
+          'Campus Collab - Email Verification OTP',
+          emailHtml,
+          fromEmail
+        );
+        
+        console.log(`✅ Email sent successfully via SendGrid! Status: ${emailResult[0]?.statusCode || 'N/A'}`);
+        
+        res.json({
+          success: true,
+          message: 'OTP sent successfully to your email'
+        });
+      } else {
+        // Fallback to nodemailer for other services
+        const transporter = createTransporter();
+        const emailService = process.env.RESEND_API_KEY ? 'Resend' 
+          : process.env.SMTP_HOST ? 'Custom SMTP' 
+          : 'Gmail';
+        
+        console.log(`📧 Sending OTP email via ${emailService} to: ${normalizedEmail}`);
+        console.log(`📧 From email: ${fromEmail}`);
+        
+        const mailOptions = {
+          from: fromEmail,
+          to: normalizedEmail,
+          subject: 'Campus Collab - Email Verification OTP',
+          html: emailHtml
+        };
 
-      const emailResult = await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
-      console.log(`✅ Email sent successfully! Message ID: ${emailResult.messageId || 'N/A'}`);
-      
-      res.json({
-        success: true,
-        message: 'OTP sent successfully to your email'
-      });
+        const emailResult = await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
+        console.log(`✅ Email sent successfully! Message ID: ${emailResult.messageId || 'N/A'}`);
+        
+        res.json({
+          success: true,
+          message: 'OTP sent successfully to your email'
+        });
+      }
     } catch (emailError) {
       console.error('❌ Error sending email:', emailError);
       console.error('Error code:', emailError.code);
-      console.error('Error command:', emailError.command);
       console.error('Error message:', emailError.message);
+      if (emailError.response) {
+        console.error('SendGrid response:', emailError.response.body);
+      }
       
       // Return error details in development, generic message in production
       if (process.env.NODE_ENV === 'development') {
@@ -758,27 +785,42 @@ router.post('/forgot-password', [
 
     // Send email
     try {
-      const transporter = createTransporter();
-      const mailOptions = {
-        from: process.env.SMTP_USER || 'noreply@campuscollab.com',
-        to: normalizedEmail,
-        subject: 'Password Reset OTP - Campus Collab',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
-            <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">You have requested to reset your password for Campus Collab.</p>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Your password reset OTP is:</p>
-            <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #f59e0b;">
-              <p style="color: #f59e0b; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otpCode}</p>
-            </div>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
-            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you did not request this password reset, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
-            <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message. Please do not reply.</p>
+      let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
+      
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
+          <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">You have requested to reset your password for Campus Collab.</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Your password reset OTP is:</p>
+          <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #f59e0b;">
+            <p style="color: #f59e0b; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otpCode}</p>
           </div>
-        `
-      };
-      await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
+          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you did not request this password reset, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message. Please do not reply.</p>
+        </div>
+      `;
+
+      // Use SendGrid API if available
+      if (process.env.SENDGRID_API_KEY) {
+        await sendEmailViaSendGrid(
+          normalizedEmail,
+          'Password Reset OTP - Campus Collab',
+          emailHtml,
+          fromEmail
+        );
+      } else {
+        // Fallback to nodemailer
+        const transporter = createTransporter();
+        const mailOptions = {
+          from: fromEmail,
+          to: normalizedEmail,
+          subject: 'Password Reset OTP - Campus Collab',
+          html: emailHtml
+        };
+        await sendEmailWithTimeout(transporter, mailOptions, 15000);
+      }
     } catch (emailError) {
       console.error('Error sending password reset email:', emailError);
       // Continue even if email fails - don't reveal if user exists
