@@ -11,17 +11,33 @@ const ALLOWED_EMAIL_DOMAIN = '@mvgrce.edu.in';
 
 // Configure nodemailer transporter
 const createTransporter = () => {
+  // Common connection options for better reliability
+  const connectionOptions = {
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000, // 10 seconds
+    socketTimeout: 10000, // 10 seconds
+    pool: true, // Use connection pooling
+    maxConnections: 1,
+    maxMessages: 3,
+    rateDelta: 1000,
+    rateLimit: 5
+  };
+
   // For development, you can use Gmail or any SMTP service
   // Make sure to set these in your .env file
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
+      port: parseInt(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
-      }
+      },
+      tls: {
+        rejectUnauthorized: false // For self-signed certificates
+      },
+      ...connectionOptions
     });
   } else {
     // Fallback: Use Gmail with app password (for development)
@@ -31,7 +47,8 @@ const createTransporter = () => {
       auth: {
         user: process.env.SMTP_USER || 'your-email@gmail.com',
         pass: process.env.SMTP_PASS || 'your-app-password'
-      }
+      },
+      ...connectionOptions
     });
   }
 };
@@ -39,6 +56,16 @@ const createTransporter = () => {
 // Generate 6-digit OTP
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Helper function to send email with timeout
+const sendEmailWithTimeout = (transporter, mailOptions, timeoutMs = 15000) => {
+  return Promise.race([
+    transporter.sendMail(mailOptions),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email sending timeout')), timeoutMs)
+    )
+  ]);
 };
 
 // @route   POST /api/auth/send-otp
@@ -105,7 +132,7 @@ router.post('/send-otp', [
         `
       };
 
-      await transporter.sendMail(mailOptions);
+      await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
       
       res.json({
         success: true,
@@ -114,7 +141,7 @@ router.post('/send-otp', [
     } catch (emailError) {
       console.error('Error sending email:', emailError);
       // Still return success but log the error
-      // In production, you might want to handle this differently
+      // In production, you might want to handle this differently or use a queue system
       res.json({
         success: true,
         message: 'OTP generated. Please check your email. If you don\'t receive it, check your spam folder.',
@@ -670,26 +697,32 @@ router.post('/forgot-password', [
     });
 
     // Send email
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.SMTP_USER || 'noreply@campuscollab.com',
-      to: normalizedEmail,
-      subject: 'Password Reset OTP - Campus Collab',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
-          <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>
-          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">You have requested to reset your password for Campus Collab.</p>
-          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Your password reset OTP is:</p>
-          <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #f59e0b;">
-            <p style="color: #f59e0b; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otpCode}</p>
+    try {
+      const transporter = createTransporter();
+      const mailOptions = {
+        from: process.env.SMTP_USER || 'noreply@campuscollab.com',
+        to: normalizedEmail,
+        subject: 'Password Reset OTP - Campus Collab',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
+            <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">You have requested to reset your password for Campus Collab.</p>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">Your password reset OTP is:</p>
+            <div style="background: linear-gradient(to right, #fef3c7, #fef9c3); padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 1px solid #f59e0b;">
+              <p style="color: #f59e0b; font-size: 32px; margin: 0; letter-spacing: 6px; font-weight: bold;">${otpCode}</p>
+            </div>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
+            <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you did not request this password reset, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
+            <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message. Please do not reply.</p>
           </div>
-          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">This OTP will expire in 10 minutes.</p>
-          <p style="color: #374151; line-height: 1.6; font-size: 16px; margin-bottom: 15px;">If you did not request this password reset, please ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #fbbf24; margin: 25px 0;">
-          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">This is an automated message. Please do not reply.</p>
-        </div>
-      `
-    });
+        `
+      };
+      await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
+    } catch (emailError) {
+      console.error('Error sending password reset email:', emailError);
+      // Continue even if email fails - don't reveal if user exists
+    }
 
     res.json({
       success: true,
