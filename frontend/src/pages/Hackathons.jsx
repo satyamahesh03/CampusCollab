@@ -6,7 +6,7 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaClock, FaArrowLeft, FaEdit } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -340,9 +340,12 @@ const Hackathons = () => {
 };
 
 const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const { user } = useAuth();
   const isSaved = hackathon.likes?.some(likeId => 
     likeId === userId || likeId.toString() === userId?.toString()
   );
+  const isOwner = hackathon.postedBy?._id === user?.id || hackathon.postedBy === user?.id;
   const isRegistrationClosed = new Date(hackathon.registrationDeadline) < new Date();
 
   return (
@@ -372,16 +375,28 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
                     Organized by {hackathon.organizer}
                   </p>
                 </div>
-                <button
-                  onClick={(e) => onSave(hackathon._id, e)}
-                  className={`p-3 rounded-full transition ${
-                    isSaved
-                      ? 'bg-primary-100 text-amber-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <FaBookmark size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit hackathon"
+                      type="button"
+                    >
+                      <FaEdit className="text-lg" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => onSave(hackathon._id, e)}
+                    className={`p-3 rounded-full transition ${
+                      isSaved
+                        ? 'bg-primary-100 text-amber-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FaBookmark size={24} />
+                  </button>
+                </div>
               </div>
 
               {/* Domain Badge */}
@@ -486,6 +501,17 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
           </div>
         </div>
       </div>
+      
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditHackathonModal
+          hackathon={hackathon}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={async () => {
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -719,6 +745,218 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
               className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base"
             >
               Post Hackathon
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const EditHackathonModal = ({ hackathon, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    title: hackathon.title || '',
+    organizer: hackathon.organizer || '',
+    description: hackathon.description || '',
+    location: hackathon.location || '',
+    registrationLink: hackathon.registrationLink || '',
+    startDate: hackathon.startDate ? new Date(hackathon.startDate).toISOString().split('T')[0] : '',
+    endDate: hackathon.endDate ? new Date(hackathon.endDate).toISOString().split('T')[0] : '',
+    registrationDeadline: hackathon.registrationDeadline ? new Date(hackathon.registrationDeadline).toISOString().split('T')[0] : '',
+    mode: hackathon.mode || '',
+    domain: hackathon.domain || '',
+    prizes: hackathon.prizes || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const { addNotification } = useGlobal();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await hackathonAPI.update(hackathon._id, formData);
+      addNotification({
+        type: 'success',
+        message: 'Hackathon updated successfully!',
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to update hackathon',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Hackathon</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Organizer <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.organizer}
+                onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Location <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Mode <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.mode}
+                onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              >
+                <option value="">Select Mode</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Domain <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.domain}
+                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              >
+                <option value="">Select Domain</option>
+                {domains.map((domain) => (
+                  <option key={domain} value={domain}>
+                    {domain}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Start Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                End Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Registration Deadline <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.registrationDeadline}
+                onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Prizes (Optional)</label>
+            <input
+              type="text"
+              value={formData.prizes}
+              onChange={(e) => setFormData({ ...formData, prizes: e.target.value })}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Registration Link <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={formData.registrationLink}
+              onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
+            />
+          </div>
+          <div className="pt-3 sm:pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Updating...' : 'Update Hackathon'}
             </button>
           </div>
         </form>

@@ -6,7 +6,7 @@ import { formatDate, departments } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaBriefcase, FaGraduationCap, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaBookmark, FaTimes, FaExternalLinkAlt, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaBriefcase, FaGraduationCap, FaArrowLeft, FaEdit } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -369,9 +369,12 @@ const Drives = () => {
 };
 
 const DriveDetailView = ({ drive, onClose, onSave, userId }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const { user } = useAuth();
   const isSaved = drive.likes?.some(likeId => 
     likeId === userId || likeId.toString() === userId?.toString()
   );
+  const isOwner = drive.postedBy?._id === user?.id || drive.postedBy === user?.id;
   const isRegistrationClosed = new Date(drive.registrationDeadline) < new Date();
   const isDriveCompleted = new Date(drive.driveDate) < new Date();
 
@@ -416,19 +419,31 @@ const DriveDetailView = ({ drive, onClose, onSave, userId }) => {
                     {drive.jobRole}
                   </p>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSave(drive._id);
-                  }}
-                  className={`p-3 rounded-full transition ${
-                    isSaved
-                      ? 'bg-primary-100 text-amber-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <FaBookmark size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit drive"
+                      type="button"
+                    >
+                      <FaEdit className="text-lg" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSave(drive._id);
+                    }}
+                    className={`p-3 rounded-full transition ${
+                      isSaved
+                        ? 'bg-primary-100 text-amber-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FaBookmark size={24} />
+                  </button>
+                </div>
               </div>
 
               {/* Quick Info Grid */}
@@ -581,6 +596,17 @@ const DriveDetailView = ({ drive, onClose, onSave, userId }) => {
           </div>
         </div>
       </div>
+      
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditDriveModal
+          drive={drive}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={async () => {
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -922,6 +948,310 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
               className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base"
             >
               Post Drive
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const EditDriveModal = ({ drive, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    title: drive.title || '',
+    company: drive.company || '',
+    jobRole: drive.jobRole || '',
+    package: drive.package || '',
+    eligibleYears: drive.eligibleYears || [],
+    cgpaCriteria: drive.cgpaCriteria || '',
+    description: drive.description || '',
+    driveDate: drive.driveDate ? new Date(drive.driveDate).toISOString().split('T')[0] : '',
+    registrationDeadline: drive.registrationDeadline ? new Date(drive.registrationDeadline).toISOString().split('T')[0] : '',
+    location: drive.location || '',
+    registrationLink: drive.registrationLink || '',
+    department: drive.department || [],
+    requirements: drive.requirements || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const { addNotification } = useGlobal();
+
+  const toggleDepartment = (dept) => {
+    if (formData.department.includes(dept)) {
+      setFormData({
+        ...formData,
+        department: formData.department.filter(d => d !== dept)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        department: [...formData.department, dept]
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (formData.department.length === 0) {
+      addNotification({
+        type: 'error',
+        message: 'Please select at least one eligible department',
+      });
+      return;
+    }
+    
+    if (formData.eligibleYears.length === 0) {
+      addNotification({
+        type: 'error',
+        message: 'Please select at least one eligible year',
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await driveAPI.update(drive._id, formData);
+      addNotification({
+        type: 'success',
+        message: 'Drive updated successfully!',
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to update drive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Placement Drive</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Job Role <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.jobRole}
+                onChange={(e) => setFormData({ ...formData, jobRole: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Package <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.package}
+                onChange={(e) => setFormData({ ...formData, package: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                CGPA Criteria <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cgpaCriteria}
+                onChange={(e) => setFormData({ ...formData, cgpaCriteria: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Drive Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.driveDate}
+                onChange={(e) => setFormData({ ...formData, driveDate: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Registration Deadline <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.registrationDeadline}
+                onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Location <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div></div>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              Eligible Years <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-3 sm:gap-4">
+              {[1, 2, 3, 4].map((year) => (
+                <label key={year} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.eligibleYears.includes(year)}
+                    onChange={(e) => {
+                      const years = e.target.checked
+                        ? [...formData.eligibleYears, year]
+                        : formData.eligibleYears.filter(y => y !== year);
+                      setFormData({ ...formData, eligibleYears: years });
+                    }}
+                    className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 flex-shrink-0"
+                  />
+                  <span className="text-xs sm:text-sm">Year {year}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              Eligible Departments <span className="text-red-500">*</span>
+            </label>
+            {formData.department.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                {formData.department.map((dept) => (
+                  <span
+                    key={dept}
+                    className="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-xs font-medium flex items-center space-x-2"
+                  >
+                    <span>{dept}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleDepartment(dept)}
+                      className="hover:text-red-600"
+                    >
+                      <FaTimes />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                {departments.map((dept) => (
+                  <label
+                    key={dept}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.department.includes(dept)}
+                      onChange={() => toggleDepartment(dept)}
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-700">{dept}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Additional Requirements (Optional)
+            </label>
+            <textarea
+              value={formData.requirements}
+              onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+              rows={2}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Registration Link <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={formData.registrationLink}
+              onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+            />
+          </div>
+          <div className="pt-3 sm:pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Updating...' : 'Update Drive'}
             </button>
           </div>
         </form>

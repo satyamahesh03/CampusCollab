@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://campuscollab-odlh.onrender.com/api';
-  // 'http://localhost:6500/api';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6500/api';
+
 
 const api = axios.create({
   baseURL: API_URL,
@@ -61,6 +62,7 @@ export const projectAPI = {
   getById: (id) => api.get(`/projects/${id}`),
   getByUser: (userId) => api.get(`/projects/by-user/${userId}`),
   create: (data) => api.post('/projects', data),
+  update: (id, data) => api.put(`/projects/${id}`, data),
   like: (id) => api.post(`/projects/${id}/like`),
   comment: (id, data) => api.post(`/projects/${id}/comment`, data),
   addComment: (id, data) => api.post(`/projects/${id}/comment`, data),
@@ -86,6 +88,7 @@ export const internshipAPI = {
   getAll: (params) => api.get('/internships', { params }),
   getById: (id) => api.get(`/internships/${id}`),
   create: (data) => api.post('/internships', data),
+  update: (id, data) => api.put(`/internships/${id}`, data),
   like: (id) => api.post(`/internships/${id}/like`),
   delete: (id) => api.delete(`/internships/${id}`),
 };
@@ -95,6 +98,7 @@ export const hackathonAPI = {
   getAll: (params) => api.get('/hackathons', { params }),
   getById: (id) => api.get(`/hackathons/${id}`),
   create: (data) => api.post('/hackathons', data),
+  update: (id, data) => api.put(`/hackathons/${id}`, data),
   like: (id) => api.post(`/hackathons/${id}/like`),
   delete: (id) => api.delete(`/hackathons/${id}`),
 };
@@ -104,6 +108,7 @@ export const driveAPI = {
   getAll: (params) => api.get('/drives', { params }),
   getById: (id) => api.get(`/drives/${id}`),
   create: (data) => api.post('/drives', data),
+  update: (id, data) => api.put(`/drives/${id}`, data),
   like: (id) => api.post(`/drives/${id}/like`),
   delete: (id) => api.delete(`/drives/${id}`),
 };

@@ -6,7 +6,7 @@ import { formatDate, getDomainColor, domains, departments } from '../utils/helpe
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaArrowLeft } from 'react-icons/fa';
+import { FaBookmark, FaExternalLinkAlt, FaPlus, FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaMoneyBillWave, FaArrowLeft, FaEdit } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -397,9 +397,12 @@ const Internships = () => {
 };
 
 const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const { user } = useAuth();
   const isSaved = internship.likes?.some(likeId => 
     likeId === userId || likeId.toString() === userId?.toString()
   );
+  const isOwner = internship.postedBy?._id === user?.id || internship.postedBy === user?.id;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
@@ -428,19 +431,31 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
                     {internship.company}
                   </p>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSave(internship._id);
-                  }}
-                  className={`p-3 rounded-full transition ${
-                    isSaved
-                      ? 'bg-primary-100 text-amber-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <FaBookmark size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit internship"
+                      type="button"
+                    >
+                      <FaEdit className="text-lg" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSave(internship._id);
+                    }}
+                    className={`p-3 rounded-full transition ${
+                      isSaved
+                        ? 'bg-primary-100 text-amber-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FaBookmark size={24} />
+                  </button>
+                </div>
               </div>
 
               {/* Domain Badge */}
@@ -549,6 +564,18 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
           </div>
         </div>
       </div>
+      
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditInternshipModal
+          internship={internship}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={async () => {
+            // Refresh the page or refetch data
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -839,6 +866,305 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
               className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base"
             >
               Post Internship
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const EditInternshipModal = ({ internship, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    title: internship.title || '',
+    company: internship.company || '',
+    description: internship.description || '',
+    mode: internship.mode || '',
+    applicationDeadline: internship.applicationDeadline ? new Date(internship.applicationDeadline).toISOString().split('T')[0] : '',
+    department: internship.department || [],
+    domain: internship.domain || '',
+    duration: internship.duration || '',
+    stipend: internship.stipend || '',
+    location: internship.location || '',
+    applyLink: internship.applyLink || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const { addNotification } = useGlobal();
+
+  const toggleDepartment = (dept) => {
+    if (formData.department.includes(dept)) {
+      setFormData({
+        ...formData,
+        department: formData.department.filter(d => d !== dept)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        department: [...formData.department, dept]
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate at least one department is selected
+    if (formData.department.length === 0) {
+      addNotification({
+        type: 'error',
+        message: 'Please select at least one eligible department',
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await internshipAPI.update(internship._id, formData);
+      addNotification({
+        type: 'success',
+        message: 'Internship updated successfully!',
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to update internship',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+      >
+        {/* Close Button - Top Right */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Internship</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            {/* Title */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+                placeholder="e.g., Summer Internship 2024"
+              />
+            </div>
+
+            {/* Company */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Company <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+                placeholder="Company name"
+              />
+            </div>
+
+            {/* Mode */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Mode <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.mode}
+                onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              >
+                <option value="">Select Mode</option>
+                <option value="virtual">Virtual</option>
+                <option value="offline">Offline</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            {/* Domain */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Domain <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.domain}
+                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              >
+                <option value="">Select Domain</option>
+                {domains.map((domain) => (
+                  <option key={domain} value={domain}>
+                    {domain}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Duration <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+                placeholder="e.g., 3 months"
+              />
+            </div>
+
+            {/* Stipend */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Stipend (Optional)</label>
+              <input
+                type="text"
+                value={formData.stipend}
+                onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+                placeholder="e.g., ₹20,000/month or leave blank for unpaid"
+              />
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Location (Optional)</label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+                placeholder="City or leave blank for Remote"
+              />
+            </div>
+
+            {/* Due Date */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+                Application Deadline <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.applicationDeadline}
+                onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
+                required
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              Eligible Departments <span className="text-red-500">*</span>
+            </label>
+            
+            {/* Selected Departments Display */}
+            {formData.department.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                {formData.department.map((dept) => (
+                  <span
+                    key={dept}
+                    className="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-xs font-medium flex items-center space-x-2"
+                  >
+                    <span>{dept}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleDepartment(dept)}
+                      className="hover:text-red-600"
+                    >
+                      <FaTimes />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Department Checkboxes */}
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                {departments.map((dept) => (
+                  <label
+                    key={dept}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.department.includes(dept)}
+                      onChange={() => toggleDepartment(dept)}
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-700">{dept}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Select all applicable departments</p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-amber-900">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+              placeholder="Describe the internship role and responsibilities..."
+            />
+          </div>
+
+          {/* Apply Link */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Application Link <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={formData.applyLink}
+              onChange={(e) => setFormData({ ...formData, applyLink: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-3 sm:pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Updating...' : 'Update Internship'}
             </button>
           </div>
         </form>

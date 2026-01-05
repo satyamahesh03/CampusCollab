@@ -83,6 +83,49 @@ router.post('/', protect, authorize('faculty', 'admin'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/drives/:id
+// @desc    Update a drive (owner only)
+// @access  Private (Drive Owner)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const drive = await Drive.findById(req.params.id);
+
+    if (!drive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Drive not found'
+      });
+    }
+
+    // Check if user is the owner
+    if (drive.postedBy.toString() !== req.user._id.toString()) {
+        success: false,
+        message: 'Not authorized to update this drive'
+      });
+    }
+
+    // Update fields
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] !== undefined && key !== 'postedBy' && key !== '_id') {
+        drive[key] = req.body[key];
+      }
+    });
+
+    await drive.save();
+
+    res.json({
+      success: true,
+      data: drive
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating drive'
+    });
+  }
+});
+
 // @route   GET /api/drives/:id
 // @desc    Get single drive by ID
 // @access  Public

@@ -83,6 +83,50 @@ router.post('/', protect, authorize('student', 'faculty'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/hackathons/:id
+// @desc    Update a hackathon (owner only)
+// @access  Private (Hackathon Owner)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const hackathon = await Hackathon.findById(req.params.id);
+
+    if (!hackathon) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hackathon not found'
+      });
+    }
+
+    // Check if user is the owner
+    if (hackathon.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this hackathon'
+      });
+    }
+
+    // Update fields
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] !== undefined && key !== 'postedBy' && key !== '_id') {
+        hackathon[key] = req.body[key];
+      }
+    });
+
+    await hackathon.save();
+
+    res.json({
+      success: true,
+      data: hackathon
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating hackathon'
+    });
+  }
+});
+
 // @route   GET /api/hackathons/:id
 // @desc    Get single hackathon by ID
 // @access  Public

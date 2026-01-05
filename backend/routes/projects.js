@@ -255,6 +255,55 @@ router.post('/', protect, authorize('student', 'faculty'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/projects/:id
+// @desc    Update a project (owner only)
+// @access  Private (Project Owner)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if user is the owner
+    if (project.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this project'
+      });
+    }
+
+    const { title, description, domains, skills, requiredRoles, teamRequirements, gitLink, department } = req.body;
+
+    // Update only provided fields
+    if (title !== undefined) project.title = title;
+    if (description !== undefined) project.description = description;
+    if (domains !== undefined) project.domains = domains;
+    if (skills !== undefined) project.skills = skills;
+    if (requiredRoles !== undefined) project.requiredRoles = requiredRoles;
+    if (teamRequirements !== undefined) project.teamRequirements = teamRequirements;
+    if (gitLink !== undefined) project.gitLink = gitLink;
+    if (department !== undefined) project.department = department;
+
+    await project.save();
+
+    res.json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating project'
+    });
+  }
+});
+
 // @route   GET /api/projects/:id/team-chat
 // @desc    Get team chat messages for a project
 // @access  Private (Project Participants)

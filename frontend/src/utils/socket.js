@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ||  'https://campuscollab-odlh.onrender.com';
-// 'http://localhost:6500';
+// const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ||  'http://localhost:6500';
 
 class SocketService {
   constructor() {

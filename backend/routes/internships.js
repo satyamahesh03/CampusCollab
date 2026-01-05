@@ -85,6 +85,50 @@ router.post('/', protect, authorize('faculty', 'admin'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/internships/:id
+// @desc    Update an internship (owner only)
+// @access  Private (Internship Owner)
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const internship = await Internship.findById(req.params.id);
+
+    if (!internship) {
+      return res.status(404).json({
+        success: false,
+        message: 'Internship not found'
+      });
+    }
+
+    // Check if user is the owner
+    if (internship.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this internship'
+      });
+    }
+
+    // Update fields
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] !== undefined && key !== 'postedBy' && key !== '_id') {
+        internship[key] = req.body[key];
+      }
+    });
+
+    await internship.save();
+
+    res.json({
+      success: true,
+      data: internship
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating internship'
+    });
+  }
+});
+
 // @route   GET /api/internships/:id
 // @desc    Get single internship by ID
 // @access  Public

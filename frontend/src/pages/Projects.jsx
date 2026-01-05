@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
 import { projectAPI } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaComment, FaUsers, FaUserPlus, FaPlus, FaCheck, FaTimes, FaPaperPlane, FaExternalLinkAlt, FaSearch, FaReply, FaArrowLeft, FaMagic, FaThumbsUp, FaStar } from 'react-icons/fa';
+import { FaComment, FaUsers, FaUserPlus, FaPlus, FaCheck, FaTimes, FaPaperPlane, FaExternalLinkAlt, FaSearch, FaReply, FaArrowLeft, FaMagic, FaThumbsUp, FaStar, FaEdit } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faHandshake, faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -894,6 +894,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   const [showJoinRequests, setShowJoinRequests] = useState(initialShowJoinRequests);
   const [showParticipants, setShowParticipants] = useState(false);
   const [confirmingRemoveParticipant, setConfirmingRemoveParticipant] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { addNotification } = useGlobal();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -1457,9 +1458,21 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex-1 pr-0 sm:pr-8">
                   {projectData.title}
                 </h2>
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projectData.status)}`}>
-                  {projectData.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit project"
+                      type="button"
+                    >
+                      <FaEdit className="text-lg" />
+                    </button>
+                  )}
+                  <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projectData.status)}`}>
+                    {projectData.status}
+                  </span>
+                </div>
               </div>
 
               {/* Creator and Date */}
@@ -1838,6 +1851,407 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             />
           </div>
       </div>
+      
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditProjectModal
+          project={projectData}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={async () => {
+            await refreshProjectData();
+            setShowEditModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const EditProjectModal = ({ project, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    title: project.title || '',
+    description: project.description || '',
+    teamRequirements: project.teamRequirements || '',
+    domains: project.domains || [],
+    skills: project.skills || [],
+    department: project.department || '',
+    gitLink: project.gitLink || '',
+  });
+  const [customDomain, setCustomDomain] = useState('');
+  const [skillSearch, setSkillSearch] = useState('');
+  const [customSkill, setCustomSkill] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { addNotification } = useGlobal();
+
+  const toggleDomain = (domain) => {
+    if (formData.domains.includes(domain)) {
+      setFormData({
+        ...formData,
+        domains: formData.domains.filter(d => d !== domain)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        domains: [...formData.domains, domain]
+      });
+    }
+  };
+
+  const toggleSkill = (skill) => {
+    if (formData.skills.includes(skill)) {
+      setFormData({
+        ...formData,
+        skills: formData.skills.filter(s => s !== skill)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        skills: [...formData.skills, skill]
+      });
+    }
+  };
+
+  const addCustomDomain = () => {
+    if (customDomain.trim() && !formData.domains.includes(customDomain.trim())) {
+      setFormData({
+        ...formData,
+        domains: [...formData.domains, customDomain.trim()]
+      });
+      setCustomDomain('');
+    }
+  };
+
+  const addCustomSkill = () => {
+    if (!customSkill.trim()) return;
+    const skill = customSkill.trim();
+    if (formData.skills.includes(skill)) {
+      addNotification({
+        type: 'error',
+        message: 'Skill already added',
+      });
+      return;
+    }
+    setFormData({
+      ...formData,
+      skills: [...formData.skills, skill]
+    });
+    setCustomSkill('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate at least one domain is selected
+    if (formData.domains.length === 0) {
+      addNotification({
+        type: 'error',
+        message: 'Please select at least one domain',
+      });
+      return;
+    }
+    
+    // Validate at least one skill is selected
+    if (formData.skills.length === 0) {
+      addNotification({
+        type: 'error',
+        message: 'Please select at least one key skill',
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await projectAPI.update(project._id, formData);
+      addNotification({
+        type: 'success',
+        message: 'Project updated successfully!',
+      });
+      onSuccess();
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to update project',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+      >
+        {/* Close Button - Top Right */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-amber-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <FaTimes className="text-lg" />
+        </button>
+        
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Project</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              placeholder="e.g., AI-Powered Student Assistant"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+              placeholder="Describe your project idea..."
+            />
+          </div>
+
+          {/* Team Requirements */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Team Requirements <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.teamRequirements}
+              onChange={(e) => setFormData({ ...formData, teamRequirements: e.target.value })}
+              required
+              rows={3}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 resize-y focus:outline-none"
+              placeholder="e.g., 2 Developers, 1 Designer, 1 ML Engineer&#10;Or describe the roles and skills needed for your team..."
+            />
+            <p className="text-xs text-gray-600 mt-1">Describe the team composition or requirements in detail</p>
+          </div>
+
+          {/* Domain Requirements */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              Domain Requirements <span className="text-red-500">*</span>
+            </label>
+            
+            {/* Selected Domains Display */}
+            {formData.domains.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                {formData.domains.map((domain) => (
+                  <span
+                    key={domain}
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${getDomainColor(domain)} flex items-center space-x-2`}
+                  >
+                    <span>{domain}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleDomain(domain)}
+                      className="hover:text-red-600"
+                    >
+                      <FaTimes />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Predefined Domains Checkboxes */}
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto mb-3 bg-amber-50 focus-within:border focus-within:border-amber-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                {domains.map((domain) => (
+                  <label
+                    key={domain}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.domains.includes(domain)}
+                      onChange={() => toggleDomain(domain)}
+                      className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-700">{domain}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Domain Input */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomDomain();
+                  }
+                }}
+                placeholder="Add custom domain..."
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCustomDomain}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
+              >
+                <FaPlus />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Select from predefined domains or add your own</p>
+          </div>
+
+          {/* Skills */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+              Key Skills <span className="text-red-500">*</span>
+            </label>
+
+            {/* Selected Skills */}
+            {formData.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50">
+                {formData.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium flex items-center space-x-2 border border-amber-200 shadow-sm"
+                  >
+                    <span>{skill}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleSkill(skill)}
+                      className="hover:text-red-600"
+                      aria-label={`Remove ${skill}`}
+                    >
+                      <FaTimes />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {formData.skills.length === 0 && (
+              <p className="text-xs text-red-500 mb-2">At least one skill is required</p>
+            )}
+
+            {/* Searchable dropdown */}
+            <div className="mb-3">
+              <input
+                type="text"
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+                placeholder="Search skills (e.g., React, Python, Figma)..."
+                className="w-full px-4 py-2 border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
+              />
+            </div>
+            <div className="border-0 rounded-lg p-3 sm:p-4 max-h-48 overflow-y-auto bg-amber-50 focus-within:border focus-within:border-amber-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                {allSkills
+                  .filter((s) => s.toLowerCase().includes(skillSearch.trim().toLowerCase()))
+                  .map((skill) => (
+                    <label
+                      key={skill}
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-1.5 sm:p-2 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.skills.includes(skill)}
+                        onChange={() => toggleSkill(skill)}
+                        className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500 flex-shrink-0"
+                      />
+                      <span className="text-xs sm:text-sm text-gray-700">{skill}</span>
+                    </label>
+                  ))}
+              </div>
+              {allSkills.filter((s) => s.toLowerCase().includes(skillSearch.trim().toLowerCase())).length === 0 && (
+                <p className="text-xs sm:text-sm text-gray-500">No skills found for that search.</p>
+              )}
+            </div>
+
+            {/* Custom skill */}
+            <div className="flex flex-col sm:flex-row gap-2 mt-3">
+              <input
+                type="text"
+                value={customSkill}
+                onChange={(e) => setCustomSkill(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomSkill();
+                  }
+                }}
+                placeholder="Add a custom skill (optional)"
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-2 focus:border-amber-500 bg-amber-50 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCustomSkill}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base flex items-center justify-center sm:flex-initial"
+              >
+                <FaPlus />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Use search to quickly find skills across departments.</p>
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.department}
+              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              required
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+            >
+              <option value="">Select Department</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Git Link (Optional) */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
+              Git Repository Link (Optional)
+            </label>
+            <input
+              type="url"
+              value={formData.gitLink}
+              onChange={(e) => setFormData({ ...formData, gitLink: e.target.value })}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-0 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border focus:border-amber-300 bg-amber-50 focus:outline-none"
+              placeholder="https://github.com/username/repo"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-3 sm:pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Updating...' : 'Update Project'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </div>
   );
 };
