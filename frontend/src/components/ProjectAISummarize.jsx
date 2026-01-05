@@ -34,22 +34,26 @@ const ProjectAISummarize = ({ projectId, description }) => {
         <button
           onClick={handleSummarize}
           disabled={summarizing}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+          className="group relative flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full hover:from-amber-700 hover:to-amber-600 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-amber-600/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md text-xs font-medium overflow-hidden backdrop-blur-sm border border-amber-400/20 hover:border-amber-500/40"
           title="Generate AI summary using Google Gemini"
         >
+          {/* Subtle shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+          
           {summarizing ? (
             <>
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-amber-700 border-t-transparent"></div>
-              <span>Summarizing...</span>
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent relative z-10"></div>
+              <span className="relative z-10">Summarizing...</span>
             </>
           ) : (
             <>
               <img 
                 src={geminiIcon} 
                 alt="summarize" 
-                className="w-3.5 h-3.5 object-contain"
+                className="w-3.5 h-3.5 object-contain relative z-10 group-hover:scale-110 transition-transform duration-300"
+                draggable="false"
               />
-              <span>Summarize</span>
+              <span className="relative z-10">Summarize</span>
             </>
           )}
         </button>
@@ -97,7 +101,7 @@ const ProjectAISummarize = ({ projectId, description }) => {
               <FaTimes size={14} />
             </button>
           </div>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words text-base">{summary}</p>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words text-sm">{summary}</p>
         </motion.div>
       )}
       

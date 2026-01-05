@@ -32,6 +32,7 @@ const Chats = () => {
   const [confirmingBlock, setConfirmingBlock] = useState(null);
   const [confirmingDeleteChat, setConfirmingDeleteChat] = useState(false);
   const [confirmingApproveDelete, setConfirmingApproveDelete] = useState(false);
+  const [sending, setSending] = useState(false);
   const { user } = useAuth();
   const { addNotification, refreshUnreadMessages } = useGlobal();
   const messagesEndRef = useRef(null);
@@ -607,12 +608,21 @@ const Chats = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || sending) return;
 
     // If this is a new chat (no existing chat selected), create it with first message
     if (newChatUser) {
-      await createChatAndSendFirstMessage(newChatUser._id, message.trim());
-      setMessage('');
+      const messageContent = message.trim();
+      setMessage(''); // Clear input immediately
+      setSending(true);
+      try {
+        await createChatAndSendFirstMessage(newChatUser._id, messageContent);
+      } catch (error) {
+        setMessage(messageContent); // Restore message on error
+        addNotification({ type: 'error', message: 'Failed to send message' });
+      } finally {
+        setSending(false);
+      }
       return;
     }
 
@@ -635,15 +645,18 @@ const Chats = () => {
       }
     }
 
+    const messageContent = message.trim();
+    setMessage(''); // Clear input immediately
+    setSending(true);
+
     try {
       // Before sending, ensure chat is restored if it was deleted
       // The backend will handle this, but we can also refresh the chat
       socketService.sendMessage({
         chatId: selectedChat._id,
         userId: user.id,
-        content: message.trim(),
+        content: messageContent,
       });
-      setMessage('');
       
       // Refresh chat list to ensure it appears if it was restored
       fetchChats();
@@ -658,7 +671,10 @@ const Chats = () => {
         isTyping: false
       });
     } catch (error) {
+      setMessage(messageContent); // Restore message on error
       addNotification({ type: 'error', message: 'Failed to send message' });
+    } finally {
+      setSending(false);
     }
   };
 
@@ -1217,34 +1233,40 @@ const Chats = () => {
           {newChatUser ? (
             <>
               {/* New Chat Header */}
-              <div className="p-5 border-b border-amber-100/50 bg-transparent flex justify-between items-center">
-                <div className="flex items-center space-x-3">
+              <div className="p-3 sm:p-5 border-b border-amber-100/50 bg-white/60 backdrop-blur-sm flex justify-between items-center sticky top-0 z-20">
+                <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                   <button
                     onClick={handleBackToList}
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-1.5 sm:p-2 rounded-lg transition flex-shrink-0"
                     title="Back to chats (ESC)"
                   >
-                    <FaArrowLeft size={18} />
+                    <FaArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold shadow-lg border-2 border-white">
                       {newChatUser.profilePicture ? (
                         <img 
                           src={newChatUser.profilePicture} 
                           alt={newChatUser.name} 
-                          className="w-10 h-10 rounded-full object-cover" 
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-md" 
                         />
                       ) : (
-                        newChatUser.name?.charAt(0).toUpperCase() || '?'
+                        <span className="text-sm sm:text-lg font-bold">
+                          {newChatUser.name?.charAt(0).toUpperCase() || '?'}
+                        </span>
                       )}
                     </div>
                     {isUserOnline(newChatUser._id) && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                     )}
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{newChatUser.name}</div>
-                    <div className="text-xs text-gray-500">{newChatUser.department} • {newChatUser.role}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm sm:text-base font-medium text-gray-900 truncate">{newChatUser.name}</div>
+                    <div className="text-xs text-gray-500 flex items-center space-x-1 truncate">
+                      <span className="truncate">{newChatUser.department}</span>
+                      <span>•</span>
+                      <span className="capitalize truncate">{newChatUser.role}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1254,9 +1276,9 @@ const Chats = () => {
               </div>
 
               {/* Message Input */}
-              <div className="p-5 bg-white/60 backdrop-blur-sm border-t border-amber-100/50 sticky bottom-0 z-10" style={{ marginBottom: '0' }}>
-                <form onSubmit={handleSendMessage} className="flex flex-col space-y-3">
-                  <div className="flex space-x-3">
+              <div className="p-3 sm:p-5 bg-white/60 backdrop-blur-sm border-t border-amber-100/50 sticky bottom-0 z-10" style={{ marginBottom: '0' }}>
+                <form onSubmit={handleSendMessage} className="flex flex-col space-y-2 sm:space-y-3">
+                  <div className="flex space-x-2 sm:space-x-3">
                     <input
                       ref={messageInputRef}
                       type="text"
@@ -1277,16 +1299,25 @@ const Chats = () => {
                         }
                       }}
                       placeholder="Type your first message..."
-                      className="flex-1 px-5 py-3 border-2 border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-white/60 backdrop-blur-sm transition"
+                      className="flex-1 px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-white/60 backdrop-blur-sm transition"
                       autoFocus
                     />
                     <button
                       type="submit"
-                      disabled={!message.trim()}
-                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-3 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-105"
+                      disabled={!message.trim() || sending}
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 shadow-md hover:shadow-lg transform hover:scale-105 flex-shrink-0"
                     >
-                      <FaPaperPlane />
-                      <span className="font-medium">Send</span>
+                      {sending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                          <span className="font-medium text-sm sm:text-base">Sending...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaPaperPlane className="text-sm sm:text-base" />
+                          <span className="font-medium text-sm sm:text-base">Send</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -1295,49 +1326,44 @@ const Chats = () => {
           ) : selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-2 sm:p-3 border-b border-amber-100/50 bg-transparent flex justify-between items-center sticky top-0 z-20 overflow-x-hidden w-full max-w-full flex-shrink-0">
-                <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-x-hidden">
+              <div className="p-2 sm:p-3 border-b border-amber-100/50 bg-white/60 backdrop-blur-sm flex justify-between items-center sticky top-0 z-20 overflow-x-hidden w-full max-w-full flex-shrink-0">
+                <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 overflow-x-hidden">
                   <button
                     onClick={handleBackToList}
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition flex-shrink-0 sm:hidden"
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-1.5 sm:p-2 rounded-lg transition flex-shrink-0"
                     title="Back to chats"
                   >
-                    <FaArrowLeft size={18} />
-                  </button>
-                  <button
-                    onClick={handleBackToList}
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition hidden sm:block"
-                    title="Back to chats (ESC)"
-                  >
-                    <FaArrowLeft size={18} />
+                    <FaArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
                   <div className="relative flex-shrink-0">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold shadow-lg border-2 border-white">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold shadow-lg border-2 border-white">
                       {getOtherUser(selectedChat)?.profilePicture ? (
                         <img 
                           src={getOtherUser(selectedChat).profilePicture} 
                           alt={getOtherUser(selectedChat).name} 
-                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-md" 
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-md" 
                         />
                       ) : (
-                        <span className="text-base sm:text-lg font-bold">
+                        <span className="text-sm sm:text-lg font-bold">
                           {getOtherUser(selectedChat)?.name?.charAt(0).toUpperCase() || '?'}
                         </span>
                       )}
                     </div>
                     {isUserOnline(getOtherUser(selectedChat)?._id) && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <button
                       onClick={() => handleViewProfile(getOtherUser(selectedChat)?._id)}
-                      className="font-medium text-gray-900 hover:text-amber-600 transition text-left text-xs sm:text-sm truncate block w-full"
+                      className="font-medium text-gray-900 hover:text-amber-600 transition text-left text-sm sm:text-base truncate block w-full"
                     >
                       {getOtherUser(selectedChat)?.name}
                     </button>
-                    <div className="hidden sm:block text-xs sm:text-sm text-gray-500 flex items-center space-x-1.5">
-                      <span>{getOtherUser(selectedChat)?.department} • {getOtherUser(selectedChat)?.role}</span>
+                    <div className="text-xs text-gray-500 flex items-center space-x-1 truncate">
+                      <span className="truncate">{getOtherUser(selectedChat)?.department}</span>
+                      <span>•</span>
+                      <span className="capitalize truncate">{getOtherUser(selectedChat)?.role}</span>
                     </div>
                   </div>
                 </div>
@@ -1681,7 +1707,7 @@ const Chats = () => {
               )}
 
               {/* Message Input */}
-              <div className="p-2 border-t border-amber-100/50 sticky bottom-0 z-10 flex-shrink-0" style={{ marginBottom: '0' }}>
+              <div className="p-2 sm:p-3 border-t border-amber-100/50 sticky bottom-0 z-10 flex-shrink-0 bg-white/60 backdrop-blur-sm" style={{ marginBottom: '0' }}>
                 {(() => {
                   const blocked = isUserBlocked(getOtherUser(selectedChat)?._id);
                   
@@ -1689,7 +1715,7 @@ const Chats = () => {
                   if (blocked) {
                     return (
                       <div className="text-center text-red-600 py-2">
-                        <p className="text-sm">
+                        <p className="text-xs sm:text-sm">
                           🚫 You have blocked this user. Unblock them to send messages.
                         </p>
                       </div>
@@ -1723,15 +1749,24 @@ const Chats = () => {
                               }
                             }}
                             placeholder={isPending ? `Send up to ${messagesLeft} message${messagesLeft !== 1 ? 's' : ''}...` : "Type a message..."}
-                            className="flex-1 px-3 py-1.5 text-sm border-2 border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-white/60 backdrop-blur-sm transition"
+                            className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border-2 border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-white/60 backdrop-blur-sm transition"
                   />
                   <button
                     type="submit"
-                            disabled={!message.trim()}
-                            className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1.5 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 shadow-md hover:shadow-lg flex-shrink-0"
+                            disabled={!message.trim() || sending}
+                            className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1 sm:space-x-2 shadow-md hover:shadow-lg flex-shrink-0 min-w-[60px] sm:min-w-[80px]"
                   >
-                    <FaPaperPlane className="text-sm" />
-                            <span className="font-medium text-sm hidden sm:inline">Send</span>
+                    {sending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                        <span className="font-medium text-xs sm:text-sm">Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaPaperPlane className="text-sm sm:text-base" />
+                        <span className="font-medium text-xs sm:text-sm">Send</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

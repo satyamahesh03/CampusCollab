@@ -294,7 +294,7 @@ const Projects = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Post your ideas and find your team</p>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Share your ideas and build your team</p>
         </div>
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           {(user?.role === 'student' || user?.role === 'faculty') && (

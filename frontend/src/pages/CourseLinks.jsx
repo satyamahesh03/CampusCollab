@@ -5,9 +5,10 @@ import { useGlobal } from '../context/GlobalContext';
 import { departments, formatRelativeTime } from '../utils/helpers';
 import FilterBar from '../components/FilterBar';
 import Loading from '../components/Loading';
-import { FaExternalLinkAlt, FaBook, FaPlus, FaUser, FaClock, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import { FaBook, FaPlus, FaUser, FaClock, FaArrowLeft, FaTimes } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRightLong } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -174,11 +175,12 @@ const CourseLinks = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden transition-all duration-300 flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+              style={{ height: '480px' }}
             >
               {/* Course Image */}
               {course.image ? (
-                <div className="h-36 sm:h-44 w-full overflow-hidden bg-gray-100">
+                <div className="h-44 w-full overflow-hidden bg-gray-100">
                   <img 
                     src={course.image} 
                     alt={course.title}
@@ -190,13 +192,13 @@ const CourseLinks = () => {
                   />
                 </div>
               ) : (
-                <div className="h-36 sm:h-44 w-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                  <FaBook className="text-3xl sm:text-5xl text-amber-600 opacity-60" />
+                <div className="h-44 w-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                  <FaBook className="text-4xl text-amber-600 opacity-60" />
                 </div>
               )}
 
               {/* Content */}
-              <div className="p-4 sm:p-6 flex flex-col flex-1">
+              <div className="p-4 sm:p-5 flex flex-col flex-1">
                 <div className="flex justify-between items-start mb-2 gap-2">
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
                     {course.title}
@@ -249,13 +251,13 @@ const CourseLinks = () => {
                 </div>
                 
                 {course.description && (
-                  <p className="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm line-clamp-3">
+                  <p className="text-gray-600 mb-0.5 text-xs sm:text-sm line-clamp-3">
                     {course.description}
                   </p>
                 )}
 
                 {/* Faculty Name and Timestamp */}
-                <div className="mb-3 sm:mb-4 space-y-1.5 sm:space-y-2">
+                <div className="mt-auto space-y-1.5">
                   <div className="flex items-center text-xs sm:text-sm text-gray-600">
                     <FaUser className="mr-1.5 sm:mr-2 text-amber-600 text-xs sm:text-sm" />
                     <span className="font-medium">
@@ -267,22 +269,27 @@ const CourseLinks = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                    <FaClock className="mr-1.5 sm:mr-2 text-xs sm:text-sm" />
-                    <span>{formatRelativeTime(course.createdAt)}</span>
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <FaClock className="mr-1.5 sm:mr-2 text-xs sm:text-sm" />
+                      <span>{formatRelativeTime(course.createdAt)}</span>
+                    </div>
+                    <a
+                      href={course.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center space-x-1 text-amber-600 hover:text-amber-700 transition-all group"
+                      title="View Resource"
+                    >
+                      <span className="hidden sm:inline text-xs sm:text-sm">View</span>
+                      <FontAwesomeIcon 
+                        icon={faArrowRightLong} 
+                        className="text-xs sm:text-sm transition-transform group-hover:translate-x-1" 
+                      />
+                    </a>
                   </div>
                 </div>
-
-                <a
-                  href={course.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="mt-auto flex items-center justify-center space-x-2 bg-amber-500 text-white py-2 sm:py-2.5 rounded-lg hover:bg-amber-600 transition font-medium shadow-sm hover:shadow-md w-full text-xs sm:text-sm"
-                >
-                  <span>View Resource</span>
-                  <FaExternalLinkAlt />
-                </a>
               </div>
             </motion.div>
           ))}

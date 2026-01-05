@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { projectAPI, hackathonAPI, internshipAPI, driveAPI, courseLinkAPI, statsAPI } from '../utils/api';
@@ -29,6 +29,7 @@ import Loading from '../components/Loading';
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [trendingProjects, setTrendingProjects] = useState([]);
   const [upcomingDrives, setUpcomingDrives] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -69,13 +70,16 @@ const Home = () => {
 
   const fetchAllData = async () => {
     try {
-      // Fetch trending projects if authenticated
-      if (isAuthenticated) {
+      // Fetch trending projects for everyone
+      try {
         const projectsResponse = await projectAPI.getAll({ sort: 'trending', status: 'open' });
         setTrendingProjects(projectsResponse.data.slice(0, 3));
+      } catch (error) {
+        // If not authenticated, projects might fail, but continue with other data
+        console.log('Could not fetch projects:', error);
       }
       
-      // Fetch upcoming drives (only 3)
+      // Fetch upcoming drives (only 3) - available for everyone
       const drivesResponse = await driveAPI.getAll({});
       const upcoming = (drivesResponse.data || [])
         .filter(drive => new Date(drive.driveDate) >= new Date())
@@ -83,34 +87,39 @@ const Home = () => {
         .slice(0, 3);
       setUpcomingDrives(upcoming);
       
-      // Fetch comprehensive stats data
-      const [
-        allProjects, 
-        openProjects, 
-        closedProjects,
-        hackathons, 
-        internships, 
-        drives, 
-        courses
-      ] = await Promise.all([
-        projectAPI.getAll({}),
-        projectAPI.getAll({ status: 'open' }),
-        projectAPI.getAll({ status: 'closed' }),
-        hackathonAPI.getAll({}),
-        internshipAPI.getAll({}),
-        driveAPI.getAll({}),
-        courseLinkAPI.getAll({}),
-      ]);
+      // Fetch comprehensive stats data (available for everyone)
+      try {
+        const [
+          allProjects, 
+          openProjects, 
+          closedProjects,
+          hackathons, 
+          internships, 
+          drives, 
+          courses
+        ] = await Promise.all([
+          projectAPI.getAll({}),
+          projectAPI.getAll({ status: 'open' }),
+          projectAPI.getAll({ status: 'closed' }),
+          hackathonAPI.getAll({}),
+          internshipAPI.getAll({}),
+          driveAPI.getAll({}),
+          courseLinkAPI.getAll({}),
+        ]);
 
-      setStats({
-        totalProjects: allProjects.count || allProjects.data?.length || 0,
-        activeProjects: openProjects.count || openProjects.data?.length || 0,
-        completedProjects: closedProjects.count || closedProjects.data?.length || 0,
-        totalHackathons: hackathons.count || hackathons.data?.length || 0,
-        totalInternships: internships.count || internships.data?.length || 0,
-        totalDrives: drives.count || drives.data?.length || 0,
-        totalResources: courses.count || courses.data?.length || 0,
-      });
+        setStats({
+          totalProjects: allProjects.count || allProjects.data?.length || 0,
+          activeProjects: openProjects.count || openProjects.data?.length || 0,
+          completedProjects: closedProjects.count || closedProjects.data?.length || 0,
+          totalHackathons: hackathons.count || hackathons.data?.length || 0,
+          totalInternships: internships.count || internships.data?.length || 0,
+          totalDrives: drives.count || drives.data?.length || 0,
+          totalResources: courses.count || courses.data?.length || 0,
+        });
+      } catch (error) {
+        // If stats fail, continue with other data
+        console.log('Could not fetch stats:', error);
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -134,6 +143,16 @@ const Home = () => {
       ...prev,
       [category]: !prev[category]
     }));
+  };
+
+  const handleNavigate = (e, path) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      // Redirect to login with return path
+      navigate(`/login?redirect=${encodeURIComponent(path)}`);
+    } else {
+      navigate(path);
+    }
   };
 
   const features = [
@@ -490,38 +509,39 @@ const Home = () => {
       </section> */}
 
       {/* Trending Projects Section */}
-      {isAuthenticated && (
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 rounded-full px-4 py-2 mb-4">
-                <TrendingUp size={20} className="text-orange-600" />
-                <span className="text-sm font-semibold text-orange-600">Top Picks Today</span>
-              </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Trending Projects</h2>
-              <p className="text-xl text-gray-600">Most popular projects getting attention from the community</p>
-            </motion.div>
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 rounded-full px-4 py-2 mb-4">
+              <TrendingUp size={20} className="text-orange-600" />
+              <span className="text-sm font-semibold text-orange-600">Top Picks Today</span>
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Trending Projects</h2>
+            <p className="text-xl text-gray-600">Most popular projects getting attention from the community</p>
+          </motion.div>
 
-            {loadingProjects ? (
-              <Loading text="Loading trending projects..." />
-            ) : trendingProjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
-                {trendingProjects.map((project, index) => (
-                  <motion.div
-                    key={project._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
+          {loadingProjects ? (
+            <Loading text="Loading trending projects..." />
+          ) : trendingProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
+              {trendingProjects.map((project, index) => (
+                <motion.div
+                  key={project._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div 
+                    onClick={(e) => handleNavigate(e, `/projects?open=${project._id}`)}
+                    className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full flex flex-col"
                   >
-                    <Link to={`/projects?open=${project._id}`}>
-                      <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full flex flex-col">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
@@ -572,7 +592,6 @@ const Home = () => {
                           </div>
                         </div>
                       </div>
-                    </Link>
                   </motion.div>
                 ))}
               </div>
@@ -583,53 +602,53 @@ const Home = () => {
               </div>
             )}
 
-                <div className="text-center">
-                  <Link
-                    to="/projects"
-                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <span>View All Projects</span>
-                    <ArrowRight size={20} />
-                  </Link>
-                </div>
-          </div>
-        </section>
-      )}
+            <div className="text-center">
+              <div
+                onClick={(e) => handleNavigate(e, '/projects')}
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+              >
+                <span>View All Projects</span>
+                <ArrowRight size={20} />
+              </div>
+            </div>
+        </div>
+      </section>
 
       {/* Upcoming Drives Section */}
-      {isAuthenticated && (
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-full px-4 py-2 mb-4">
-                <Calendar size={20} className="text-amber-600" />
-                <span className="text-sm font-semibold text-amber-600">UPCOMING OPPORTUNITIES</span>
-              </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Upcoming Placement Drives</h2>
-              <p className="text-xl text-gray-600">Don't miss out on these upcoming opportunities</p>
-            </motion.div>
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-full px-4 py-2 mb-4">
+              <Calendar size={20} className="text-amber-600" />
+              <span className="text-sm font-semibold text-amber-600">UPCOMING OPPORTUNITIES</span>
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Placement Drives</h2>
+            <p className="text-xl text-gray-600">Don't miss out on these upcoming opportunities</p>
+          </motion.div>
 
-            {loadingProjects ? (
-              <Loading text="Loading upcoming drives..." />
-            ) : upcomingDrives.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {upcomingDrives.map((drive, index) => (
-                    <motion.div
-                      key={drive._id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      viewport={{ once: true }}
+          {loadingProjects ? (
+            <Loading text="Loading upcoming drives..." />
+          ) : upcomingDrives.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {upcomingDrives.map((drive, index) => (
+                  <motion.div
+                    key={drive._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <div 
+                      onClick={(e) => handleNavigate(e, `/drives/${drive._id}`)}
+                      className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full"
                     >
-                      <Link to={`/drives/${drive._id}`}>
-                        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
@@ -654,37 +673,34 @@ const Home = () => {
                             </div>
                           </div>
 
-                          <div className="pt-4 border-t border-amber-100">
-                            <div className="text-xs text-amber-600 font-semibold">View Details →</div>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="text-center">
-                  <Link
-                    to="/drives"
-                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <span>View All Drives</span>
-                    <ArrowRight size={20} />
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl">
-                <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">No upcoming drives at the moment. Check back soon!</p>
+                      <div className="pt-4 border-t border-amber-100">
+                        <div className="text-xs text-amber-600 font-semibold">View Details →</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            )}
-          </div>
-        </section>
-      )}
+              <div className="text-center">
+                <div
+                  onClick={(e) => handleNavigate(e, '/drives')}
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+                >
+                  <span>View All Drives</span>
+                  <ArrowRight size={20} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl">
+              <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No upcoming drives at the moment. Check back soon!</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Statistics Section */}
-      {isAuthenticated && (
-        <section className="py-20">
+      <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -734,11 +750,11 @@ const Home = () => {
                 {/* Category Filter Buttons */}
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
                   {[
-                    { key: 'Projects', color: '#fef3c7', icon: <Briefcase size={14} /> },
-                    { key: 'Internships', color: '#fde68a', icon: <GraduationCap size={14} /> },
-                    { key: 'Hackathons', color: '#fcd34d', icon: <Code size={14} /> },
-                    { key: 'Drives', color: '#fbbf24', icon: <Target size={14} /> },
-                    { key: 'Courses', color: '#f59e0b', icon: <BookOpen size={14} /> },
+                    { key: 'Projects', color: '#3b82f6', icon: <Briefcase size={14} /> }, // Bright Blue
+                    { key: 'Internships', color: '#10b981', icon: <GraduationCap size={14} /> }, // Emerald Green
+                    { key: 'Hackathons', color: '#8b5cf6', icon: <Code size={14} /> }, // Violet Purple
+                    { key: 'Drives', color: '#ef4444', icon: <Target size={14} /> }, // Red
+                    { key: 'Courses', color: '#ec4899', icon: <BookOpen size={14} /> }, // Pink/Magenta
                   ].map((cat) => (
                     <button
                       key={cat.key}
@@ -750,7 +766,8 @@ const Home = () => {
                       }`}
                       style={{
                         borderColor: activeCategories[cat.key] ? cat.color : 'transparent',
-                        color: activeCategories[cat.key] ? cat.color : '#6b7280'
+                        color: activeCategories[cat.key] ? cat.color : '#6b7280',
+                        backgroundColor: activeCategories[cat.key] ? `${cat.color}15` : 'transparent'
                       }}
                     >
                       <div style={{ color: cat.color }} className="sm:hidden">{cat.icon}</div>
@@ -758,7 +775,13 @@ const Home = () => {
                         <span className="hidden sm:inline">{cat.key}</span>
                         <span className="sm:hidden">{cat.key.substring(0, 3)}</span>
                       {activeCategories[cat.key] && (
-                        <span className="text-xs bg-amber-100 text-amber-700 px-1.5 sm:px-2 py-0.5 rounded-full">
+                        <span 
+                          className="text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-semibold"
+                          style={{ 
+                            backgroundColor: `${cat.color}20`,
+                            color: cat.color
+                          }}
+                        >
                           {cat.key === 'Projects' ? postedStats.projects :
                            cat.key === 'Internships' ? postedStats.internships :
                            cat.key === 'Hackathons' ? postedStats.hackathons :
@@ -810,50 +833,50 @@ const Home = () => {
                           <Line 
                             type="monotone" 
                             dataKey="Projects" 
-                            stroke="#fef3c7" 
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: '#fef3c7' }}
-                            activeDot={{ r: 5, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2 }}
+                            stroke="#3b82f6" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#3b82f6' }}
+                            activeDot={{ r: 6, fill: '#3b82f6', stroke: '#2563eb', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Internships && (
                           <Line 
                             type="monotone" 
                             dataKey="Internships" 
-                            stroke="#fde68a" 
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: '#fde68a' }}
-                            activeDot={{ r: 5, fill: '#fde68a', stroke: '#f59e0b', strokeWidth: 2 }}
+                            stroke="#10b981" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#10b981' }}
+                            activeDot={{ r: 6, fill: '#10b981', stroke: '#059669', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Hackathons && (
                           <Line 
                             type="monotone" 
                             dataKey="Hackathons" 
-                            stroke="#fcd34d" 
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: '#fcd34d' }}
-                            activeDot={{ r: 5, fill: '#fcd34d', stroke: '#f59e0b', strokeWidth: 2 }}
+                            stroke="#8b5cf6" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#8b5cf6' }}
+                            activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#7c3aed', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Drives && (
                           <Line 
                             type="monotone" 
                             dataKey="Drives" 
-                            stroke="#fbbf24" 
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: '#fbbf24' }}
-                            activeDot={{ r: 5, fill: '#fbbf24', stroke: '#f59e0b', strokeWidth: 2 }}
+                            stroke="#ef4444" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#ef4444' }}
+                            activeDot={{ r: 6, fill: '#ef4444', stroke: '#dc2626', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Courses && (
                           <Line 
                             type="monotone" 
                             dataKey="Courses" 
-                            stroke="#f59e0b" 
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: '#f59e0b' }}
-                            activeDot={{ r: 5, fill: '#f59e0b', stroke: '#d97706', strokeWidth: 2 }}
+                            stroke="#ec4899" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#ec4899' }}
+                            activeDot={{ r: 6, fill: '#ec4899', stroke: '#db2777', strokeWidth: 2 }}
                           />
                         )}
                       </LineChart>
@@ -874,7 +897,6 @@ const Home = () => {
             </motion.div>
           </div>
         </section>
-      )}
 
       {/* Quick Actions for Students */}
       {isAuthenticated && user?.role === 'student' && (

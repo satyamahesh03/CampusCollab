@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { FaUsers, FaComment, FaPaperPlane, FaUserPlus } from 'react-icons/fa';
 import { projectAPI } from '../utils/api';
 import { useGlobal } from '../context/GlobalContext';
@@ -136,10 +135,10 @@ const ProjectTeamChat = ({
         </h3>
         <button
           onClick={() => setShowTeamChat(!showTeamChat)}
-          className="flex items-center gap-2 p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
+          className="flex items-center gap-2 px-3 py-1.5 bg-white text-amber-600 hover:bg-amber-50 rounded-lg transition-all text-sm font-medium"
         >
-          <FontAwesomeIcon icon={['far', 'message']} />
-          <span>{showTeamChat ? 'Hide' : 'Show'}</span>
+          <FaComment className="text-sm text-amber-600" />
+          <span className="text-amber-600">{showTeamChat ? 'Hide' : 'Show'}</span>
         </button>
       </div>
 

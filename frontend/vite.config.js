@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'https://campuscollab-odlh.onrender.com',
+        // target: 'http://localhost:6500',
         changeOrigin: true,
       }
     }

@@ -216,7 +216,7 @@ const Notifications = () => {
       {activeTab === 'notifications' && (
         <div>
           {notifications.length === 0 ? (
-            <div className="text-center py-12 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50">
+            <div className="text-center py-12 bg-amber-50/60 backdrop-blur-sm rounded-lg border border-amber-100/50">
               <FaBell className="mx-auto text-4xl text-amber-400 mb-4" />
               <p className="text-gray-500">No notifications yet</p>
             </div>
@@ -289,7 +289,7 @@ const Notifications = () => {
       {activeTab === 'reminders' && (
         <div>
           {reminders.length === 0 ? (
-            <div className="text-center py-12 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50">
+            <div className="text-center py-12 bg-amber-50/60 backdrop-blur-sm rounded-lg border border-amber-100/50">
               <FaClock className="mx-auto text-4xl text-amber-400 mb-4" />
               <p className="text-gray-500">No reminders yet. Save internships, hackathons, or drives to get reminders here!</p>
             </div>

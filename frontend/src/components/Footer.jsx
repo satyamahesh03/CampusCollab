@@ -22,7 +22,7 @@ const Footer = () => {
               <span className="text-lg sm:text-xl font-bold text-gray-900">Campus Collab</span>
             </div>
             <p className="text-gray-700 text-xs sm:text-sm leading-relaxed max-w-md">
-              A unified platform for collaboration across every department. Connect, build, and grow together.
+              A unified platform for collaboration across every department. Connect, Collaborate and grow together.
             </p>
           </div>
 

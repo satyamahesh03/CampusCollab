@@ -23,7 +23,7 @@ import Profile from './pages/Profile';
 
 function AppContent() {
   const location = useLocation();
-  const isChatPage = location.pathname.startsWith('/chats');
+  const isHomePage = location.pathname === '/';
   
   return (
           <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
@@ -180,7 +180,7 @@ function AppContent() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
-      {!isChatPage && <Footer />}
+      {isHomePage && <Footer />}
           </div>
   );
 }
