@@ -99,6 +99,7 @@ router.put('/:id', protect, async (req, res) => {
 
     // Check if user is the owner
     if (drive.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
         success: false,
         message: 'Not authorized to update this drive'
       });
