@@ -409,9 +409,21 @@ const DriveDetailView = ({ drive, onClose, onSave, userId }) => {
             <div className="mb-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 pr-8">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                    {drive.title || 'Placement Drive'}
-                  </h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                      {drive.title || 'Placement Drive'}
+                    </h2>
+                    {isOwner && (
+                      <button
+                        onClick={() => setShowEditModal(true)}
+                        className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                        title="Edit drive"
+                        type="button"
+                      >
+                        <FaEdit className="text-base sm:text-lg" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-lg sm:text-xl md:text-2xl text-amber-600 font-semibold">
                     {drive.company}
                   </p>
@@ -419,31 +431,19 @@ const DriveDetailView = ({ drive, onClose, onSave, userId }) => {
                     {drive.jobRole}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {isOwner && (
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
-                      title="Edit drive"
-                      type="button"
-                    >
-                      <FaEdit className="text-lg" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSave(drive._id);
-                    }}
-                    className={`p-3 rounded-full transition ${
-                      isSaved
-                        ? 'bg-primary-100 text-amber-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <FaBookmark size={24} />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSave(drive._id);
+                  }}
+                  className={`p-2 transition ${
+                    isSaved
+                      ? 'text-amber-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <FaBookmark size={24} />
+                </button>
               </div>
 
               {/* Quick Info Grid */}

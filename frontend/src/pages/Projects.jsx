@@ -895,6 +895,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   const [showParticipants, setShowParticipants] = useState(false);
   const [confirmingRemoveParticipant, setConfirmingRemoveParticipant] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmingComplete, setConfirmingComplete] = useState(false);
   const { addNotification } = useGlobal();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -1439,8 +1440,8 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-3 sm:px-4 pb-4 sm:pb-8 max-w-7xl">
-        <div className="bg-transparent rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
+      <div className="container mx-auto px-2 sm:px-4 pb-4 sm:pb-8 max-w-7xl">
+        <div className="bg-transparent rounded-lg p-3 sm:p-6 md:p-8 lg:p-10">
             {/* Completed Project Banner */}
             {projectData.status === 'closed' && (
               <div className="mb-6 bg-gray-800 text-white rounded-lg p-4 flex items-center space-x-3">
@@ -1455,24 +1456,24 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             {/* Header */}
             <div className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex-1 pr-0 sm:pr-8">
-                  {projectData.title}
-                </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 pr-0 sm:pr-8">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                    {projectData.title}
+                  </h2>
                   {isOwner && (
                     <button
                       onClick={() => setShowEditModal(true)}
-                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
                       title="Edit project"
                       type="button"
                     >
-                      <FaEdit className="text-lg" />
+                      <FaEdit className="text-base sm:text-lg" />
                     </button>
                   )}
-                  <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projectData.status)}`}>
-                    {projectData.status}
-                  </span>
                 </div>
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projectData.status)}`}>
+                  {projectData.status}
+                </span>
               </div>
 
               {/* Creator and Date */}
@@ -1665,7 +1666,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                   onClick={handleLikeClick}
                   className={`group px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm ${
                     isLiked
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200 shadow-sm'
+                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-md'
                       : 'bg-white/60 backdrop-blur-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border border-amber-200/50 hover:border-red-300/50'
                   }`}
                 >
@@ -1673,7 +1674,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                     icon={faHeart} 
                     className={`text-sm sm:text-base transition-colors ${
                       isLiked 
-                        ? "text-red-600" 
+                        ? "text-white" 
                         : "text-gray-400 opacity-60 group-hover:text-red-600 group-hover:opacity-100"
                     }`}
                   />
@@ -1711,71 +1712,60 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                 </button>
               )}
               {isOwner && projectData.status === 'open' && (
-                <>
+                <div className="flex items-center gap-2 flex-wrap w-full">
                     <button
                       onClick={() => setShowJoinRequests(!showJoinRequests)}
-                    className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 text-xs shadow-sm hover:shadow-md"
+                    className="flex-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 text-xs shadow-sm hover:shadow-md min-w-0"
                     >
                     <FontAwesomeIcon icon={faHandshake} className="text-xs" />
-                    <span>View Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount})`}</span>
+                    <span className="truncate">View Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount})`}</span>
                     </button>
-                  <button
-                    onClick={async () => {
-                      await onComplete(projectData._id);
-                      onClose();
-                      onUpdate();
-                    }}
-                    className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 text-xs"
-                  >
-                    <FaCheck className="text-xs" />
-                    <span>Mark as Complete</span>
-                  </button>
-                </>
-              )}
-              {isOwner && (
-                <div className="relative flex flex-col items-end">
-                  {confirmingDelete === projectData._id && (
-                    <div className="flex items-center gap-2 mb-1 -mt-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onDeleteConfirm();
-                        }}
-                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors shadow-sm"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onDeleteCancel();
-                        }}
-                        className="px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (confirmingDelete !== projectData._id) {
-                        onDelete(projectData._id);
-                      }
-                    }}
-                    disabled={confirmingDelete === projectData._id}
-                    className="px-3 py-1.5 text-red-600 rounded-lg transition-all flex items-center justify-center hover:scale-110 border border-red-200 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    title="Delete project"
-                  >
-                    <FontAwesomeIcon icon={faTrashCan} className="text-xs transition-transform" />
-                    <span className="ml-1 text-xs">Delete</span>
-                  </button>
+                  <div className="relative flex-1 min-w-0">
+                    {confirmingComplete && (
+                      <div className="flex items-center gap-2 mb-1 -mt-2">
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setConfirmingComplete(false);
+                            await onComplete(projectData._id);
+                            onClose();
+                            onUpdate();
+                          }}
+                          className="px-2 sm:px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                        >
+                          Complete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setConfirmingComplete(false);
+                          }}
+                          className="px-2 sm:px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!confirmingComplete) {
+                          setConfirmingComplete(true);
+                        }
+                      }}
+                      disabled={confirmingComplete}
+                      className="w-full px-2 sm:px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaCheck className="text-xs" />
+                      <span className="truncate">Mark as Complete</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

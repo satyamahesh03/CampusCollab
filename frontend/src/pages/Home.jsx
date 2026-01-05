@@ -34,7 +34,7 @@ const Home = () => {
   const [upcomingDrives, setUpcomingDrives] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [statsPeriod, setStatsPeriod] = useState('month'); // 'week' or 'month'
+  const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' or 'month' - default to week
   const [postedStats, setPostedStats] = useState({
     projects: 0,
     internships: 0,
@@ -798,15 +798,18 @@ const Home = () => {
                   <div className="w-full overflow-x-auto">
                     <div className="w-full min-w-[300px] min-h-[300px]" style={{ height: '300px', position: 'relative' }}>
                       <ResponsiveContainer width="100%" height={300} minHeight={300}>
-                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: statsPeriod === 'month' ? 60 : 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis 
                             dataKey="label" 
                             stroke="#6b7280"
-                            style={{ fontSize: '10px' }}
-                            angle={-45}
+                            style={{ fontSize: statsPeriod === 'month' ? '11px' : '10px' }}
+                            angle={statsPeriod === 'month' ? -45 : -45}
                             textAnchor="end"
-                            height={60}
+                            height={statsPeriod === 'month' ? 100 : 60}
+                            interval={0}
+                            tick={{ fill: '#6b7280' }}
+                            tickFormatter={(value) => value || ''}
                           />
                           <YAxis 
                             stroke="#6b7280"

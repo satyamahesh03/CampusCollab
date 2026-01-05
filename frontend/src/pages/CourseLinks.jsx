@@ -168,14 +168,14 @@ const CourseLinks = () => {
       {loading ? (
         <Loading />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-0">
           {courseLinks.map((course, index) => (
             <motion.div
               key={course._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden transition-all duration-300 flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1"
+              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden transition-all duration-300 flex flex-col border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 mb-0"
               style={{ height: '480px' }}
             >
               {/* Course Image */}
@@ -198,9 +198,9 @@ const CourseLinks = () => {
               )}
 
               {/* Content */}
-              <div className="p-4 sm:p-5 flex flex-col flex-1">
+              <div className="pt-4 sm:pt-5 px-4 sm:px-5 pb-0 flex flex-col flex-1">
                 <div className="flex justify-between items-start mb-2 gap-2">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2 flex-1 min-h-[3rem] sm:min-h-[3.5rem]">
                     {course.title}
                   </h3>
                   {(course.postedBy?._id === user?.id || course.postedBy === user?.id) && (
@@ -251,13 +251,13 @@ const CourseLinks = () => {
                 </div>
                 
                 {course.description && (
-                  <p className="text-gray-600 mb-0.5 text-xs sm:text-sm line-clamp-3">
+                  <p className="text-gray-600 mb-[30px] text-xs sm:text-sm line-clamp-3">
                     {course.description}
                   </p>
                 )}
 
                 {/* Faculty Name and Timestamp */}
-                <div className="mt-auto space-y-1.5">
+                <div className="space-y-1.5">
                   <div className="flex items-center text-xs sm:text-sm text-gray-600">
                     <FaUser className="mr-1.5 sm:mr-2 text-amber-600 text-xs sm:text-sm" />
                     <span className="font-medium">

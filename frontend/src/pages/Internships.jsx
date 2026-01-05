@@ -424,38 +424,38 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
           <div className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
                 <div className="flex-1 pr-0 sm:pr-8">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                    {internship.title}
-                  </h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                      {internship.title}
+                    </h2>
+                    {isOwner && (
+                      <button
+                        onClick={() => setShowEditModal(true)}
+                        className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                        title="Edit internship"
+                        type="button"
+                      >
+                        <FaEdit className="text-base sm:text-lg" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-lg sm:text-xl text-amber-600 font-semibold">
                     {internship.company}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {isOwner && (
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
-                      title="Edit internship"
-                      type="button"
-                    >
-                      <FaEdit className="text-lg" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSave(internship._id);
-                    }}
-                    className={`p-3 rounded-full transition ${
-                      isSaved
-                        ? 'bg-primary-100 text-amber-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <FaBookmark size={24} />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSave(internship._id);
+                  }}
+                  className={`p-2 transition ${
+                    isSaved
+                      ? 'text-amber-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <FaBookmark size={24} />
+                </button>
               </div>
 
               {/* Domain Badge */}

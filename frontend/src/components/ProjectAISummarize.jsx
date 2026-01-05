@@ -101,12 +101,12 @@ const ProjectAISummarize = ({ projectId, description }) => {
               <FaTimes size={14} />
             </button>
           </div>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words text-sm">{summary}</p>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words text-xs sm:text-sm">{summary}</p>
         </motion.div>
       )}
       
-      <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 sm:p-6 border border-amber-100/50">
-        <p className={`text-gray-700 whitespace-pre-wrap leading-relaxed text-sm ${showSummary ? 'opacity-60' : ''}`}>
+      <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 sm:p-4 md:p-6 border border-amber-100/50">
+        <p className={`text-gray-700 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm ${showSummary ? 'opacity-60' : ''}`}>
           {description}
         </p>
       </div>

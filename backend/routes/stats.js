@@ -25,8 +25,14 @@ const getStartOfWeek = (date) => {
 };
 
 // Helper function to format date for labels
-const formatDateLabel = (date, period) => {
+const formatDateLabel = (date, period, weekIndex = null) => {
   const d = new Date(date);
+  
+  // Validate date
+  if (isNaN(d.getTime())) {
+    return 'Invalid Date';
+  }
+  
   if (period === 'week') {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayName = days[d.getDay()];
@@ -34,9 +40,36 @@ const formatDateLabel = (date, period) => {
     const day = d.getDate();
     return `${dayName} ${day}`;
   } else {
-    // For month view, return week labels (Week 1, Week 2, etc.)
-    // This will be calculated in the interval loop
-    return '';
+    // For month view, return week labels with date range
+    try {
+      const weekStart = new Date(d);
+      const weekEnd = new Date(d);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      // Ensure dates are valid
+      if (isNaN(weekStart.getTime()) || isNaN(weekEnd.getTime())) {
+        // Fallback to simple format
+        const month = d.toLocaleString('default', { month: 'short' });
+        const day = d.getDate();
+        return `${month} ${day}`;
+      }
+      
+      const startMonth = weekStart.toLocaleString('default', { month: 'short' });
+      const startDay = weekStart.getDate();
+      const endMonth = weekEnd.toLocaleString('default', { month: 'short' });
+      const endDay = weekEnd.getDate();
+      
+      if (startMonth === endMonth) {
+        return `${startMonth} ${startDay}-${endDay}`;
+      } else {
+        return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
+      }
+    } catch (error) {
+      // Fallback format if anything fails
+      const month = d.toLocaleString('default', { month: 'short' });
+      const day = d.getDate();
+      return `${month} ${day}`;
+    }
   }
 };
 
@@ -45,7 +78,7 @@ const formatDateLabel = (date, period) => {
 // @access  Public
 router.get('/public', async (req, res) => {
   try {
-    const { period } = req.query; // 'week' or 'month'
+    const { period = 'month' } = req.query; // 'week' or 'month', default to 'month'
     
     // Get total users count
     const totalUsers = await User.countDocuments({ isSuspended: { $ne: true } });
@@ -78,18 +111,23 @@ router.get('/public', async (req, res) => {
       const currentWeekStart = getStartOfWeek(now);
       startDate = new Date(currentWeekStart);
       startDate.setDate(startDate.getDate() - (3 * 7));
+      startDate.setHours(0, 0, 0, 0);
       
       // Create week-wise intervals
       for (let i = 0; i < 4; i++) {
         const weekStart = new Date(startDate);
         weekStart.setDate(startDate.getDate() + (i * 7));
+        weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
         
+        // Generate label for this week
+        const label = formatDateLabel(weekStart, 'month', i);
+        
         intervals.push({
           date: weekStart.toISOString(),
-          label: formatDateLabel(weekStart, 'month'),
+          label: label,
           start: weekStart,
           end: weekEnd
         });
