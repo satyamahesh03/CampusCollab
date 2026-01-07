@@ -70,55 +70,52 @@ const Home = () => {
 
   const fetchAllData = async () => {
     try {
-      // Fetch trending projects for everyone
-      try {
-        const projectsResponse = await projectAPI.getAll({ sort: 'trending', status: 'open' });
-        setTrendingProjects(projectsResponse.data.slice(0, 3));
-      } catch (error) {
-        // If not authenticated, projects might fail, but continue with other data
-        console.log('Could not fetch projects:', error);
-      }
+      setLoadingProjects(true);
       
-      // Fetch upcoming drives (only 3) - available for everyone
-      const drivesResponse = await driveAPI.getAll({});
-      const upcoming = (drivesResponse.data || [])
-        .filter(drive => new Date(drive.driveDate) >= new Date())
-        .sort((a, b) => new Date(a.driveDate) - new Date(b.driveDate))
-        .slice(0, 3);
-      setUpcomingDrives(upcoming);
-      
-      // Fetch comprehensive stats data (available for everyone)
-      try {
-        const [
-          allProjects, 
-          openProjects, 
-          closedProjects,
-          hackathons, 
-          internships, 
-          drives, 
-          courses
-        ] = await Promise.all([
-          projectAPI.getAll({}),
-          projectAPI.getAll({ status: 'open' }),
-          projectAPI.getAll({ status: 'closed' }),
-          hackathonAPI.getAll({}),
-          internshipAPI.getAll({}),
-          driveAPI.getAll({}),
-          courseLinkAPI.getAll({}),
-        ]);
+      // Fetch all home page data in parallel using optimized endpoint
+      const [homeDataResponse, statsResponse] = await Promise.all([
+        statsAPI.getHomeData().catch(err => {
+          console.log('Could not fetch home data:', err);
+          return { data: null };
+        }),
+        statsAPI.getPublicStats(statsPeriod).catch(err => {
+          console.log('Could not fetch stats:', err);
+          return { data: null };
+        })
+      ]);
 
-        setStats({
-          totalProjects: allProjects.count || allProjects.data?.length || 0,
-          activeProjects: openProjects.count || openProjects.data?.length || 0,
-          completedProjects: closedProjects.count || closedProjects.data?.length || 0,
-          totalHackathons: hackathons.count || hackathons.data?.length || 0,
-          totalInternships: internships.count || internships.data?.length || 0,
-          totalDrives: drives.count || drives.data?.length || 0,
-          totalResources: courses.count || courses.data?.length || 0,
+      // Set all data at once from optimized endpoint
+      if (homeDataResponse.data) {
+        setTrendingProjects(homeDataResponse.data.trendingProjects || []);
+        setUpcomingDrives(homeDataResponse.data.upcomingDrives || []);
+        setStats(homeDataResponse.data.stats || {
+          totalProjects: 0,
+          activeProjects: 0,
+          completedProjects: 0,
+          totalHackathons: 0,
+          totalInternships: 0,
+          totalDrives: 0,
+          totalResources: 0,
         });
-      } catch (error) {
-        // If stats fail, continue with other data
-        console.log('Could not fetch stats:', error);
+        // Set totalUsers from home data if available
+        if (homeDataResponse.data.totalUsers) {
+          setTotalUsers(homeDataResponse.data.totalUsers);
+        }
+      }
+
+      // Set chart data and posted stats from stats endpoint
+      if (statsResponse.data) {
+        if (statsResponse.data.totalUsers) {
+          setTotalUsers(statsResponse.data.totalUsers);
+        }
+        setPostedStats(statsResponse.data.postedStats || {
+          projects: 0,
+          internships: 0,
+          hackathons: 0,
+          drives: 0,
+          courses: 0,
+        });
+        setChartData(statsResponse.data.chartData || []);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);

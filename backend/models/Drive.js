@@ -72,5 +72,10 @@ const driveSchema = new mongoose.Schema({
   }
 });
 
+// Add indexes for better query performance
+driveSchema.index({ isHidden: 1, driveDate: 1 });
+driveSchema.index({ createdAt: 1 });
+driveSchema.index({ driveDate: 1 });
+
 module.exports = mongoose.model('Drive', driveSchema);
 

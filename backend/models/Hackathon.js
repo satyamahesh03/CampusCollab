@@ -70,5 +70,9 @@ const hackathonSchema = new mongoose.Schema({
   }
 });
 
+// Add indexes for better query performance
+hackathonSchema.index({ isHidden: 1, endDate: 1 });
+hackathonSchema.index({ createdAt: 1 });
+
 module.exports = mongoose.model('Hackathon', hackathonSchema);
 

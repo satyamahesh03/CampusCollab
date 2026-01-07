@@ -8,8 +8,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://campuscollab-odlh.onrender.com',
-        // target: 'http://localhost:6500',
+        // target: 'https://campuscollab-odlh.onrender.com',
+        target: 'http://localhost:6500',
         changeOrigin: true,
       }
     }

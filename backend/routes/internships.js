@@ -42,14 +42,36 @@ router.get('/', async (req, res) => {
     // Filter out expired internships (deadline passed)
     query.applicationDeadline = { $gte: new Date() };
 
+    // Pagination support
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const total = await Internship.countDocuments(query);
+
+    // Fetch with optimized fields and lean for performance
     const internships = await Internship.find(query)
+      .select('title company description domain department eligibleYears duration stipend location mode applicationDeadline likes createdAt postedBy')
       .populate('postedBy', 'name department')
-      .sort({ createdAt: -1 });
+      .lean()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Convert likes to count
+    const internshipsWithCounts = internships.map(internship => ({
+      ...internship,
+      likes: internship.likes?.length || 0
+    }));
 
     res.json({
       success: true,
-      count: internships.length,
-      data: internships
+      count: internshipsWithCounts.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: internshipsWithCounts
     });
   } catch (error) {
     console.error(error);

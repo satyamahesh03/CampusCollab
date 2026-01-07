@@ -320,6 +320,7 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
   });
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [metadataFetched, setMetadataFetched] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { addNotification } = useGlobal();
 
@@ -372,6 +373,7 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
     }
 
     try {
+      setLoading(true);
       await courseLinkAPI.create(formData);
       addNotification({
         type: 'success',
@@ -384,6 +386,8 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
         type: 'error',
         message: 'Failed to add resource',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -392,7 +396,7 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white/60 backdrop-blur-sm rounded-lg p-4 sm:p-6 md:p-8 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative border border-amber-100/50"
+        className="bg-white/60 backdrop-blur-sm rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-2xl md:max-w-3xl lg:max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative border border-amber-100/50"
       >
         {/* Close Button - Top Right */}
         <button
@@ -501,10 +505,20 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
           <div className="pt-3 sm:pt-4">
             <button
               type="submit"
-              disabled={!formData.department || !formData.link}
-              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              disabled={!formData.department || !formData.link || loading}
+              className="w-full bg-amber-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-amber-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center"
             >
-              Add Resource
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                'Add Resource'
+              )}
             </button>
           </div>
         </form>

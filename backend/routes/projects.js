@@ -191,24 +191,152 @@ router.get('/', async (req, res) => {
       query.skills = { $in: [skill] };
     }
 
-    let projects = await Project.find(query)
-      .populate('createdBy', 'name department')
-      .populate('comments.user', 'name')
-      .populate('comments.replies.user', 'name')
-      .populate('comments.replies.replies.user', 'name')
-      .populate('comments.replies.replies.replies.user', 'name')
-      .populate('participants.user', 'name')
-      .populate('joinRequests.user', 'name email department');
+    let projects;
 
-    // Sort by trending (likes count) if requested
+    // Optimize trending sort using aggregation
     if (sort === 'trending') {
-      projects = projects.sort((a, b) => b.likes.length - a.likes.length);
-      // Limit to top 3 trending projects
-      projects = projects.slice(0, 3);
+      projects = await Project.aggregate([
+        { $match: query },
+        { 
+          $addFields: { 
+            likesCount: { $size: { $ifNull: ['$likes', []] } } 
+          } 
+        },
+        { $sort: { likesCount: -1 } },
+        { $limit: 3 },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'createdBy',
+            foreignField: '_id',
+            as: 'createdBy',
+            pipeline: [
+              { $project: { name: 1, department: 1 } }
+            ]
+          }
+        },
+        { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants.user',
+            foreignField: '_id',
+            as: 'participantsData',
+            pipeline: [
+              { $project: { name: 1 } }
+            ]
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'joinRequests.user',
+            foreignField: '_id',
+            as: 'joinRequestsData',
+            pipeline: [
+              { $project: { name: 1, email: 1, department: 1 } }
+            ]
+          }
+        },
+        {
+          $addFields: {
+            participants: {
+              $map: {
+                input: '$participants',
+                as: 'p',
+                in: {
+                  $mergeObjects: [
+                    '$$p',
+                    {
+                      user: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: '$participantsData',
+                              as: 'pd',
+                              cond: { $eq: ['$$pd._id', '$$p.user'] }
+                            }
+                          },
+                          0
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            joinRequests: {
+              $map: {
+                input: '$joinRequests',
+                as: 'jr',
+                in: {
+                  $mergeObjects: [
+                    '$$jr',
+                    {
+                      user: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: '$joinRequestsData',
+                              as: 'jrd',
+                              cond: { $eq: ['$$jrd._id', '$$jr.user'] }
+                            }
+                          },
+                          0
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            participantsData: 0,
+            joinRequestsData: 0
+          }
+        }
+      ]);
     } else {
-      projects = projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // For non-trending queries, use optimized query with pagination
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const skip = (page - 1) * limit;
+
+      // Get total count for pagination
+      const total = await Project.countDocuments(query);
+
+      // Fetch projects with minimal population for list view
+      projects = await Project.find(query)
+        .select('title description domains skills status likes comments participants createdAt createdBy')
+        .populate('createdBy', 'name department')
+        .populate('participants.user', 'name')
+        .lean()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      // Convert likes and comments to counts for list view
+      projects = projects.map(project => ({
+        ...project,
+        likes: project.likes?.length || 0,
+        comments: project.comments?.length || 0,
+        participants: project.participants?.length || 0
+      }));
+
+      return res.json({
+        success: true,
+        count: projects.length,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        data: projects
+      });
     }
 
+    // For trending sort (already limited to 3)
     res.json({
       success: true,
       count: projects.length,

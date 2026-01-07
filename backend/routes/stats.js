@@ -73,6 +73,115 @@ const formatDateLabel = (date, period, weekIndex = null) => {
   }
 };
 
+// @route   GET /api/stats/home
+// @desc    Get optimized home page data (trending projects, upcoming drives, stats)
+// @access  Public
+router.get('/home', async (req, res) => {
+  try {
+    // Use Promise.all to fetch everything in parallel with optimized queries
+    const [
+      totalUsers,
+      trendingProjects,
+      upcomingDrives,
+      stats
+    ] = await Promise.all([
+      // Total users count - optimized
+      User.countDocuments({ isSuspended: { $ne: true } }),
+      
+      // Trending projects - use aggregation for efficiency
+      Project.aggregate([
+        { 
+          $match: { 
+            isHidden: { $ne: true }, 
+            status: { $ne: 'closed' } 
+          } 
+        },
+        { 
+          $addFields: { 
+            likesCount: { $size: { $ifNull: ['$likes', []] } } 
+          } 
+        },
+        { $sort: { likesCount: -1 } },
+        { $limit: 3 },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'createdBy',
+            foreignField: '_id',
+            as: 'createdBy',
+            pipeline: [
+              { $project: { name: 1, department: 1 } }
+            ]
+          }
+        },
+        { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            domains: 1,
+            likes: 1,
+            comments: 1,
+            participants: 1,
+            createdAt: 1,
+            createdBy: {
+              name: '$createdBy.name',
+              department: '$createdBy.department'
+            }
+          }
+        }
+      ]),
+      
+      // Upcoming drives - optimized query with select and limit
+      Drive.find({
+        isHidden: { $ne: true },
+        driveDate: { $gte: new Date() }
+      })
+        .select('title company jobRole driveDate package')
+        .populate('postedBy', 'name department')
+        .sort({ driveDate: 1 })
+        .limit(3)
+        .lean(),
+      
+      // Stats using countDocuments for efficiency
+      Promise.all([
+        Project.countDocuments({ isHidden: { $ne: true } }),
+        Project.countDocuments({ isHidden: { $ne: true }, status: 'open' }),
+        Project.countDocuments({ isHidden: { $ne: true }, status: 'closed' }),
+        Hackathon.countDocuments({ isHidden: { $ne: true } }),
+        Internship.countDocuments({ isHidden: { $ne: true } }),
+        Drive.countDocuments({ isHidden: { $ne: true } }),
+        CourseLink.countDocuments({ isHidden: { $ne: true } })
+      ]).then(([totalProjects, activeProjects, completedProjects, totalHackathons, totalInternships, totalDrives, totalResources]) => ({
+        totalProjects,
+        activeProjects,
+        completedProjects,
+        totalHackathons,
+        totalInternships,
+        totalDrives,
+        totalResources
+      }))
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        trendingProjects,
+        upcomingDrives,
+        stats
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching home data'
+    });
+  }
+});
+
 // @route   GET /api/stats/public
 // @desc    Get public statistics (users count and posted data statistics with breakdown)
 // @access  Public

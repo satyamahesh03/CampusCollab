@@ -34,20 +34,75 @@ router.get('/', async (req, res) => {
     // Filter out hackathons where end date has passed
     query.endDate = { $gte: new Date() };
 
-    let hackathons = await Hackathon.find(query)
-      .populate('postedBy', 'name department role');
+    // Pagination support
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-    // Sort by trending (likes count) if requested
+    // Get total count
+    const total = await Hackathon.countDocuments(query);
+
+    let hackathons;
     if (sort === 'trending') {
-      hackathons = hackathons.sort((a, b) => b.likes.length - a.likes.length);
+      // Use aggregation for trending sort
+      hackathons = await Hackathon.aggregate([
+        { $match: query },
+        { $addFields: { likesCount: { $size: { $ifNull: ['$likes', []] } } } },
+        { $sort: { likesCount: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'postedBy',
+            foreignField: '_id',
+            as: 'postedBy',
+            pipeline: [{ $project: { name: 1, department: 1, role: 1 } }]
+          }
+        },
+        { $unwind: { path: '$postedBy', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            title: 1,
+            organizer: 1,
+            description: 1,
+            domain: 1,
+            startDate: 1,
+            endDate: 1,
+            registrationDeadline: 1,
+            mode: 1,
+            location: 1,
+            prizes: 1,
+            registrationLink: 1,
+            likes: 1,
+            createdAt: 1,
+            postedBy: 1
+          }
+        }
+      ]);
     } else {
-      hackathons = hackathons.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      hackathons = await Hackathon.find(query)
+        .select('title organizer description domain startDate endDate registrationDeadline mode location prizes registrationLink likes createdAt postedBy')
+        .populate('postedBy', 'name department role')
+        .lean()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
     }
+
+    // Convert likes to count
+    const hackathonsWithCounts = hackathons.map(hackathon => ({
+      ...hackathon,
+      likes: Array.isArray(hackathon.likes) ? hackathon.likes.length : (hackathon.likes || 0)
+    }));
 
     res.json({
       success: true,
-      count: hackathons.length,
-      data: hackathons
+      count: hackathonsWithCounts.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: hackathonsWithCounts
     });
   } catch (error) {
     console.error(error);

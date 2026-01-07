@@ -40,14 +40,36 @@ router.get('/', async (req, res) => {
       query.driveDate = { $gte: new Date() };
     }
 
+    // Pagination support
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const total = await Drive.countDocuments(query);
+
+    // Fetch with optimized fields and lean for performance
     const drives = await Drive.find(query)
+      .select('title company description department eligibleYears cgpaCriteria jobRole package driveDate registrationDeadline location registrationLink requirements likes createdAt postedBy')
       .populate('postedBy', 'name department')
-      .sort({ driveDate: status === 'completed' ? -1 : 1 }); // Completed: newest first, Active: soonest first
+      .lean()
+      .sort({ driveDate: status === 'completed' ? -1 : 1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Convert likes to count
+    const drivesWithCounts = drives.map(drive => ({
+      ...drive,
+      likes: drive.likes?.length || 0
+    }));
 
     res.json({
       success: true,
-      count: drives.length,
-      data: drives
+      count: drivesWithCounts.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: drivesWithCounts
     });
   } catch (error) {
     console.error(error);

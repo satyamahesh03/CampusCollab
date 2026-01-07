@@ -54,5 +54,9 @@ const courseLinkSchema = new mongoose.Schema({
   }
 });
 
+// Add indexes for better query performance
+courseLinkSchema.index({ isHidden: 1 });
+courseLinkSchema.index({ createdAt: 1 });
+
 module.exports = mongoose.model('CourseLink', courseLinkSchema);
 

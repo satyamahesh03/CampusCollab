@@ -79,13 +79,29 @@ router.get('/', async (req, res) => {
       ];
     }
 
+    // Pagination support
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const total = await CourseLink.countDocuments(query);
+
+    // Fetch with optimized fields and lean for performance
     const courseLinks = await CourseLink.find(query)
+      .select('title description category department subject skills link image type createdAt postedBy')
       .populate('postedBy', 'name department')
-      .sort({ createdAt: -1 });
+      .lean()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.json({
       success: true,
       count: courseLinks.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       data: courseLinks
     });
   } catch (error) {

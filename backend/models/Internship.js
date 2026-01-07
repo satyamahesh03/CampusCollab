@@ -72,5 +72,9 @@ const internshipSchema = new mongoose.Schema({
   }
 });
 
+// Add indexes for better query performance
+internshipSchema.index({ isHidden: 1, applicationDeadline: 1 });
+internshipSchema.index({ createdAt: 1 });
+
 module.exports = mongoose.model('Internship', internshipSchema);
 

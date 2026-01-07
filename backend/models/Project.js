@@ -208,5 +208,11 @@ projectSchema.pre('save', function(next) {
   next();
 });
 
+// Add indexes for better query performance
+projectSchema.index({ isHidden: 1, status: 1, createdAt: -1 });
+projectSchema.index({ isHidden: 1, status: 1 });
+projectSchema.index({ createdAt: 1 });
+projectSchema.index({ 'likes': 1 });
+
 module.exports = mongoose.model('Project', projectSchema);
 
