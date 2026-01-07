@@ -25,7 +25,7 @@ import {
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
-  const { reminders, unreadMessages, newReminderIds, unreadNotificationCount } = useGlobal();
+  const { reminders, unreadMessages, pendingChatRequests, newReminderIds, unreadNotificationCount } = useGlobal();
   const navigate = useNavigate();
   const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -163,9 +163,9 @@ const Navbar = () => {
                   className="relative p-2 text-gray-600 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50"
                 >
                   <MessageCircle size={20} />
-                  {unreadMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center text-xs font-medium">
-                      {unreadMessages}
+                  {(unreadMessages > 0 || pendingChatRequests > 0) && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center text-xs font-medium">
+                      {unreadMessages + pendingChatRequests}
                     </span>
                   )}
                 </Link>

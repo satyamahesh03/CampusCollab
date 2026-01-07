@@ -22,7 +22,7 @@ const Internships = () => {
   const [availableYears, setAvailableYears] = useState([]);
   const [confirmingDeleteInternship, setConfirmingDeleteInternship] = useState(null);
   const { user } = useAuth();
-  const { addNotification, refreshReminders } = useGlobal();
+  const { addNotification, refreshReminders, reminders } = useGlobal();
   const { id: internshipId } = useParams();
   const navigate = useNavigate();
 
@@ -73,6 +73,29 @@ const Internships = () => {
     }
   }, [internshipId]);
 
+  // Update saved state when reminders change
+  useEffect(() => {
+    if (reminders.length >= 0 && internships.length > 0) {
+      setInternships(prevInternships => {
+        // Get reminder IDs for internships
+        const reminderItemIds = reminders
+          .filter(r => r.itemType === 'internship')
+          .map(r => {
+            // Handle both itemId (string) and item._id (object) formats
+            const itemId = r.itemId || r.item?._id;
+            return itemId?.toString();
+          });
+        
+        return prevInternships.map(item => {
+          const isInReminders = reminderItemIds.includes(item._id?.toString());
+          // Always update based on reminders (reminders are source of truth)
+          return { ...item, _isSaved: isInReminders };
+        });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders]);
+
   useEffect(() => {
     if (!internshipId) {
       fetchInternships();
@@ -96,7 +119,27 @@ const Internships = () => {
     try {
       setLoading(true);
       const response = await internshipAPI.getAll(filters);
-      setInternships(response.data);
+      // Preserve saved state from previous data and check reminders
+      setInternships(prevInternships => {
+        const newInternships = response.data;
+        // Get reminder IDs for internships
+        const reminderItemIds = reminders
+          .filter(r => r.itemType === 'internship')
+          .map(r => {
+            // Handle both itemId (string) and item._id (object) formats
+            const itemId = r.itemId || r.item?._id;
+            return itemId?.toString();
+          });
+        
+        return newInternships.map(newItem => {
+          const prevItem = prevInternships.find(p => p._id === newItem._id);
+          // Check if item is in reminders list
+          const isInReminders = reminderItemIds.includes(newItem._id?.toString());
+          // Preserve optimistic state or use reminders check
+          const savedState = prevItem?._isSaved !== undefined ? prevItem._isSaved : isInReminders;
+          return { ...newItem, _isSaved: savedState };
+        });
+      });
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to fetch internships' });
     } finally {
@@ -126,8 +169,34 @@ const Internships = () => {
         return;
       }
 
-      const wasSaved = internship.likes?.some(likeId => 
+      const wasSaved = Array.isArray(internship.likes) && internship.likes.some(likeId => 
         likeId === user.id || likeId.toString() === user.id?.toString()
+      );
+      
+      // Optimistic update - update UI immediately
+      setInternships(prevInternships => 
+        prevInternships.map(i => {
+          if (i._id === id) {
+            // If likes is an array, toggle the user ID
+            if (Array.isArray(i.likes)) {
+              const newLikes = wasSaved 
+                ? i.likes.filter(likeId => likeId !== user.id && likeId?.toString() !== user.id?.toString())
+                : [...i.likes, user.id];
+              return { ...i, likes: newLikes };
+            } else {
+              // If likes is a number, convert to array format for optimistic update
+              const currentCount = typeof i.likes === 'number' ? i.likes : 0;
+              return { 
+                ...i, 
+                likes: wasSaved 
+                  ? currentCount - 1 
+                  : currentCount + 1,
+                _isSaved: !wasSaved // Track saved state separately
+              };
+            }
+          }
+          return i;
+        })
       );
       
       await internshipAPI.like(id);
@@ -254,7 +323,45 @@ const Internships = () => {
       </div>
       
       {loading ? (
-        <Loading />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          {[1, 2, 3, 4, 5, 6].map((index) => (
+            <div
+              key={index}
+              className="bg-white/60 backdrop-blur-sm rounded-lg p-6 sm:p-8 border border-transparent h-full flex flex-col animate-pulse"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-lg flex-shrink-0"></div>
+              </div>
+
+              {/* Company */}
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+
+              {/* Info rows */}
+              <div className="space-y-2 mb-4 flex-1">
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-28"></div>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-3 border-t border-gray-100 mt-auto">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : internships.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No active internships found</p>
@@ -284,7 +391,7 @@ const Internships = () => {
                         handleSave(internship._id);
                       }}
                       className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
-                        internship.likes?.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())
+                        (Array.isArray(internship.likes) && internship.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || internship._isSaved
                           ? 'text-amber-600' 
                           : 'text-gray-400'
                       } hover:text-amber-600 transition`}
@@ -399,7 +506,7 @@ const Internships = () => {
 const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user } = useAuth();
-  const isSaved = internship.likes?.some(likeId => 
+  const isSaved = Array.isArray(internship.likes) && internship.likes.some(likeId => 
     likeId === userId || likeId.toString() === userId?.toString()
   );
   const isOwner = internship.postedBy?._id === user?.id || internship.postedBy === user?.id;

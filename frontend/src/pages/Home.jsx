@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { projectAPI, hackathonAPI, internshipAPI, driveAPI, courseLinkAPI, statsAPI } from '../utils/api';
 import { motion } from 'framer-motion';
 import cclogo from '../assets/cclogo.png';
@@ -32,7 +32,9 @@ const Home = () => {
   const navigate = useNavigate();
   const [trendingProjects, setTrendingProjects] = useState([]);
   const [upcomingDrives, setUpcomingDrives] = useState([]);
-  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingDrives, setLoadingDrives] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [totalUsers, setTotalUsers] = useState(0);
   const [statsPeriod, setStatsPeriod] = useState('week'); // 'week' or 'month' - default to week
   const [postedStats, setPostedStats] = useState({
@@ -60,78 +62,146 @@ const Home = () => {
     totalResources: 0,
   });
 
+  // Refs for lazy loading sections
+  const trendingProjectsRef = useRef(null);
+  const drivesRef = useRef(null);
+  const statsRef = useRef(null);
+  const [trendingProjectsLoaded, setTrendingProjectsLoaded] = useState(false);
+  const [drivesLoaded, setDrivesLoaded] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(false);
+
+  // Load basic stats for hero section immediately
   useEffect(() => {
-    fetchAllData();
+    const fetchBasicStats = async () => {
+      try {
+        const response = await statsAPI.getHomeData().catch(() => ({ data: null }));
+        if (response.data) {
+          setTotalUsers(response.data.totalUsers || 0);
+          setStats(response.data.stats || {
+            totalProjects: 0,
+            activeProjects: 0,
+            completedProjects: 0,
+            totalHackathons: 0,
+            totalInternships: 0,
+            totalDrives: 0,
+            totalResources: 0,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch basic stats:', error);
+      }
+    };
+    fetchBasicStats();
   }, [isAuthenticated]);
 
+  // Intersection Observer for lazy loading
   useEffect(() => {
-    fetchStats();
-  }, [statsPeriod]);
+    const observerOptions = {
+      root: null,
+      rootMargin: '100px', // Start loading 100px before section enters viewport
+      threshold: 0.1,
+    };
 
-  const fetchAllData = async () => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          if (entry.target === trendingProjectsRef.current && !trendingProjectsLoaded) {
+            fetchTrendingProjects();
+            setTrendingProjectsLoaded(true);
+          } else if (entry.target === drivesRef.current && !drivesLoaded) {
+            fetchUpcomingDrives();
+            setDrivesLoaded(true);
+          } else if (entry.target === statsRef.current && !statsLoaded) {
+            fetchStats();
+            setStatsLoaded(true);
+          }
+        }
+      });
+    }, observerOptions);
+
+    // Observe elements - use setTimeout to ensure refs are attached
+    const observeElements = () => {
+      if (trendingProjectsRef.current && !trendingProjectsLoaded) {
+        observer.observe(trendingProjectsRef.current);
+      }
+      if (drivesRef.current && !drivesLoaded) {
+        observer.observe(drivesRef.current);
+      }
+      if (statsRef.current && !statsLoaded) {
+        observer.observe(statsRef.current);
+      }
+    };
+
+    // Try to observe after a short delay to ensure refs are attached
+    const timeoutId = setTimeout(observeElements, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [trendingProjectsLoaded, drivesLoaded, statsLoaded]);
+
+  useEffect(() => {
+    if (statsLoaded) {
+      fetchStats();
+    }
+  }, [statsPeriod, statsLoaded]);
+
+  const fetchTrendingProjects = async () => {
     try {
       setLoadingProjects(true);
-      
-      // Fetch all home page data in parallel using optimized endpoint
-      const [homeDataResponse, statsResponse] = await Promise.all([
-        statsAPI.getHomeData().catch(err => {
-          console.log('Could not fetch home data:', err);
-          return { data: null };
-        }),
-        statsAPI.getPublicStats(statsPeriod).catch(err => {
-          console.log('Could not fetch stats:', err);
-          return { data: null };
-        })
-      ]);
-
-      // Set all data at once from optimized endpoint
-      if (homeDataResponse.data) {
-        setTrendingProjects(homeDataResponse.data.trendingProjects || []);
-        setUpcomingDrives(homeDataResponse.data.upcomingDrives || []);
-        setStats(homeDataResponse.data.stats || {
-          totalProjects: 0,
-          activeProjects: 0,
-          completedProjects: 0,
-          totalHackathons: 0,
-          totalInternships: 0,
-          totalDrives: 0,
-          totalResources: 0,
-        });
-        // Set totalUsers from home data if available
-        if (homeDataResponse.data.totalUsers) {
-          setTotalUsers(homeDataResponse.data.totalUsers);
-        }
+      const response = await statsAPI.getHomeData().catch(err => {
+        console.log('Could not fetch trending projects:', err);
+        return { data: null };
+      });
+      if (response.data) {
+        setTrendingProjects(response.data.trendingProjects || []);
       }
+    } catch (error) {
+      console.error('Failed to fetch trending projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
-      // Set chart data and posted stats from stats endpoint
-      if (statsResponse.data) {
-        if (statsResponse.data.totalUsers) {
-          setTotalUsers(statsResponse.data.totalUsers);
+  const fetchUpcomingDrives = async () => {
+    try {
+      setLoadingDrives(true);
+      const response = await statsAPI.getHomeData().catch(err => {
+        console.log('Could not fetch drives:', err);
+        return { data: null };
+      });
+      if (response.data) {
+        setUpcomingDrives(response.data.upcomingDrives || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch upcoming drives:', error);
+    } finally {
+      setLoadingDrives(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const response = await statsAPI.getPublicStats(statsPeriod);
+      if (response.data) {
+        if (response.data.totalUsers) {
+          setTotalUsers(response.data.totalUsers);
         }
-        setPostedStats(statsResponse.data.postedStats || {
+        setPostedStats(response.data.postedStats || {
           projects: 0,
           internships: 0,
           hackathons: 0,
           drives: 0,
           courses: 0,
         });
-        setChartData(statsResponse.data.chartData || []);
+        setChartData(response.data.chartData || []);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoadingProjects(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await statsAPI.getPublicStats(statsPeriod);
-      setTotalUsers(response.data.totalUsers);
-      setPostedStats(response.data.postedStats);
-      setChartData(response.data.chartData || []);
-    } catch (error) {
       console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -506,7 +576,7 @@ const Home = () => {
       </section> */}
 
       {/* Trending Projects Section */}
-      <section className="py-20">
+      <section ref={trendingProjectsRef} className="py-20">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -524,7 +594,38 @@ const Home = () => {
           </motion.div>
 
           {loadingProjects ? (
-            <Loading text="Loading trending projects..." />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
+              {[1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 h-full flex flex-col animate-pulse"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-3"></div>
+                      <div className="h-4 bg-gray-200 rounded-lg w-full mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded-lg w-5/6"></div>
+                    </div>
+                    <div className="ml-2">
+                      <div className="h-7 w-16 bg-gradient-to-r from-orange-100 to-red-100 rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                    <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-100 mt-auto">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : trendingProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
               {trendingProjects.map((project, index) => (
@@ -612,7 +713,7 @@ const Home = () => {
       </section>
 
       {/* Upcoming Drives Section */}
-      <section className="py-20">
+      <section ref={drivesRef} className="py-20">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -629,8 +730,41 @@ const Home = () => {
             <p className="text-xl text-gray-600">Don't miss out on these upcoming opportunities</p>
           </motion.div>
 
-          {loadingProjects ? (
-            <Loading text="Loading upcoming drives..." />
+          {loadingDrives ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 h-full animate-pulse"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center">
+                      <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-36"></div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-32"></div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-28"></div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-amber-100">
+                    <div className="h-3 bg-gray-200 rounded w-28"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : upcomingDrives.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -697,7 +831,7 @@ const Home = () => {
       </section>
 
       {/* Statistics Section */}
-      <section className="py-20">
+      <section ref={statsRef} className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -791,7 +925,35 @@ const Home = () => {
                 </div>
 
                 {/* Line Chart */}
-                {chartData.length > 0 ? (
+                {loadingStats ? (
+                  <div className="w-full animate-pulse">
+                    <div className="w-full min-h-[300px] bg-gray-100 rounded-lg relative overflow-hidden">
+                      {/* Y-axis skeleton */}
+                      <div className="absolute left-0 top-0 bottom-0 w-10 bg-gray-200"></div>
+                      {/* X-axis skeleton */}
+                      <div className="absolute bottom-0 left-10 right-0 h-12 bg-gray-200"></div>
+                      {/* Chart area with bars */}
+                      <div className="absolute left-12 top-4 right-4 bottom-16 flex items-end justify-between gap-2">
+                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                          <div 
+                            key={i} 
+                            className="flex-1 bg-gray-200 rounded-t" 
+                            style={{ height: `${30 + (i * 8)}%` }}
+                          ></div>
+                        ))}
+                      </div>
+                      {/* Legend skeleton */}
+                      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="flex items-center space-x-2">
+                            <div className="h-3 w-3 bg-gray-300 rounded"></div>
+                            <div className="h-3 bg-gray-300 rounded w-16"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : chartData.length > 0 ? (
                   <div className="w-full overflow-x-auto">
                     <div className="w-full min-w-[300px] min-h-[300px]" style={{ height: '300px', position: 'relative' }}>
                       <ResponsiveContainer width="100%" height={300} minHeight={300}>

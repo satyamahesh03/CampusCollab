@@ -926,9 +926,27 @@ router.post('/reset-password', [
     // Delete the used OTP
     await OTP.deleteOne({ _id: otpRecord._id });
 
+    // Generate token for automatic login
+    const token = getSignedJwtToken(user._id);
+
     res.json({
       success: true,
-      message: 'Password reset successfully. You can now login with your new password.'
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        year: user.year,
+        rollNumber: user.rollNumber,
+        skills: user.skills,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        websiteUrl: user.websiteUrl,
+        designation: user.designation
+      },
+      message: 'Password reset successfully. You have been automatically logged in.'
     });
   } catch (error) {
     console.error('Error resetting password:', error);

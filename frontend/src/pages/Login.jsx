@@ -141,21 +141,45 @@ const Login = () => {
 
     setResettingPassword(true);
     try {
-      await authAPI.resetPassword(forgotEmail, resetOTP, resetPassword);
-      addNotification({
-        type: 'success',
-        title: 'Password Reset Successful',
-        message: 'Your password has been reset. You can now login.',
-      });
-      // Close modal and reset state
-      setShowForgotPassword(false);
-      setForgotEmail('');
-      setResetOTP('');
-      setResetPassword('');
-      setConfirmResetPassword('');
-      setOtpSent(false);
-      setOtpVerified(false);
-      setShowResetPassword(false);
+      const response = await authAPI.resetPassword(forgotEmail, resetOTP, resetPassword);
+      
+      // Automatically log in the user with the returned token and user data
+      if (response.token && response.user) {
+        login(response.user, response.token);
+        addNotification({
+          type: 'success',
+          title: 'Password Reset Successful',
+          message: 'Your password has been reset. You have been automatically logged in.',
+        });
+        
+        // Close modal and reset state
+        setShowForgotPassword(false);
+        setForgotEmail('');
+        setResetOTP('');
+        setResetPassword('');
+        setConfirmResetPassword('');
+        setOtpSent(false);
+        setOtpVerified(false);
+        setShowResetPassword(false);
+        
+        // Navigate to home page
+        navigate('/');
+      } else {
+        // Fallback if token/user not returned (shouldn't happen with updated backend)
+        addNotification({
+          type: 'success',
+          title: 'Password Reset Successful',
+          message: 'Your password has been reset. Please login with your new password.',
+        });
+        setShowForgotPassword(false);
+        setForgotEmail('');
+        setResetOTP('');
+        setResetPassword('');
+        setConfirmResetPassword('');
+        setOtpSent(false);
+        setOtpVerified(false);
+        setShowResetPassword(false);
+      }
     } catch (error) {
       addNotification({
         type: 'error',
@@ -255,7 +279,13 @@ const Login = () => {
               </label>
                 <button
                   type="button"
-                  onClick={() => setShowForgotPassword(true)}
+                  onClick={() => {
+                    // Pre-fill email from login form if available
+                    if (formData.email) {
+                      setForgotEmail(formData.email);
+                    }
+                    setShowForgotPassword(true);
+                  }}
                   className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
                 >
                   Forgot Password?

@@ -18,6 +18,7 @@ export const GlobalProvider = ({ children }) => {
   const [reminders, setReminders] = useState([]);
   const [newReminderIds, setNewReminderIds] = useState([]); // Track newly added reminder IDs
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingChatRequests, setPendingChatRequests] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const { user, isAuthenticated } = useAuth();
@@ -28,6 +29,7 @@ export const GlobalProvider = ({ children }) => {
     if (isAuthenticated && user) {
       fetchReminders();
       fetchUnreadMessages();
+      fetchPendingChatRequests();
       fetchUnreadNotificationCount();
       
       // Connect to socket for global message notifications
@@ -79,6 +81,7 @@ export const GlobalProvider = ({ children }) => {
       // Refresh unread count every 30 seconds
       const interval = setInterval(() => {
         fetchUnreadMessages();
+        fetchPendingChatRequests();
         fetchUnreadNotificationCount();
       }, 30000);
 
@@ -94,6 +97,7 @@ export const GlobalProvider = ({ children }) => {
       setReminders([]);
       setNewReminderIds([]);
       setUnreadMessages(0);
+      setPendingChatRequests(0);
       setUnreadNotificationCount(0);
     }
   }, [isAuthenticated, user]);
@@ -174,6 +178,24 @@ export const GlobalProvider = ({ children }) => {
     }
   };
 
+  const fetchPendingChatRequests = async () => {
+    try {
+      const response = await chatAPI.getRequests();
+      const requests = response?.data || response || [];
+      
+      // Count pending requests where current user is NOT the initiator
+      // (i.e., requests waiting for user's approval)
+      const pendingCount = requests.filter(request => {
+        const isInitiator = request.initiatedBy === user.id || request.initiatedBy?._id === user.id;
+        return request.status === 'pending' && !isInitiator;
+      }).length;
+      
+      setPendingChatRequests(pendingCount);
+    } catch (error) {
+      console.error('Error fetching pending chat requests:', error);
+    }
+  };
+
   const refreshReminders = () => {
     if (isAuthenticated && user) {
       fetchReminders();
@@ -183,6 +205,12 @@ export const GlobalProvider = ({ children }) => {
   const refreshUnreadMessages = () => {
     if (isAuthenticated && user) {
       fetchUnreadMessages();
+    }
+  };
+
+  const refreshPendingChatRequests = () => {
+    if (isAuthenticated && user) {
+      fetchPendingChatRequests();
     }
   };
 
@@ -237,6 +265,8 @@ export const GlobalProvider = ({ children }) => {
     unreadMessages,
     setUnreadMessages,
     refreshUnreadMessages,
+    pendingChatRequests,
+    refreshPendingChatRequests,
     unreadNotificationCount,
     refreshUnreadNotificationCount,
     soundEnabled,

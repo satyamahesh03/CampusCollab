@@ -5,7 +5,8 @@ import { projectAPI } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaComment, FaUsers, FaUserPlus, FaPlus, FaCheck, FaTimes, FaPaperPlane, FaExternalLinkAlt, FaSearch, FaReply, FaArrowLeft, FaMagic, FaThumbsUp, FaStar, FaEdit } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart, faHandshake, faTrashCan } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as faHeartRegular, faHandshake, faTrashCan } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as faHeartSolid } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { far } from '@fortawesome/free-regular-svg-icons';
 library.add(far);
@@ -56,16 +57,11 @@ const Projects = () => {
   // Auto-open project from URL parameter
   useEffect(() => {
     const projectIdToOpen = searchParams.get('open');
-    if (projectIdToOpen && projects.length > 0) {
-      const projectToOpen = projects.find(p => p._id === projectIdToOpen);
-      if (projectToOpen) {
-        setSelectedProject(projectToOpen);
-        // Clear the URL parameter
-        searchParams.delete('open');
-        setSearchParams(searchParams, { replace: true });
-      }
+    if (projectIdToOpen && !selectedProject && !projectId) {
+      // Navigate to the project URL to show the project ID in the URL
+      navigate(`/projects/${projectIdToOpen}`, { replace: true });
     }
-  }, [projects, searchParams, setSearchParams]);
+  }, [searchParams, navigate, selectedProject, projectId]);
 
   const fetchSingleProject = async (id) => {
     try {
@@ -344,7 +340,45 @@ const Projects = () => {
 
       {/* Projects Grid */}
       {loading ? (
-        <Loading />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          {[1, 2, 3, 4, 5, 6].map((index) => (
+            <div
+              key={index}
+              className="bg-white/60 backdrop-blur-sm rounded-lg p-6 sm:p-8 flex flex-col border border-transparent h-full animate-pulse"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start mb-3 sm:mb-4 flex-shrink-0 gap-2">
+                <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-lg flex-shrink-0"></div>
+              </div>
+
+              {/* Domains */}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-2 flex-shrink-0">
+                <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+                <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+              </div>
+
+              {/* Skills */}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-2 flex-shrink-0">
+                <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+              </div>
+
+              {/* Creator */}
+              <div className="text-xs sm:text-sm mb-2 sm:mb-2 flex-shrink-0 mt-auto">
+                <div className="h-4 bg-gray-200 rounded w-32"></div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center space-x-4 sm:space-x-6 text-xs sm:text-sm flex-shrink-0">
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : projects.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No projects found</p>
@@ -396,9 +430,6 @@ const ProjectCard = ({ project, index, onClick, userId, confirmingDelete, onDele
           {project.title}
         </h3>
         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(project.status)}`}>
-            {project.status}
-          </span>
           {isOwner && (
             <div className="relative flex flex-col items-end">
               {isConfirming && (
@@ -487,16 +518,16 @@ const ProjectCard = ({ project, index, onClick, userId, confirmingDelete, onDele
       {/* Stats */}
       <div className="flex items-center space-x-4 sm:space-x-6 text-gray-600 text-xs sm:text-sm flex-shrink-0">
         <span className="flex items-center space-x-1 sm:space-x-2">
-          <FontAwesomeIcon icon={faHeart} className="text-red-500 text-sm sm:text-base" />
-          <span>{project.likes?.length || 0}</span>
+          <FontAwesomeIcon icon={faHeartRegular} className="text-red-500 text-sm sm:text-base" />
+          <span>{Array.isArray(project.likes) ? project.likes.length : (project.likes || 0)}</span>
         </span>
         <span className="flex items-center space-x-1 sm:space-x-2">
           <FaComment className="text-amber-500 text-sm sm:text-base" />
-          <span>{project.comments?.length || 0}</span>
+          <span>{Array.isArray(project.comments) ? project.comments.length : (project.comments || 0)}</span>
         </span>
         <span className="flex items-center space-x-1 sm:space-x-2">
           <FaUsers className="text-green-500 text-sm sm:text-base" />
-          <span>{project.participants?.length || 0}</span>
+          <span>{Array.isArray(project.participants) ? project.participants.length : (project.participants || 0)}</span>
         </span>
       </div>
     </motion.div>
@@ -915,24 +946,54 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Fetch full project data if initial project data is incomplete (e.g., from optimized list)
+  useEffect(() => {
+    const hasIncompleteData = 
+      !Array.isArray(projectData.participants) || 
+      !Array.isArray(projectData.likes) || 
+      !Array.isArray(projectData.joinRequests);
+    
+    if (hasIncompleteData && projectData._id) {
+      const fetchFullData = async () => {
+        try {
+          const response = await projectAPI.getById(projectData._id);
+          if (response.data) {
+            setProjectData(response.data);
+          }
+        } catch (error) {
+          console.error('Error fetching full project data:', error);
+        }
+      };
+      fetchFullData();
+    }
+  }, [projectData._id]);
+
   // Refresh project data function
   const refreshProjectData = async () => {
     try {
-      const response = await projectAPI.getAll({});
-      const updatedProject = response.data.find(p => p._id === projectData._id);
-      if (updatedProject) {
-        setProjectData(updatedProject);
+      const response = await projectAPI.getById(projectData._id);
+      if (response.data) {
+        setProjectData(response.data);
       }
     } catch (error) {
       console.error('Error refreshing project:', error);
     }
   };
   
-  const isLiked = projectData.likes?.includes(userId);
-  const hasJoined = projectData.participants?.some((p) => p.user?._id === userId || p.user === userId);
+  // Handle both array and number for likes (array from getById, number from getAll)
+  const isLiked = Array.isArray(projectData.likes) 
+    ? projectData.likes.includes(userId)
+    : false;
+  const hasJoined = Array.isArray(projectData.participants)
+    ? projectData.participants.some((p) => p.user?._id === userId || p.user === userId)
+    : false;
   const isOwner = projectData.createdBy?._id === userId || projectData.createdBy === userId;
-  const hasPendingRequest = projectData.joinRequests?.some((r) => (r.user?._id === userId || r.user === userId) && r.status === 'pending');
-  const pendingRequestsCount = projectData.joinRequests?.filter(r => r.status === 'pending').length || 0;
+  const hasPendingRequest = Array.isArray(projectData.joinRequests)
+    ? projectData.joinRequests.some((r) => (r.user?._id === userId || r.user === userId) && r.status === 'pending')
+    : false;
+  const pendingRequestsCount = Array.isArray(projectData.joinRequests)
+    ? projectData.joinRequests.filter(r => r.status === 'pending').length
+    : 0;
 
 
   const handleRemoveParticipant = async (participantId) => {
@@ -1316,19 +1377,48 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   };
 
   const handleLikeClick = async () => {
-    await onLike(projectData._id);
-    // Refresh project data
-    const response = await projectAPI.getAll({});
-    const updatedProject = response.data.find(p => p._id === projectData._id);
-    if (updatedProject) setProjectData(updatedProject);
+    // Optimistic update - update UI immediately
+    const currentLikes = Array.isArray(projectData.likes) ? projectData.likes : [];
+    const wasLiked = Array.isArray(projectData.likes) && projectData.likes.includes(userId);
+    
+    if (wasLiked) {
+      // Remove like optimistically
+      setProjectData({
+        ...projectData,
+        likes: currentLikes.filter(id => id !== userId)
+      });
+    } else {
+      // Add like optimistically
+      setProjectData({
+        ...projectData,
+        likes: [...currentLikes, userId]
+      });
+    }
+    
+    // Then make the API call
+    try {
+      await onLike(projectData._id);
+      // Refresh project data to get accurate state
+      const response = await projectAPI.getById(projectData._id);
+      if (response.data) setProjectData(response.data);
+    } catch (error) {
+      // Revert on error
+      setProjectData({
+        ...projectData,
+        likes: currentLikes
+      });
+      addNotification({
+        type: 'error',
+        message: 'Failed to update like'
+      });
+    }
   };
 
   const handleJoinClick = async () => {
     await onJoin(projectData._id);
     // Refresh project data
-    const response = await projectAPI.getAll({});
-    const updatedProject = response.data.find(p => p._id === projectData._id);
-    if (updatedProject) setProjectData(updatedProject);
+    const response = await projectAPI.getById(projectData._id);
+    if (response.data) setProjectData(response.data);
   };
 
   const handleApproveRequest = async (requestId) => {
@@ -1386,9 +1476,8 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       await projectAPI.cancelJoinRequest(projectData._id, userRequest._id);
 
       // Refresh project data
-      const response = await projectAPI.getAll({});
-      const updatedProject = response.data.find(p => p._id === projectData._id);
-      if (updatedProject) setProjectData(updatedProject);
+      const response = await projectAPI.getById(projectData._id);
+      if (response.data) setProjectData(response.data);
     } catch (error) {
       addNotification({
         type: 'error',
@@ -1486,9 +1575,6 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                     </button>
                   )}
                 </div>
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projectData.status)}`}>
-                  {projectData.status}
-                </span>
               </div>
 
               {/* Creator and Date */}
@@ -1527,10 +1613,22 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
 
               {/* Stats */}
               <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-gray-600 text-xs sm:text-sm">
-                <span className="flex items-center space-x-1 sm:space-x-2">
-                  <FontAwesomeIcon icon={faHeart} className="text-red-500 text-sm sm:text-base" />
-                  <span>{projectData.likes?.length || 0} likes</span>
-                </span>
+                <button
+                  onClick={handleLikeClick}
+                  className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-200 hover:scale-105 ${
+                    isLiked
+                      ? 'text-red-600 font-semibold'
+                      : 'text-gray-600 hover:text-red-500'
+                  }`}
+                >
+                  <FontAwesomeIcon 
+                    icon={isLiked ? faHeartSolid : faHeartRegular} 
+                    className={`text-sm sm:text-base transition-colors ${
+                      isLiked ? 'text-red-500' : 'text-red-500 opacity-60'
+                    }`}
+                  />
+                  <span>{Array.isArray(projectData.likes) ? projectData.likes.length : (projectData.likes || 0)} likes</span>
+                </button>
                 <span className="flex items-center space-x-1 sm:space-x-2">
                   <FaComment className="text-amber-500 text-sm sm:text-base" />
                   <span>{projectData.comments?.length || 0} comments</span>
@@ -1546,7 +1644,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             </div>
 
             {/* Participants List - Visible when clicked */}
-            {showParticipants && projectData.participants && projectData.participants.length > 0 && (
+            {showParticipants && Array.isArray(projectData.participants) && projectData.participants.length > 0 && (
               <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100/50">
                 <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <FaUsers className="text-amber-600" />
@@ -1676,26 +1774,6 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
 
             {/* Action Buttons */}
             <div className="flex flex-row gap-2 mb-4 sm:mb-6">
-              {projectData.status !== 'closed' && (
-                <button
-                  onClick={handleLikeClick}
-                  className={`group px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm ${
-                    isLiked
-                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-md'
-                      : 'bg-white/60 backdrop-blur-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border border-amber-200/50 hover:border-red-300/50'
-                  }`}
-                >
-                  <FontAwesomeIcon 
-                    icon={faHeart} 
-                    className={`text-sm sm:text-base transition-colors ${
-                      isLiked 
-                        ? "text-white" 
-                        : "text-gray-400 opacity-60 group-hover:text-red-600 group-hover:opacity-100"
-                    }`}
-                  />
-                  <span>{isLiked ? 'Liked' : 'Like'}</span>
-                </button>
-              )}
               {projectData.status === 'open' && !hasJoined && !hasPendingRequest && !isOwner && (
                 <button
                   onClick={handleJoinClick}

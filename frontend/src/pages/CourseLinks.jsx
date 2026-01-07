@@ -166,7 +166,48 @@ const CourseLinks = () => {
       />
       
       {loading ? (
-        <Loading />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-0">
+          {[1, 2, 3, 4, 5, 6].map((index) => (
+            <div
+              key={index}
+              className="bg-white/60 backdrop-blur-sm rounded-lg overflow-hidden flex flex-col border border-amber-100/50 mb-0 animate-pulse"
+              style={{ height: '480px' }}
+            >
+              {/* Course Image Skeleton */}
+              <div className="h-44 w-full bg-gray-200"></div>
+
+              {/* Content Skeleton */}
+              <div className="pt-4 sm:pt-5 px-4 sm:px-5 pb-0 flex flex-col flex-1">
+                {/* Header with Title and Delete Button */}
+                <div className="flex justify-between items-start mb-2 gap-2">
+                  <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+                  <div className="h-8 w-8 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2 mb-[30px]">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+                </div>
+
+                {/* Faculty Name and Timestamp */}
+                <div className="space-y-1.5 mt-auto">
+                  <div className="flex items-center">
+                    <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  </div>
+                  
+                  {/* Department Badge */}
+                  <div className="h-5 bg-gray-200 rounded-full w-20"></div>
+                  
+                  {/* Link Button */}
+                  <div className="h-10 bg-gray-200 rounded-lg w-full mt-2"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-0">
           {courseLinks.map((course, index) => (

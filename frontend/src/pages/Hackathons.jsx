@@ -20,7 +20,7 @@ const Hackathons = () => {
   const [availableDomains, setAvailableDomains] = useState([]);
   const [confirmingDeleteHackathon, setConfirmingDeleteHackathon] = useState(null);
   const { user } = useAuth();
-  const { addNotification, refreshReminders } = useGlobal();
+  const { addNotification, refreshReminders, reminders } = useGlobal();
   const { id: hackathonId } = useParams();
   const navigate = useNavigate();
 
@@ -57,6 +57,29 @@ const Hackathons = () => {
     }
   }, [hackathonId]);
 
+  // Update saved state when reminders change
+  useEffect(() => {
+    if (reminders.length >= 0 && hackathons.length > 0) {
+      setHackathons(prevHackathons => {
+        // Get reminder IDs for hackathons
+        const reminderItemIds = reminders
+          .filter(r => r.itemType === 'hackathon')
+          .map(r => {
+            // Handle both itemId (string) and item._id (object) formats
+            const itemId = r.itemId || r.item?._id;
+            return itemId?.toString();
+          });
+        
+        return prevHackathons.map(item => {
+          const isInReminders = reminderItemIds.includes(item._id?.toString());
+          // Always update based on reminders (reminders are source of truth)
+          return { ...item, _isSaved: isInReminders };
+        });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders]);
+
   useEffect(() => {
     if (!hackathonId) {
       fetchHackathons();
@@ -80,7 +103,27 @@ const Hackathons = () => {
     try {
       setLoading(true);
       const response = await hackathonAPI.getAll(filters);
-      setHackathons(response.data);
+      // Preserve saved state from previous data and check reminders
+      setHackathons(prevHackathons => {
+        const newHackathons = response.data;
+        // Get reminder IDs for hackathons
+        const reminderItemIds = reminders
+          .filter(r => r.itemType === 'hackathon')
+          .map(r => {
+            // Handle both itemId (string) and item._id (object) formats
+            const itemId = r.itemId || r.item?._id;
+            return itemId?.toString();
+          });
+        
+        return newHackathons.map(newItem => {
+          const prevItem = prevHackathons.find(p => p._id === newItem._id);
+          // Check if item is in reminders list
+          const isInReminders = reminderItemIds.includes(newItem._id?.toString());
+          // Preserve optimistic state or use reminders check
+          const savedState = prevItem?._isSaved !== undefined ? prevItem._isSaved : isInReminders;
+          return { ...newItem, _isSaved: savedState };
+        });
+      });
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to fetch hackathons' });
     } finally {
@@ -112,11 +155,37 @@ const Hackathons = () => {
     }
 
     // Check if already saved by comparing user ID with likes array
-    const wasSaved = hackathon.likes?.some(likeId => 
+    const wasSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => 
       likeId === user.id || likeId.toString() === user.id?.toString()
     );
     
     try {
+      // Optimistic update - update UI immediately
+      setHackathons(prevHackathons => 
+        prevHackathons.map(h => {
+          if (h._id === id) {
+            // If likes is an array, toggle the user ID
+            if (Array.isArray(h.likes)) {
+              const newLikes = wasSaved 
+                ? h.likes.filter(likeId => likeId !== user.id && likeId?.toString() !== user.id?.toString())
+                : [...h.likes, user.id];
+              return { ...h, likes: newLikes };
+            } else {
+              // If likes is a number, convert to array format for optimistic update
+              const currentCount = typeof h.likes === 'number' ? h.likes : 0;
+              return { 
+                ...h, 
+                likes: wasSaved 
+                  ? currentCount - 1 
+                  : currentCount + 1,
+                _isSaved: !wasSaved // Track saved state separately
+              };
+            }
+          }
+          return h;
+        })
+      );
+      
       // Make the API call
       await hackathonAPI.like(id);
       
@@ -199,7 +268,45 @@ const Hackathons = () => {
       />
       
       {loading ? (
-        <Loading />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          {[1, 2, 3, 4, 5, 6].map((index) => (
+            <div
+              key={index}
+              className="bg-white/60 backdrop-blur-sm rounded-lg p-6 sm:p-8 border border-transparent h-full flex flex-col animate-pulse"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                <div className="h-6 bg-gray-200 rounded-lg w-3/4"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-lg flex-shrink-0"></div>
+              </div>
+
+              {/* Domain */}
+              <div className="h-6 bg-gray-200 rounded-full w-20 mb-3"></div>
+
+              {/* Info rows */}
+              <div className="space-y-2 mb-4 flex-1">
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-40"></div>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-28"></div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-3 border-t border-gray-100 mt-auto">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : hackathons.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No hackathons found</p>
@@ -228,7 +335,7 @@ const Hackathons = () => {
                     <button
                       onClick={(e) => handleSave(hackathon._id, e)}
                       className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
-                        hackathon.likes?.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())
+                        (Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || hackathon._isSaved
                           ? 'text-amber-600' 
                           : 'text-gray-400'
                       } hover:text-amber-600 transition`}
@@ -342,7 +449,7 @@ const Hackathons = () => {
 const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user } = useAuth();
-  const isSaved = hackathon.likes?.some(likeId => 
+  const isSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => 
     likeId === userId || likeId.toString() === userId?.toString()
   );
   const isOwner = hackathon.postedBy?._id === user?.id || hackathon.postedBy === user?.id;

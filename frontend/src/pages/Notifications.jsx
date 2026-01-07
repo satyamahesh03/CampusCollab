@@ -164,10 +164,13 @@ const Notifications = () => {
         {activeTab === 'notifications' && unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="flex items-center space-x-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+            className="flex items-center space-x-1.5 px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition text-sm"
           >
-            <FaCheckDouble />
-            <span>Mark All as Read</span>
+            <div className="relative flex items-center" style={{ width: '16px', height: '12px' }}>
+              <FaCheck className="absolute text-xs text-green-500" style={{ left: '0px', opacity: 0.6 }} />
+              <FaCheck className="absolute text-xs text-green-500" style={{ left: '4px' }} />
+            </div>
+            <span className="text-xs sm:text-sm">Mark All as Read</span>
           </button>
         )}
       </div>
@@ -228,14 +231,14 @@ const Notifications = () => {
                   key={notification._id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-4 flex justify-between items-start cursor-pointer hover:border-amber-400 hover:shadow-lg transition-all duration-300 ${
+                  className={`bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-3 sm:p-4 flex justify-between items-start cursor-pointer hover:border-amber-400 hover:shadow-lg transition-all duration-300 ${
                     !notification.isRead ? 'border-l-4 border-amber-500 bg-amber-50/50' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
                         notification.type === 'comment_reply' 
                           ? 'bg-green-100 text-green-700' 
                           : notification.type === 'project_join_request'
@@ -248,9 +251,9 @@ const Notifications = () => {
                         <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                       )}
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">{notification.title}</h3>
-                    <p className="text-gray-700 text-sm mb-2">{notification.message}</p>
-                    <p className="text-xs text-gray-500">
+                    <h3 className="font-semibold text-gray-900 mb-1 text-sm">{notification.title}</h3>
+                    <p className="text-gray-700 text-xs mb-2">{notification.message}</p>
+                    <p className="text-[10px] text-gray-500">
                       {formatRelativeTime(notification.createdAt)}
                     </p>
                   </div>

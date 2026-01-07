@@ -34,7 +34,7 @@ const Chats = () => {
   const [confirmingApproveDelete, setConfirmingApproveDelete] = useState(false);
   const [sending, setSending] = useState(false);
   const { user } = useAuth();
-  const { addNotification, refreshUnreadMessages } = useGlobal();
+  const { addNotification, refreshUnreadMessages, refreshPendingChatRequests } = useGlobal();
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messageInputRef = useRef(null);
@@ -795,6 +795,7 @@ const Chats = () => {
       fetchChats(); // Refresh approved chats
       fetchMessageRequests(); // Remove from requests
       addNotification({ type: 'success', message: 'Chat request accepted!' });
+      refreshPendingChatRequests(); // Refresh pending requests count in navbar
       
       // Switch to chats tab after approval
       setActiveTab('chats');
@@ -821,6 +822,7 @@ const Chats = () => {
       fetchChats();
       fetchMessageRequests(); // Remove from requests
       addNotification({ type: 'success', message: 'Chat request rejected' });
+      refreshPendingChatRequests(); // Refresh pending requests count in navbar
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to reject chat' });
     }
@@ -1531,29 +1533,33 @@ const Chats = () => {
 
               {/* Pending Request Banner */}
               {!isUserBlocked(getOtherUser(selectedChat)?._id) && selectedChat.status === 'pending' && selectedChat.initiatedBy !== user.id && selectedChat.initiatedBy?._id !== user.id && (
-                <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <FaUserClock className="text-yellow-600 text-base" />
-                      <div>
-                        <p className="font-semibold text-gray-900">Chat Request</p>
-                        <p className="text-sm text-gray-600">{getOtherUser(selectedChat)?.name} wants to chat with you</p>
+                <div className="bg-yellow-50 border-b border-yellow-200 p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                          <FaUserClock className="text-yellow-600 text-sm sm:text-base" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 text-sm sm:text-base">Chat Request</p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">{getOtherUser(selectedChat)?.name} wants to chat with you</p>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 self-end sm:self-auto">
                       <button
                         onClick={handleApproveChat}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center space-x-2"
+                        className="bg-green-600 text-white p-2.5 sm:p-3 rounded-xl hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg"
+                        title="Accept"
                       >
-                        <FaCheck />
-                        <span>Accept</span>
+                        <FaCheck className="text-base sm:text-lg" />
                       </button>
                       <button
                         onClick={handleRejectChat}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center space-x-2"
+                        className="bg-red-600 text-white p-2.5 sm:p-3 rounded-xl hover:bg-red-700 active:bg-red-800 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg"
+                        title="Reject"
                       >
-                        <FaTimes />
-                        <span>Reject</span>
+                        <FaTimes className="text-base sm:text-lg" />
                       </button>
                     </div>
                   </div>
@@ -1629,35 +1635,53 @@ const Chats = () => {
                     
                     // Determine spacing: reduce spacing for consecutive messages from same sender
                     // Only add top margin if it's first in sequence or has date separator
-                    const messageSpacing = isFirstInSequence || showDateSeparator ? 'mt-2' : 'mt-1';
+                    const messageSpacing = isFirstInSequence || showDateSeparator ? 'mt-3 sm:mt-4' : 'mt-1.5 sm:mt-2';
                     
                     return (
                       <div key={msg._id ? `msg-${msg._id}` : `msg-${selectedChat._id}-${index}`} className={messageSpacing}>
                         {/* Date Separator */}
                         {showDateSeparator && (
-                          <div className="flex justify-center my-3">
-                            <div className="bg-white/60 backdrop-blur-sm border border-amber-200/50 text-gray-600 text-xs sm:text-sm px-3 py-1 rounded-full">
+                          <div className="flex justify-center my-4 sm:my-5">
+                            <div className="bg-white/80 backdrop-blur-sm border border-amber-200/50 text-gray-600 text-xs sm:text-sm px-4 py-1.5 rounded-full shadow-sm">
                               {formatChatDate(msg.timestamp)}
                             </div>
                           </div>
                         )}
                         
                         {/* Message Container - Proper alignment: own messages right, incoming left */}
-                        <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end`}>
+                        <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}>
+                          {/* Avatar for received messages */}
+                          {showAvatar && !isOwn && (
+                            <div className="flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9">
+                              {getOtherUser(selectedChat)?.profilePicture ? (
+                                <img
+                                  src={getOtherUser(selectedChat).profilePicture}
+                                  alt={getOtherUser(selectedChat)?.name}
+                                  className="w-full h-full rounded-full object-cover border-2 border-amber-200"
+                                />
+                              ) : (
+                                <div className="w-full h-full rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white font-semibold text-xs sm:text-sm border-2 border-amber-200">
+                                  {getOtherUser(selectedChat)?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {!showAvatar && !isOwn && <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />}
+                          
                           {/* Message Bubble */}
-                          <div className={`group relative max-w-[85%] sm:max-w-xs lg:max-w-md ${isOwn ? 'ml-auto' : ''} overflow-x-hidden`}>
+                          <div className={`group relative max-w-[75%] sm:max-w-xs md:max-w-sm lg:max-w-md ${isOwn ? 'ml-auto' : ''} overflow-x-hidden`}>
                             <div
-                              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg ${
+                              className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl ${
                                 msg.isDeleted
                                   ? 'bg-gray-100 text-gray-500 italic border border-gray-200'
                                   : isOwn
-                                  ? 'bg-white/60 backdrop-blur-sm text-gray-900 rounded-br-sm border border-amber-200/50'
-                                  : 'bg-white/60 backdrop-blur-sm text-gray-900 rounded-bl-sm border border-amber-200/50'
+                                  ? 'bg-gradient-to-br from-amber-500 to-yellow-500 text-white rounded-br-md shadow-md'
+                                  : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
                               }`}
                             >
-                              <p className={`text-xs sm:text-sm break-words leading-relaxed text-gray-900`}>{msg.content}</p>
+                              <p className={`text-sm sm:text-base break-words leading-relaxed ${isOwn ? 'text-white' : 'text-gray-900'}`}>{msg.content}</p>
                               <div className={`flex items-center justify-end space-x-1.5 sm:space-x-2 mt-1.5`}>
-                                <span className={`text-[9px] sm:text-[10px] font-medium text-gray-500`}>
+                                <span className={`text-[10px] sm:text-xs font-medium ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
                                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 {isOwn && !msg.isDeleted && (
