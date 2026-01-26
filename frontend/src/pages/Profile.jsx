@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, chatAPI, projectAPI } from '../utils/api';
-import { getRoleColor } from '../utils/helpers';
+import { getRoleColor, departments } from '../utils/helpers';
 import { useGlobal } from '../context/GlobalContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, FolderKanban, Hash } from 'lucide-react';
@@ -38,7 +38,7 @@ const Profile = () => {
   const [joinedProjects, setJoinedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
-  
+
   // Determine if viewing another user's profile
   const isViewingOtherUser = userIdParam && userIdParam !== user?.id;
   const displayUser = isViewingOtherUser ? viewedUser : user;
@@ -67,7 +67,7 @@ const Profile = () => {
         setViewedUser(null);
       }
     };
-    
+
     fetchUserProfile();
   }, [userIdParam, user?.id, isViewingOtherUser]);
 
@@ -147,14 +147,14 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-    
+
     // Capitalize name (first letter of each word)
     if (name === 'name') {
-      processedValue = value.split(' ').map(word => 
+      processedValue = value.split(' ').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
       ).join(' ');
     }
-    
+
     setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
@@ -163,7 +163,7 @@ const Profile = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
-      
+
       img.onload = () => {
         // Calculate new dimensions
         let { width, height } = img;
@@ -171,17 +171,17 @@ const Profile = () => {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
-        
+
         // Set canvas dimensions
         canvas.width = width;
         canvas.height = height;
-        
+
         // Draw and compress
         ctx.drawImage(img, 0, 0, width, height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };
-      
+
       img.src = URL.createObjectURL(file);
     });
   };
@@ -219,10 +219,10 @@ const Profile = () => {
 
         // Compress the image
         const compressedBase64 = await compressImage(file, 800, 0.8);
-        
+
         // Calculate compressed size
         const compressedSize = Math.round((compressedBase64.length * 3) / 4);
-        
+
         // Set image info
         setImageInfo({
           name: file.name,
@@ -233,7 +233,7 @@ const Profile = () => {
         // Set preview and form data
         setImagePreview(compressedBase64);
         setFormData(prev => ({ ...prev, profilePicture: compressedBase64 }));
-        
+
         addNotification({
           type: 'success',
           title: 'Image Ready',
@@ -296,7 +296,7 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate name
     if (!formData.name.trim()) {
       addNotification({
@@ -387,9 +387,9 @@ const Profile = () => {
       addNotification({ type: 'error', message: 'Unable to start chat. Please try again.' });
       return;
     }
-    
+
     setMessageLoading(true);
-    
+
     try {
       // Use userIdParam as fallback if viewedUser._id is not available
       const targetUserId = viewedUser._id || userIdParam;
@@ -397,7 +397,7 @@ const Profile = () => {
         addNotification({ type: 'error', message: 'User ID not found. Please try again.' });
         return;
       }
-      
+
       // Get or create chat with this user
       const response = await chatAPI.getChat(targetUserId);
       // Navigate to the chat
@@ -439,7 +439,7 @@ const Profile = () => {
   };
 
   if (!user) return null;
-  
+
   if (fetchingProfile) {
     return <Loading />;
   }
@@ -500,18 +500,18 @@ const Profile = () => {
                 {isEditing && (
                   <>
                     <div className="absolute inset-0 flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        fileInputRef.current?.click();
-                        setShowImageUploadHelp(true);
-                      }}
-                      className="w-24 h-24 md:w-32 md:h-32 rounded-lg bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
-                    >
-                      <Camera size={24} className="mb-1" />
-                      <span className="text-xs font-medium">Change Photo</span>
-                      <span className="text-xs mt-1 opacity-75">Max 5MB</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setShowImageUploadHelp(true);
+                        }}
+                        className="w-24 h-24 md:w-32 md:h-32 rounded-lg bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      >
+                        <Camera size={24} className="mb-1" />
+                        <span className="text-xs font-medium">Change Photo</span>
+                        <span className="text-xs mt-1 opacity-75">Max 5MB</span>
+                      </button>
                       {imagePreview && (
                         <button
                           type="button"
@@ -564,7 +564,7 @@ const Profile = () => {
                 ) : (
                   <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{capitalizeName(displayUser?.name || '')}</h1>
                 )}
-                
+
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold capitalize ${getRoleColor(displayUser?.role)} shadow-sm`}>
                     {displayUser?.role}
@@ -577,13 +577,13 @@ const Profile = () => {
                     {displayUser?.role === 'student' ? (
                       <>
                         {/* Roll Number (Students - First) */}
-                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           <div className="p-1.5 bg-blue-100 rounded-lg">
                             <Hash size={16} className="text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
+                          </div>
+                          <div className="flex-1 min-w-0">
                             <p className="text-xs text-gray-500 font-medium">Roll Number</p>
-                        {isEditing ? (
+                            {isEditing ? (
                               <input
                                 type="text"
                                 name="rollNumber"
@@ -597,42 +597,42 @@ const Profile = () => {
                                 maxLength="10"
                                 className="w-full mt-0.5 px-2 py-1 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium uppercase"
                               />
-                        ) : (
+                            ) : (
                               <p className="text-sm font-semibold text-gray-900 mt-0.5">
                                 {displayUser?.rollNumber || '-'}
                               </p>
-                        )}
-                      </div>
-                    </div>
+                            )}
+                          </div>
+                        </div>
 
                         {/* Year (Students - Second) */}
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-amber-100 rounded-lg">
-                          <Calendar size={16} className="text-amber-600" />
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-amber-100 rounded-lg">
+                            <Calendar size={16} className="text-amber-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 font-medium">Year of Study</p>
+                            {isEditing ? (
+                              <select
+                                name="year"
+                                value={formData.year}
+                                onChange={handleChange}
+                                className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium"
+                                required
+                              >
+                                <option value="">Select Year</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                              </select>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                                {displayUser?.year ? `Year ${displayUser.year}` : 'Not specified'}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-500 font-medium">Year of Study</p>
-                          {isEditing ? (
-                            <select
-                              name="year"
-                              value={formData.year}
-                              onChange={handleChange}
-                              className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium"
-                              required
-                            >
-                              <option value="">Select Year</option>
-                              <option value="1">1st Year</option>
-                              <option value="2">2nd Year</option>
-                              <option value="3">3rd Year</option>
-                              <option value="4">4th Year</option>
-                            </select>
-                          ) : (
-                            <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                              {displayUser?.year ? `Year ${displayUser.year}` : 'Not specified'}
-                            </p>
-                          )}
-                        </div>
-                      </div>
 
                         {/* Department (Students - Third) */}
                         <div className="flex items-center gap-2">
@@ -650,14 +650,11 @@ const Profile = () => {
                                 required
                               >
                                 <option value="">Select Department</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Information Technology">Information Technology</option>
-                                <option value="Electronics">Electronics</option>
-                                <option value="Mechanical">Mechanical</option>
-                                <option value="Civil">Civil</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Chemical">Chemical</option>
-                                <option value="Other">Other</option>
+                                {departments.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
                               </select>
                             ) : (
                               <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
@@ -668,26 +665,26 @@ const Profile = () => {
                     ) : displayUser?.role === 'faculty' ? (
                       <>
                         {/* Designation (Faculty - First) */}
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-amber-100 rounded-lg">
-                          <Award size={16} className="text-amber-600" />
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-amber-100 rounded-lg">
+                            <Award size={16} className="text-amber-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 font-medium">Designation</p>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                name="designation"
+                                value={formData.designation}
+                                onChange={handleChange}
+                                placeholder="e.g., Assistant Professor"
+                                className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-transparent outline-none text-sm font-medium"
+                              />
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.designation || 'Not specified'}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-500 font-medium">Designation</p>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              name="designation"
-                              value={formData.designation}
-                              onChange={handleChange}
-                              placeholder="e.g., Assistant Professor"
-                              className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-transparent outline-none text-sm font-medium"
-                            />
-                          ) : (
-                            <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.designation || 'Not specified'}</p>
-                          )}
-                        </div>
-                      </div>
 
                         {/* Department (Faculty - Second) */}
                         <div className="flex items-center gap-2">
@@ -705,14 +702,11 @@ const Profile = () => {
                                 required
                               >
                                 <option value="">Select Department</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Information Technology">Information Technology</option>
-                                <option value="Electronics">Electronics</option>
-                                <option value="Mechanical">Mechanical</option>
-                                <option value="Civil">Civil</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Chemical">Chemical</option>
-                                <option value="Other">Other</option>
+                                {departments.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
                               </select>
                             ) : (
                               <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
@@ -740,7 +734,7 @@ const Profile = () => {
                       Projects
                     </span>
                   </button>
-                  
+
                   {/* Projects Dropdown */}
                   {showProjects && (
                     <div className="absolute top-14 right-0 w-72 md:w-80 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 z-20 flex flex-col" style={{ maxHeight: '600px' }}>
@@ -748,9 +742,9 @@ const Profile = () => {
                         <h3 className="text-sm font-semibold text-gray-900">Joined Projects</h3>
                         <p className="text-xs text-gray-600 mt-0.5">{joinedProjects.length} project{joinedProjects.length !== 1 ? 's' : ''}</p>
                       </div>
-                      <div 
+                      <div
                         className="overflow-y-auto overflow-x-hidden"
-                        style={{ 
+                        style={{
                           maxHeight: '520px',
                           WebkitOverflowScrolling: 'touch',
                           scrollbarWidth: 'thin',
@@ -813,33 +807,33 @@ const Profile = () => {
                     Edit Profile
                   </button>
                 ) : (
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleCancel}
-                    disabled={loading}
-                    className="bg-gray-300 text-gray-700 px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <X size={18} />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCancel}
+                      disabled={loading}
+                      className="bg-gray-300 text-gray-700 px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <X size={18} />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={18} />
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )
               )}
             </div>
@@ -1023,29 +1017,25 @@ const Profile = () => {
                       rows="5"
                       maxLength="300"
                       placeholder="Tell us about yourself... Share your interests, goals, or what makes you unique!"
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${
-                        bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
-                      }`}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
+                        }`}
                     />
                     {/* Character counter with progress bar */}
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
-                        <span className={`text-sm font-medium ${
-                          bioPercentage > 90 ? 'text-red-600' : 'text-gray-600'
-                        }`}>
+                        <span className={`text-sm font-medium ${bioPercentage > 90 ? 'text-red-600' : 'text-gray-600'
+                          }`}>
                           {formData.bio.length} / 300 characters
                         </span>
-                        <span className={`text-xs ${
-                          bioCharsRemaining < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'
-                        }`}>
+                        <span className={`text-xs ${bioCharsRemaining < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'
+                          }`}>
                           {bioCharsRemaining} remaining
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 rounded-full ${
-                            bioPercentage > 90 ? 'bg-red-500' : bioPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}
+                          className={`h-full transition-all duration-300 rounded-full ${bioPercentage > 90 ? 'bg-red-500' : bioPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
                           style={{ width: `${bioPercentage}%` }}
                         ></div>
                       </div>
@@ -1095,10 +1085,10 @@ const Profile = () => {
                           type="url"
                           name="websiteUrl"
                           value={formData.websiteUrl}
-                        onChange={handleChange}
-                        placeholder="https://linkedin.com/in/..."
-                        className="w-full px-3 py-2 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
-                      />
+                          onChange={handleChange}
+                          placeholder="https://linkedin.com/in/..."
+                          className="w-full px-3 py-2 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+                        />
                       ) : displayUser?.websiteUrl ? (
                         <a
                           href={displayUser?.websiteUrl}

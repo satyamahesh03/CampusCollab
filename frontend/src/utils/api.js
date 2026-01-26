@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://campuscollab-odlh.onrender.com/api';
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6500/api';
+// const API_URL = import.meta.env.VITE_API_URL || 'https://campuscollab-odlh.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6500/api';
 
 
 const api = axios.create({
@@ -111,6 +111,9 @@ export const driveAPI = {
   update: (id, data) => api.put(`/drives/${id}`, data),
   like: (id) => api.post(`/drives/${id}/like`),
   delete: (id) => api.delete(`/drives/${id}`),
+  parseDescription: (text) => api.post('/drives/parse-description', { text }),
+  verifyGmailCode: (code) => api.post('/drives/verify-gmail-code', { code }),
+  sendEmails: (id) => api.post(`/drives/${id}/send-emails`),
 };
 
 // Course Link APIs
