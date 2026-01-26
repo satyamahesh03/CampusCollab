@@ -49,6 +49,22 @@ const driveSchema = new mongoose.Schema({
   requirements: {
     type: String
   },
+  stipend: {
+    type: String,
+    default: ''
+  },
+  internshipDuration: {
+    type: String,
+    default: ''
+  },
+  serviceAgreement: {
+    type: String,
+    default: ''
+  },
+  selectionProcess: {
+    type: String,
+    default: ''
+  },
   registrationLink: {
     type: String,
     required: true

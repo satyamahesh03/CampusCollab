@@ -22,12 +22,12 @@ export const formatChatDate = (date) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   // Reset time to compare dates only
   const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-  
+
   if (messageDateOnly.getTime() === todayOnly.getTime()) {
     return 'Today';
   } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
@@ -108,15 +108,18 @@ export const validatePassword = (password) => {
 };
 
 export const departments = [
-  'Computer Science',
-  'Information Technology',
-  'Electronics',
-  'Electrical',
-  'Mechanical',
-  'Civil',
-  'Chemical',
-  'Biotechnology',
-  'Other',
+  'CSE',
+  'CSD',
+  'CSM',
+  'CIC',
+  'CSIT',
+  'IT',
+  'ECE',
+  'EEE',
+  'CIVIL',
+  'MECH',
+  'CHEM',
+  'MBA',
 ];
 
 export const domains = [
