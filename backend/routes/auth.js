@@ -15,16 +15,16 @@ const sendEmailViaSendGrid = async (to, subject, html, from) => {
   if (!process.env.SENDGRID_API_KEY) {
     throw new Error('SENDGRID_API_KEY not configured');
   }
-  
+
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  
+
   const msg = {
     to: to,
     from: from || process.env.FROM_EMAIL || 'noreply@campuscollab.com',
     subject: subject,
     html: html,
   };
-  
+
   return await sgMail.send(msg);
 };
 
@@ -100,7 +100,7 @@ const generateOTP = () => {
 const sendEmailWithTimeout = (transporter, mailOptions, timeoutMs = 15000) => {
   return Promise.race([
     transporter.sendMail(mailOptions),
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Email sending timeout')), timeoutMs)
     )
   ]);
@@ -151,7 +151,7 @@ router.post('/send-otp', [
     try {
       // Determine "from" email based on email service
       let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
-      
+
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
           <h2 style="color: #d97706; margin-bottom: 20px; text-align: center; font-size: 24px;">Campus Collab - Email Verification</h2>
@@ -171,16 +171,16 @@ router.post('/send-otp', [
       if (process.env.SENDGRID_API_KEY) {
         console.log(`📧 Sending OTP email via SendGrid API to: ${normalizedEmail}`);
         console.log(`📧 From email: ${fromEmail}`);
-        
+
         const emailResult = await sendEmailViaSendGrid(
           normalizedEmail,
           'Campus Collab - Email Verification OTP',
           emailHtml,
           fromEmail
         );
-        
+
         console.log(`✅ Email sent successfully via SendGrid! Status: ${emailResult[0]?.statusCode || 'N/A'}`);
-        
+
         res.json({
           success: true,
           message: 'OTP sent successfully to your email'
@@ -188,13 +188,13 @@ router.post('/send-otp', [
       } else {
         // Fallback to nodemailer for other services
         const transporter = createTransporter();
-        const emailService = process.env.RESEND_API_KEY ? 'Resend' 
-          : process.env.SMTP_HOST ? 'Custom SMTP' 
-          : 'Gmail';
-        
+        const emailService = process.env.RESEND_API_KEY ? 'Resend'
+          : process.env.SMTP_HOST ? 'Custom SMTP'
+            : 'Gmail';
+
         console.log(`📧 Sending OTP email via ${emailService} to: ${normalizedEmail}`);
         console.log(`📧 From email: ${fromEmail}`);
-        
+
         const mailOptions = {
           from: fromEmail,
           to: normalizedEmail,
@@ -204,7 +204,7 @@ router.post('/send-otp', [
 
         const emailResult = await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
         console.log(`✅ Email sent successfully! Message ID: ${emailResult.messageId || 'N/A'}`);
-        
+
         res.json({
           success: true,
           message: 'OTP sent successfully to your email'
@@ -217,7 +217,7 @@ router.post('/send-otp', [
       if (emailError.response) {
         console.error('SendGrid response:', emailError.response.body);
       }
-      
+
       // Return error details in development, generic message in production
       if (process.env.NODE_ENV === 'development') {
         res.status(500).json({
@@ -257,7 +257,7 @@ router.post('/verify-otp', [
     const normalizedEmail = email.toLowerCase().trim();
 
     // Find OTP record (registration type)
-    const otpRecord = await OTP.findOne({ 
+    const otpRecord = await OTP.findOne({
       email: normalizedEmail,
       otp,
       type: 'registration',
@@ -336,7 +336,7 @@ router.post('/register', [
     }
 
     // Verify OTP was verified
-    const otpRecord = await OTP.findOne({ 
+    const otpRecord = await OTP.findOne({
       email: normalizedEmail,
       verified: true
     });
@@ -426,15 +426,6 @@ router.post('/login', [
       });
     }
 
-    // Check if account is suspended
-    if (user.isSuspended) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account has been suspended',
-        reason: user.suspensionReason
-      });
-    }
-
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -519,7 +510,7 @@ router.get('/me', protect, async (req, res) => {
 router.get('/user/:userId', protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -597,7 +588,7 @@ router.put('/profile', protect, async (req, res) => {
     if (department) user.department = department;
     if (profilePicture !== undefined) user.profilePicture = profilePicture;
     if (bio !== undefined) user.bio = bio;
-    
+
     // Student-specific fields
     if (user.role === 'student') {
       if (year) user.year = year;
@@ -605,7 +596,7 @@ router.put('/profile', protect, async (req, res) => {
       if (skills !== undefined) user.skills = skills;
       if (websiteUrl !== undefined) user.websiteUrl = websiteUrl;
     }
-    
+
     // Faculty-specific fields
     if (user.role === 'faculty') {
       if (designation) user.designation = designation;
@@ -786,7 +777,7 @@ router.post('/forgot-password', [
     // Send email
     try {
       let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
-      
+
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(to bottom, #fef3c7, #fef9c3, #fef3c7); padding: 30px; border-radius: 12px;">
           <h2 style="color: #f59e0b; margin-bottom: 20px; text-align: center; font-size: 24px;">Password Reset Request</h2>

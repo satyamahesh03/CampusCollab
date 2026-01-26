@@ -27,7 +27,7 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    if (req.user.isSuspended) {
+    if (req.user.isSuspended && !req.originalUrl.includes('/api/notifications') && !req.originalUrl.includes('/api/auth/me')) {
       return res.status(403).json({
         success: false,
         message: 'Your account has been suspended',

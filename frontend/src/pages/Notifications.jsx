@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Loading from '../components/Loading';
 import { formatDate, formatRelativeTime } from '../utils/helpers';
-import { FaTrash, FaBell, FaClock, FaCheck, FaCheckDouble, FaTimes } from 'react-icons/fa';
+import { FaTrash, FaBell, FaClock, FaCheck, FaCheckDouble, FaTimes, FaExclamationCircle, FaCheckCircle, FaBan } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import socketService from '../utils/socket';
 
@@ -21,12 +21,12 @@ const Notifications = () => {
 
   useEffect(() => {
     fetchNotifications();
-    
+
     // Connect socket if not already connected
     if (isAuthenticated && user) {
       socketService.connect(user.id);
     }
-    
+
     // Set up socket listener for new notifications
     const handleNewNotification = (data) => {
       if (data.type === 'project_join_request') {
@@ -34,9 +34,9 @@ const Notifications = () => {
         fetchNotifications();
       }
     };
-    
+
     socketService.socket?.on('new-notification', handleNewNotification);
-    
+
     return () => {
       socketService.socket?.off('new-notification', handleNewNotification);
     };
@@ -69,7 +69,7 @@ const Notifications = () => {
   const handleMarkAsRead = async (id) => {
     try {
       await notificationAPI.markAsRead(id);
-      setNotifications(notifications.map(n => 
+      setNotifications(notifications.map(n =>
         n._id === id ? { ...n, isRead: true } : n
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
@@ -123,7 +123,7 @@ const Notifications = () => {
     }
 
     // Navigate to the project and scroll to the specific reply
-    if (notification.type === 'comment_reply' && notification.projectId) {
+    if ((notification.type === 'comment_reply' || notification.type === 'content_approved') && notification.projectId) {
       navigate(`/projects/${notification.projectId}`, {
         state: {
           scrollToComment: notification.commentId,
@@ -131,7 +131,7 @@ const Notifications = () => {
         }
       });
     }
-    
+
     // Navigate to project and open join requests section
     if (notification.type === 'project_join_request' && notification.projectId) {
       navigate(`/projects/${notification.projectId}`, {
@@ -144,7 +144,7 @@ const Notifications = () => {
 
   const handleReminderClick = (reminder) => {
     if (!reminder.item || !reminder.item._id) return;
-    
+
     // Navigate to the appropriate page based on item type
     if (reminder.itemType === 'internship') {
       navigate(`/internships/${reminder.item._id}`);
@@ -179,11 +179,10 @@ const Notifications = () => {
       <div className="flex space-x-4 mb-6 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('notifications')}
-          className={`px-6 py-3 font-semibold transition border-b-2 ${
-            activeTab === 'notifications'
-              ? 'border-amber-600 text-amber-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          className={`px-6 py-3 font-semibold transition border-b-2 ${activeTab === 'notifications'
+            ? 'border-amber-600 text-amber-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
         >
           <div className="flex items-center space-x-2">
             <FaBell />
@@ -197,11 +196,10 @@ const Notifications = () => {
         </button>
         <button
           onClick={() => setActiveTab('reminders')}
-          className={`px-6 py-3 font-semibold transition border-b-2 ${
-            activeTab === 'reminders'
-              ? 'border-amber-600 text-amber-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          className={`px-6 py-3 font-semibold transition border-b-2 ${activeTab === 'reminders'
+            ? 'border-amber-600 text-amber-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
         >
           <div className="flex items-center space-x-2">
             <FaClock />
@@ -231,27 +229,41 @@ const Notifications = () => {
                   key={notification._id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-3 sm:p-4 flex justify-between items-start cursor-pointer hover:border-amber-400 hover:shadow-lg transition-all duration-300 ${
-                    !notification.isRead ? 'border-l-4 border-amber-500 bg-amber-50/50' : ''
-                  }`}
+                  className={`bg-white/60 backdrop-blur-sm rounded-lg border p-3 sm:p-4 flex justify-between items-start cursor-pointer hover:shadow-lg transition-all duration-300 ${notification.type === 'account_suspended' || notification.title === 'Content Warning'
+                      ? 'border-red-400 bg-red-50/50 hover:border-red-500' // Warning/Suspended styling
+                      : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
+                        ? 'border-green-400 bg-green-50/50 hover:border-green-500' // Approved/Reactivated styling
+                        : !notification.isRead
+                          ? 'border-l-4 border-l-amber-500 border-amber-100/50 hover:border-amber-400'
+                          : 'border-amber-100/50 hover:border-amber-400'
+                    }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
-                        notification.type === 'comment_reply' 
-                          ? 'bg-green-100 text-green-700' 
-                          : notification.type === 'project_join_request'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {notification.type === 'comment_reply' ? 'Reply' : notification.type === 'project_join_request' ? 'Join Request' : notification.type}
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${notification.type === 'account_suspended' || notification.title === 'Content Warning'
+                          ? 'bg-red-100 text-red-700'
+                          : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
+                            ? 'bg-green-100 text-green-700'
+                            : notification.type === 'comment_reply'
+                              ? 'bg-green-100 text-green-700'
+                              : notification.type === 'project_join_request'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-gray-100 text-gray-700'
+                        }`}>
+                        {notification.type === 'account_suspended' ? 'Suspended' : notification.type === 'account_unsuspended' ? 'Reactivated' : notification.title === 'Content Warning' ? 'Warning' : notification.title === 'Content Approved' ? 'Approved' : (notification.type === 'comment_reply' ? 'Reply' : notification.type === 'project_join_request' ? 'Join Request' : notification.type)}
                       </span>
                       {!notification.isRead && (
-                        <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                        <span className={`w-2 h-2 rounded-full ${notification.type === 'account_suspended' || notification.title === 'Content Warning' ? 'bg-red-500' : notification.type === 'account_unsuspended' || notification.title === 'Content Approved' ? 'bg-green-500' : 'bg-amber-500'
+                          }`}></span>
                       )}
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1 text-sm">{notification.title}</h3>
+                    <div className="flex items-center gap-2">
+                      {(notification.type === 'account_suspended' || notification.title === 'Content Warning') && <span className="text-red-600">{notification.type === 'account_suspended' ? <FaBan /> : <FaExclamationCircle />}</span>}
+                      {(notification.type === 'account_unsuspended' || notification.title === 'Content Approved') && <span className="text-green-600"><FaCheckCircle /></span>}
+                      <h3 className={`font-semibold mb-1 text-sm ${notification.type === 'account_suspended' || notification.title === 'Content Warning' ? 'text-red-700' : notification.type === 'account_unsuspended' || notification.title === 'Content Approved' ? 'text-green-800' : 'text-gray-900'
+                        }`}>{notification.title}</h3>
+                    </div>
                     <p className="text-gray-700 text-xs mb-2">{notification.message}</p>
                     <p className="text-[10px] text-gray-500">
                       {formatRelativeTime(notification.createdAt)}

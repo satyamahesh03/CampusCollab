@@ -9,26 +9,26 @@ import { useGlobal } from '../context/GlobalContext';
 import { formatRelativeTime } from '../utils/helpers';
 
 // Recursive Reply Tree Component
-const ReplyTree = ({ 
-  reply, 
-  commentId, 
-  depth, 
-  userId, 
-  loading, 
-  projectStatus, 
-  onVote, 
-  onDelete, 
-  onReply, 
-  replyingTo, 
-  replyText, 
-  setReplyText, 
-  onAddReply, 
-  handleUserClick, 
-  formatRelativeTime, 
-  getVoteScore, 
-  getUserVote, 
-  confirmingDeleteReply, 
-  setConfirmingDeleteReply 
+const ReplyTree = ({
+  reply,
+  commentId,
+  depth,
+  userId,
+  loading,
+  projectStatus,
+  onVote,
+  onDelete,
+  onReply,
+  replyingTo,
+  replyText,
+  setReplyText,
+  onAddReply,
+  handleUserClick,
+  formatRelativeTime,
+  getVoteScore,
+  getUserVote,
+  confirmingDeleteReply,
+  setConfirmingDeleteReply
 }) => {
   const replyVoteScore = getVoteScore(reply);
   const replyUserVote = getUserVote(reply);
@@ -38,7 +38,7 @@ const ReplyTree = ({
   const canReply = depth < maxDepth;
   const replyKey = `${commentId}-${reply._id}`;
   const isReplying = replyingTo === replyKey;
-  
+
   return (
     <div
       className={`flex items-start ${depth > 0 ? 'ml-4 pl-4 border-l-2 border-gray-200' : ''}`}
@@ -105,18 +105,17 @@ const ReplyTree = ({
           )}
         </div>
         <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed mb-2">{reply.text}</p>
-        
+
         {/* Action Buttons */}
         <div className="flex items-center space-x-3 text-xs text-gray-500 mb-2">
           {/* Vote Button */}
           <button
             onClick={() => onVote(commentId, reply._id, 'upvote')}
             disabled={loading || projectStatus === 'closed'}
-            className={`flex items-center space-x-1.5 transition font-medium ${
-              isReplyUpvoted 
-                ? 'text-orange-500 hover:text-orange-600' 
+            className={`flex items-center space-x-1.5 transition font-medium ${isReplyUpvoted
+                ? 'text-orange-500 hover:text-orange-600'
                 : 'text-gray-500 hover:text-orange-500'
-            } ${projectStatus === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              } ${projectStatus === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             title="Vote"
           >
             <FaThumbsUp className="text-xs" />
@@ -134,7 +133,7 @@ const ReplyTree = ({
             </button>
           )}
         </div>
-        
+
         {/* Reply Input */}
         {isReplying && (
           <div className="mt-2" style={{ direction: 'ltr', minHeight: '80px' }}>
@@ -151,8 +150,8 @@ const ReplyTree = ({
               className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm"
               rows={2}
               autoFocus
-              style={{ 
-                direction: 'ltr', 
+              style={{
+                direction: 'ltr',
                 textAlign: 'left',
                 unicodeBidi: 'embed',
                 writingMode: 'horizontal-tb'
@@ -189,7 +188,7 @@ const ReplyTree = ({
             </div>
           </div>
         )}
-        
+
         {/* Nested Replies - Recursive */}
         {reply.replies && reply.replies.length > 0 && (
           <div className="mt-3 space-y-3">
@@ -230,12 +229,12 @@ const ReplyTree = ({
   );
 };
 
-const ProjectDiscussion = ({ 
-  projectId, 
-  projectData, 
-  userId, 
+const ProjectDiscussion = ({
+  projectId,
+  projectData,
+  userId,
   loading: parentLoading,
-  onProjectUpdate 
+  onProjectUpdate
 }) => {
   const [comment, setComment] = useState('');
   const [replyingTo, setReplyingTo] = useState(null); // Format: "commentId" or "commentId-replyId"
@@ -257,10 +256,10 @@ const ProjectDiscussion = ({
   // Check if user has voted
   const getUserVote = (item) => {
     if (!userId || !item) return null;
-    const hasUpvoted = item.upvotes?.some(id => 
+    const hasUpvoted = item.upvotes?.some(id =>
       id === userId || id?._id === userId || id?.toString() === userId?.toString()
     );
-    const hasDownvoted = item.downvotes?.some(id => 
+    const hasDownvoted = item.downvotes?.some(id =>
       id === userId || id?._id === userId || id?.toString() === userId?.toString()
     );
     if (hasUpvoted) return 'upvote';
@@ -373,7 +372,7 @@ const ProjectDiscussion = ({
     } catch (error) {
       addNotification({
         type: 'error',
-        message: 'Failed to add comment',
+        message: 'Abusive words are not allowed',
       });
     } finally {
       setLoading(false);
@@ -423,8 +422,8 @@ const ProjectDiscussion = ({
               dir="ltr"
               className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm sm:text-base"
               rows={4}
-              style={{ 
-                direction: 'ltr', 
+              style={{
+                direction: 'ltr',
                 textAlign: 'left',
                 unicodeBidi: 'embed',
                 writingMode: 'horizontal-tb'
@@ -478,7 +477,7 @@ const ProjectDiscussion = ({
               const isDownvoted = userVote === 'downvote';
               const commentKey = comment._id;
               const isReplyingToComment = replyingTo === commentKey;
-              
+
               return (
                 <motion.div
                   key={comment._id || index}
@@ -549,18 +548,17 @@ const ProjectDiscussion = ({
                       )}
                     </div>
                     <p className="text-gray-700 text-sm sm:text-base whitespace-pre-wrap leading-relaxed mb-3">{comment.text}</p>
-                    
+
                     {/* Action Buttons */}
                     <div className="flex items-center space-x-4 text-xs sm:text-sm text-gray-500 mb-3">
                       {/* Vote Button */}
                       <button
                         onClick={() => handleVoteComment(comment._id, 'upvote')}
                         disabled={isLoading || projectData.status === 'closed'}
-                        className={`flex items-center space-x-1.5 transition font-medium ${
-                          isUpvoted 
-                            ? 'text-orange-500 hover:text-orange-600' 
+                        className={`flex items-center space-x-1.5 transition font-medium ${isUpvoted
+                            ? 'text-orange-500 hover:text-orange-600'
                             : 'text-gray-500 hover:text-orange-500'
-                        } ${projectData.status === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${projectData.status === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         title="Vote"
                       >
                         <FaThumbsUp className="text-sm" />
@@ -581,7 +579,7 @@ const ProjectDiscussion = ({
                         </button>
                       )}
                     </div>
-                    
+
                     {/* Reply Input for Comment */}
                     {isReplyingToComment && (
                       <div className="mt-3" style={{ direction: 'ltr', minHeight: '80px' }}>
@@ -598,8 +596,8 @@ const ProjectDiscussion = ({
                           className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm"
                           rows={2}
                           autoFocus
-                          style={{ 
-                            direction: 'ltr', 
+                          style={{
+                            direction: 'ltr',
                             textAlign: 'left',
                             unicodeBidi: 'embed',
                             writingMode: 'horizontal-tb'
@@ -636,7 +634,7 @@ const ProjectDiscussion = ({
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Recursive Reply Tree */}
                     {comment.replies && comment.replies.length > 0 && (
                       <div className="mt-4 space-y-3">

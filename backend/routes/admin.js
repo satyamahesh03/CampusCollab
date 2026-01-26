@@ -17,13 +17,13 @@ router.get('/dashboard', protect, authorize('admin'), async (req, res) => {
     const totalStudents = await User.countDocuments({ role: 'student' });
     const totalFaculty = await User.countDocuments({ role: 'faculty' });
     const suspendedUsers = await User.countDocuments({ isSuspended: true });
-    
+
     const totalProjects = await Project.countDocuments();
     const activeProjects = await Project.countDocuments({ status: 'open' });
     const totalInternships = await Internship.countDocuments();
     const totalHackathons = await Hackathon.countDocuments();
     const totalDrives = await Drive.countDocuments();
-    
+
     const pendingReports = await Report.countDocuments({ status: 'pending' });
     const totalReports = await Report.countDocuments();
 
@@ -136,8 +136,29 @@ router.put('/users/:id/suspend', protect, authorize('admin'), async (req, res) =
 
     user.isSuspended = !user.isSuspended;
     user.suspensionReason = req.body.reason || '';
-    
+
     await user.save();
+
+    // Create notification
+    const Notification = require('../models/Notification');
+
+    if (user.isSuspended) {
+      await Notification.create({
+        user: user._id,
+        type: 'account_suspended',
+        title: 'Account Suspended',
+        message: 'Your account has been suspended due to policy violations. To activate your account, please contact our support team at campuscollabofficial@gmail.com.',
+        isRead: false
+      });
+    } else {
+      await Notification.create({
+        user: user._id,
+        type: 'account_unsuspended',
+        title: 'Account Reactivated',
+        message: 'Your account has been reactivated. You can now access all features.',
+        isRead: false
+      });
+    }
 
     res.json({
       success: true,
@@ -257,6 +278,130 @@ router.put('/reports/:id/review', protect, authorize('admin'), async (req, res) 
     res.status(500).json({
       success: false,
       message: 'Server error reviewing report'
+    });
+  }
+});
+
+// @route   PUT /api/admin/reports/:id/warn
+// @desc    Warn the reported user
+// @access  Private (Admin)
+router.put('/reports/:id/warn', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found'
+      });
+    }
+
+    // Determine the warning message
+    const warningMessage = `You have been warned for posting abusive content. Repeated violations will result in account suspension. Content: "${report.content.substring(0, 50)}${report.content.length > 50 ? '...' : ''}"`;
+
+    // Create notification for the user
+    await Notification.create({
+      user: report.reportedUser,
+      type: 'content_warning',
+      title: 'Content Warning',
+      message: warningMessage,
+      isRead: false
+    });
+
+    // Update report status
+    report.status = 'action-taken';
+    report.actionTaken = 'User Warned';
+    report.reviewedBy = req.user._id;
+    report.reviewedAt = Date.now();
+
+    await report.save();
+
+    res.json({
+      success: true,
+      message: 'User warned successfully',
+      data: report
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error warning user'
+    });
+  }
+});
+
+// @route   PUT /api/admin/reports/:id/accept
+// @desc    Accept/Approve flagged content (restore it)
+// @access  Private (Admin)
+router.put('/reports/:id/accept', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found'
+      });
+    }
+
+    let restoredCommentId = null;
+
+    // 1. Restore content based on type
+    if (report.contentType === 'project' || report.contentType === 'general') { // 'general' logic usually maps to project comments in this app
+      const project = await Project.findById(report.contentId);
+
+      if (project) {
+        // Add the comment to the project with original timestamp
+        project.comments.push({
+          user: report.reportedUser,
+          text: report.content,
+          createdAt: report.createdAt || Date.now(), // Use report creation time as original comment time
+          isAbusive: false // Explicitly mark as safe now
+        });
+
+        await project.save();
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Target project not found, cannot restore content'
+        });
+      }
+    } else {
+      // Handle other content types if necessary (e.g. internships)
+      // For now, only Project comments are fully implemented with abusive detection middleware
+    }
+
+    // 2. Notify the user
+    await Notification.create({
+      user: report.reportedUser,
+      type: 'content_approved',
+      title: 'Content Approved',
+      message: `Your comment "${report.content.substring(0, 30)}..." has been reviewed and approved by admins. Click to view.`,
+      projectId: report.contentId,
+      commentId: restoredCommentId,
+      isRead: false
+    });
+
+    // 3. Update Report Status
+    report.status = 'action-taken';
+    report.actionTaken = 'Content Approved/Restored';
+    report.reviewedBy = req.user._id;
+    report.reviewedAt = Date.now();
+
+    await report.save();
+
+    res.json({
+      success: true,
+      message: 'Content accepted and restored successfully',
+      data: report
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error accepting content'
     });
   }
 });

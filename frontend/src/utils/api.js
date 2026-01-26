@@ -190,6 +190,8 @@ export const adminAPI = {
   getHackathons: (params) => api.get('/admin/content/hackathons', { params }),
   getDrives: (params) => api.get('/admin/content/drives', { params }),
   getCourseLinks: (params) => api.get('/admin/content/course-links', { params }),
+  warnUser: (id) => api.put(`/admin/reports/${id}/warn`),
+  acceptContent: (id) => api.put(`/admin/reports/${id}/accept`),
 };
 
 export default api;

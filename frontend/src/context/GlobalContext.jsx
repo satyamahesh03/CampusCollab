@@ -27,34 +27,37 @@ export const GlobalProvider = ({ children }) => {
   // Load reminders and unread messages when user logs in
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchReminders();
-      fetchUnreadMessages();
-      fetchPendingChatRequests();
-      fetchUnreadNotificationCount();
-      
+      fetchUnreadNotificationCount(); // Always fetch notifications (even if suspended)
+
+      if (!user.isSuspended) {
+        fetchReminders();
+        fetchUnreadMessages();
+        fetchPendingChatRequests();
+      }
+
       // Connect to socket for global message notifications
       socketService.connect(user.id);
-      
+
       // Set up global message listener
       socketService.onNewMessage((data) => {
         // Play sound for any new message
         playNotificationSound();
         // Refresh unread count
-        fetchUnreadMessages();
+        if (!user.isSuspended) fetchUnreadMessages();
         // Show notification
-        addNotification({ 
-          type: 'info', 
-          message: `New message from ${data.message.sender?.name || 'Unknown'}` 
+        addNotification({
+          type: 'info',
+          message: `New message from ${data.message.sender?.name || 'Unknown'}`
         });
       });
-      
+
       // Set up socket listener for new notifications
       // Use ref to persist handler across renders
       notificationHandlerRef.current = () => {
         // Refresh notification count for any new notification
         fetchUnreadNotificationCount();
       };
-      
+
       // Set up listener when socket is ready
       const setupNotificationListener = () => {
         if (socketService.socket && notificationHandlerRef.current) {
@@ -64,12 +67,12 @@ export const GlobalProvider = ({ children }) => {
           socketService.socket.on('new-notification', notificationHandlerRef.current);
         }
       };
-      
+
       // Handler for socket connect event
       const onConnect = () => {
         setupNotificationListener();
       };
-      
+
       // Try to set up immediately if socket is connected
       if (socketService.socket && socketService.socket.connected) {
         setupNotificationListener();
@@ -77,11 +80,13 @@ export const GlobalProvider = ({ children }) => {
         // Also set up when socket connects (in case it's not connected yet)
         socketService.socket.on('connect', onConnect);
       }
-      
+
       // Refresh unread count every 30 seconds
       const interval = setInterval(() => {
-        fetchUnreadMessages();
-        fetchPendingChatRequests();
+        if (!user.isSuspended) {
+          fetchUnreadMessages();
+          fetchPendingChatRequests();
+        }
         fetchUnreadNotificationCount();
       }, 30000);
 
@@ -103,16 +108,17 @@ export const GlobalProvider = ({ children }) => {
   }, [isAuthenticated, user]);
 
   const fetchReminders = async () => {
+    if (user?.isSuspended) return; // Skip if suspended
     try {
       const response = await reminderAPI.getAll();
       const oldReminderIds = reminders.map(r => r._id);
       const newReminders = response.data;
-      
+
       // Identify newly added reminders
       const newIds = newReminders
         .filter(r => !oldReminderIds.includes(r._id))
         .map(r => r._id);
-      
+
       if (newIds.length > 0) {
         setNewReminderIds(newIds);
         // Remove shake effect after 3 seconds
@@ -120,17 +126,20 @@ export const GlobalProvider = ({ children }) => {
           setNewReminderIds([]);
         }, 3000);
       }
-      
+
       setReminders(newReminders);
     } catch (error) {
-      console.error('Error fetching reminders:', error);
+      // Ignore 403 errors (suspension) to avoid console noise
+      if (error.response?.status !== 403) {
+        console.error('Error fetching reminders:', error);
+      }
     }
   };
 
   const addNotification = (notification) => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { ...notification, id }]);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
       removeNotification(id);
@@ -157,70 +166,80 @@ export const GlobalProvider = ({ children }) => {
   };
 
   const fetchUnreadMessages = async () => {
+    if (user?.isSuspended) return; // Skip if suspended
     try {
       const response = await chatAPI.getAll();
       const chats = response.data || [];
-      
+
       // Calculate total unread messages
       let totalUnread = 0;
       chats.forEach(chat => {
         if (chat.unreadCount) {
-          const unreadMap = chat.unreadCount instanceof Map 
-            ? chat.unreadCount 
+          const unreadMap = chat.unreadCount instanceof Map
+            ? chat.unreadCount
             : new Map(Object.entries(chat.unreadCount));
           totalUnread += unreadMap.get(user.id) || 0;
         }
       });
-      
+
       setUnreadMessages(totalUnread);
     } catch (error) {
-      console.error('Error fetching unread messages:', error);
+      if (error.response?.status !== 403) {
+        console.error('Error fetching unread messages:', error);
+      }
     }
   };
 
   const fetchPendingChatRequests = async () => {
+    if (user?.isSuspended) return; // Skip if suspended
     try {
       const response = await chatAPI.getRequests();
       const requests = response?.data || response || [];
-      
+
       // Count pending requests where current user is NOT the initiator
       // (i.e., requests waiting for user's approval)
       const pendingCount = requests.filter(request => {
         const isInitiator = request.initiatedBy === user.id || request.initiatedBy?._id === user.id;
         return request.status === 'pending' && !isInitiator;
       }).length;
-      
+
       setPendingChatRequests(pendingCount);
     } catch (error) {
-      console.error('Error fetching pending chat requests:', error);
+      if (error.response?.status !== 403) {
+        console.error('Error fetching pending chat requests:', error);
+      }
     }
   };
 
   const refreshReminders = () => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !user.isSuspended) {
       fetchReminders();
     }
   };
 
   const refreshUnreadMessages = () => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !user.isSuspended) {
       fetchUnreadMessages();
     }
   };
 
   const refreshPendingChatRequests = () => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !user.isSuspended) {
       fetchPendingChatRequests();
     }
   };
 
   const fetchUnreadNotificationCount = async () => {
+    // Note: Suspended users CAN fetch notifications
     try {
       const response = await notificationAPI.getAll();
       const unreadCount = response.data.unreadCount || 0;
       setUnreadNotificationCount(unreadCount);
     } catch (error) {
-      console.error('Error fetching unread notification count:', error);
+      // Even if this fails (e.g., 403 before we fixed middleware), silence it
+      if (error.response?.status !== 403) {
+        console.error('Error fetching unread notification count:', error);
+      }
     }
   };
 
@@ -237,16 +256,16 @@ export const GlobalProvider = ({ children }) => {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
       oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.2);
     }

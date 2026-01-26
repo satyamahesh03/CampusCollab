@@ -68,12 +68,12 @@ const Projects = () => {
       setLoading(true);
       const response = await projectAPI.getById(id);
       setSelectedProject(response.data);
-      
+
       // Handle navigation from notification - open join requests if needed
       if (location.state?.showJoinRequests) {
         // This will be handled by ProjectDetailView's initialShowJoinRequests prop
       }
-      
+
       // Scroll to specific comment/reply if navigating from notification
       if (location.state?.scrollToComment) {
         setTimeout(() => {
@@ -86,7 +86,7 @@ const Projects = () => {
             setTimeout(() => {
               commentElement.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
             }, 3000);
-            
+
             // If there's a specific reply, highlight it
             if (replyId) {
               setTimeout(() => {
@@ -119,25 +119,25 @@ const Projects = () => {
     const fetchFilterOptions = async () => {
       try {
         const response = await projectAPI.getAll({ status: 'open' });
-        
+
         // Extract unique domains and departments from all projects
         const uniqueDomains = [...new Set(
           response.data.flatMap(project => project.domains || [])
         )].sort();
-        
+
         const uniqueDepartments = [...new Set(
           response.data
             .map(project => project.createdBy?.department)
             .filter(dept => dept)
         )].sort();
-        
+
         setAvailableDomains(uniqueDomains);
         setAvailableDepartments(uniqueDepartments);
       } catch (error) {
         // Silently fail - filters will use defaults
       }
     };
-    
+
     if (!projectId) {
       fetchFilterOptions();
     }
@@ -192,7 +192,7 @@ const Projects = () => {
 
   const handleDeleteConfirm = async () => {
     if (!confirmingDeleteProject) return;
-    
+
     try {
       await projectAPI.delete(confirmingDeleteProject);
       setConfirmingDeleteProject(null);
@@ -219,7 +219,7 @@ const Projects = () => {
 
   const handleComplete = async (projectId) => {
     if (!window.confirm('Mark this project as completed?')) return;
-    
+
     try {
       await projectAPI.close(projectId);
       fetchProjects();
@@ -306,9 +306,9 @@ const Projects = () => {
       </div>
 
       {/* Filters */}
-      <FilterBar 
-        filters={filters} 
-        setFilters={setFilters} 
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
         showYear={false}
         domains={availableDomains.length > 0 ? availableDomains : null}
         departments={availableDepartments.length > 0 ? availableDepartments : null}
@@ -318,21 +318,19 @@ const Projects = () => {
       <div className="flex space-x-2 sm:space-x-4 mb-4 sm:mb-6">
         <button
           onClick={() => setFilters({ status: 'open', sort: undefined })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${
-            filters.status === 'open'
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${filters.status === 'open'
               ? 'bg-green-600 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           Active
         </button>
         <button
           onClick={() => setFilters({ status: 'closed', sort: undefined })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${
-            filters.status === 'closed'
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${filters.status === 'closed'
               ? 'bg-gray-600 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           Completed
         </button>
@@ -512,7 +510,7 @@ const ProjectCard = ({ project, index, onClick, userId, confirmingDelete, onDele
 
       {/* Creator */}
       <div className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-2 flex-shrink-0 mt-auto">
-         {project.createdBy?.name} • {formatRelativeTime(project.createdAt)}
+        {project.createdBy?.name} • {formatRelativeTime(project.createdAt)}
       </div>
 
       {/* Stats */}
@@ -607,7 +605,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate at least one domain is selected
     if (formData.domains.length === 0) {
       addNotification({
@@ -616,7 +614,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     // Validate at least one skill is selected
     if (formData.skills.length === 0) {
       addNotification({
@@ -625,7 +623,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
       await projectAPI.create(formData);
@@ -661,7 +659,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Create New Project</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Title */}
@@ -715,7 +713,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Domain Requirements <span className="text-red-500">*</span>
             </label>
-            
+
             {/* Selected Domains Display */}
             {formData.domains.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
@@ -948,11 +946,11 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
 
   // Fetch full project data if initial project data is incomplete (e.g., from optimized list)
   useEffect(() => {
-    const hasIncompleteData = 
-      !Array.isArray(projectData.participants) || 
-      !Array.isArray(projectData.likes) || 
+    const hasIncompleteData =
+      !Array.isArray(projectData.participants) ||
+      !Array.isArray(projectData.likes) ||
       !Array.isArray(projectData.joinRequests);
-    
+
     if (hasIncompleteData && projectData._id) {
       const fetchFullData = async () => {
         try {
@@ -979,9 +977,9 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       console.error('Error refreshing project:', error);
     }
   };
-  
+
   // Handle both array and number for likes (array from getById, number from getAll)
-  const isLiked = Array.isArray(projectData.likes) 
+  const isLiked = Array.isArray(projectData.likes)
     ? projectData.likes.includes(userId)
     : false;
   const hasJoined = Array.isArray(projectData.participants)
@@ -1027,10 +1025,10 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
   // Check if user has voted
   const getUserVote = (item) => {
     if (!userId || !item) return null;
-    const hasUpvoted = item.upvotes?.some(id => 
+    const hasUpvoted = item.upvotes?.some(id =>
       id === userId || id?._id === userId || id?.toString() === userId?.toString()
     );
-    const hasDownvoted = item.downvotes?.some(id => 
+    const hasDownvoted = item.downvotes?.some(id =>
       id === userId || id?._id === userId || id?.toString() === userId?.toString()
     );
     if (hasUpvoted) return 'upvote';
@@ -1138,7 +1136,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       console.error('Error adding comment:', error);
       addNotification({
         type: 'error',
-        message: 'Failed to add comment',
+        message: 'Abusive words are not allowed',
       });
     } finally {
       setLoading(false);
@@ -1177,7 +1175,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
     const canReply = depth < maxDepth;
     const replyKey = `${commentId}-${reply._id}`;
     const isReplying = replyingTo === replyKey;
-    
+
     return (
       <div
         className={`flex items-start ${depth > 0 ? 'ml-4 pl-4 border-l-2 border-gray-200' : ''}`}
@@ -1201,13 +1199,13 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
             {(reply.user?._id === userId || reply.user === userId) && (
               confirmingDeleteReply === `${commentId}-${reply._id}` ? (
                 <div className="flex items-center space-x-1">
-              <button
+                  <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onDelete(commentId, reply._id);
                     }}
-                disabled={loading}
+                    disabled={loading}
                     className="text-red-600 hover:text-red-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     type="button"
                   >
@@ -1235,27 +1233,26 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                   }}
                   disabled={loading}
                   className="text-red-500 hover:text-red-700 transition-all p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
-                title="Delete reply"
+                  title="Delete reply"
                   type="button"
-              >
+                >
                   <FontAwesomeIcon icon={faTrashCan} className="text-xs transition-transform" />
-              </button>
+                </button>
               )
             )}
           </div>
           <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed mb-2">{reply.text}</p>
-          
+
           {/* Action Buttons */}
           <div className="flex items-center space-x-3 text-xs text-gray-500 mb-2">
             {/* Vote Button */}
             <button
               onClick={() => onVote(commentId, reply._id, 'upvote')}
               disabled={loading || projectStatus === 'closed'}
-              className={`flex items-center space-x-1.5 transition font-medium ${
-                isReplyUpvoted 
-                  ? 'text-orange-500 hover:text-orange-600' 
+              className={`flex items-center space-x-1.5 transition font-medium ${isReplyUpvoted
+                  ? 'text-orange-500 hover:text-orange-600'
                   : 'text-gray-500 hover:text-orange-500'
-              } ${projectStatus === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${projectStatus === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               title="Vote"
             >
               <FaThumbsUp className="text-xs" />
@@ -1273,7 +1270,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               </button>
             )}
           </div>
-          
+
           {/* Reply Input */}
           {isReplying && (
             <div className="mt-2" style={{ direction: 'ltr', minHeight: '80px' }}>
@@ -1287,11 +1284,11 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                 placeholder="Write your reply..."
                 dir="ltr"
                 maxLength={200}
-                                className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm"
+                className="w-full px-3 py-2 border border-amber-200/50 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none resize-none bg-amber-50 text-sm"
                 rows={2}
                 autoFocus
-                style={{ 
-                  direction: 'ltr', 
+                style={{
+                  direction: 'ltr',
                   textAlign: 'left',
                   unicodeBidi: 'embed',
                   writingMode: 'horizontal-tb'
@@ -1329,7 +1326,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               </div>
             </div>
           )}
-          
+
           {/* Nested Replies - Recursive */}
           {reply.replies && reply.replies.length > 0 && (
             <div className="mt-3 space-y-3">
@@ -1380,7 +1377,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
     // Optimistic update - update UI immediately
     const currentLikes = Array.isArray(projectData.likes) ? projectData.likes : [];
     const wasLiked = Array.isArray(projectData.likes) && projectData.likes.includes(userId);
-    
+
     if (wasLiked) {
       // Remove like optimistically
       setProjectData({
@@ -1394,7 +1391,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
         likes: [...currentLikes, userId]
       });
     }
-    
+
     // Then make the API call
     try {
       await onLike(projectData._id);
@@ -1425,7 +1422,7 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
     try {
       setLoading(true);
       const result = await projectAPI.approveRequest(projectData._id, requestId);
-      
+
       // Check if project was auto-completed
       if (result.data.status === 'closed') {
         addNotification({
@@ -1546,53 +1543,53 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
       {/* Content */}
       <div className="container mx-auto px-2 sm:px-4 pb-4 sm:pb-8 max-w-7xl">
         <div className="bg-transparent rounded-lg p-3 sm:p-6 md:p-8 lg:p-10">
-            {/* Completed Project Banner */}
-            {projectData.status === 'closed' && (
-              <div className="mb-6 bg-gray-800 text-white rounded-lg p-4 flex items-center space-x-3">
-                <FaCheck className="text-2xl" />
-                <div>
-                  <h4 className="font-semibold">Project Completed</h4>
-                  <p className="text-sm text-gray-300">This project has been marked as complete. No further actions can be taken.</p>
-                </div>
+          {/* Completed Project Banner */}
+          {projectData.status === 'closed' && (
+            <div className="mb-6 bg-gray-800 text-white rounded-lg p-4 flex items-center space-x-3">
+              <FaCheck className="text-2xl" />
+              <div>
+                <h4 className="font-semibold">Project Completed</h4>
+                <p className="text-sm text-gray-300">This project has been marked as complete. No further actions can be taken.</p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Header */}
-            <div className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                <div className="flex items-center gap-2 flex-1 pr-0 sm:pr-8">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                    {projectData.title}
-                  </h2>
-                  {isOwner && (
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
-                      title="Edit project"
-                      type="button"
-                    >
-                      <FaEdit className="text-base sm:text-lg" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Creator and Date */}
-              <div className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
-                by <span className="font-medium">{projectData.createdBy?.name}</span> • {formatRelativeTime(projectData.createdAt)}
-              </div>
-
-              {/* Domains */}
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-                {projectData.domains?.map((domain) => (
-                  <span
-                    key={domain}
-                    className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(domain)}`}
+          {/* Header */}
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <div className="flex items-center gap-2 flex-1 pr-0 sm:pr-8">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                  {projectData.title}
+                </h2>
+                {isOwner && (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                    title="Edit project"
+                    type="button"
                   >
-                    {domain}
-                  </span>
-                ))}
+                    <FaEdit className="text-base sm:text-lg" />
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* Creator and Date */}
+            <div className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
+              by <span className="font-medium">{projectData.createdBy?.name}</span> • {formatRelativeTime(projectData.createdAt)}
+            </div>
+
+            {/* Domains */}
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+              {projectData.domains?.map((domain) => (
+                <span
+                  key={domain}
+                  className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(domain)}`}
+                >
+                  {domain}
+                </span>
+              ))}
+            </div>
 
             {/* Skills */}
             {projectData.skills && projectData.skills.length > 0 && (
@@ -1611,263 +1608,261 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               </div>
             )}
 
-              {/* Stats */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-gray-600 text-xs sm:text-sm">
-                <button
-                  onClick={handleLikeClick}
-                  className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-200 hover:scale-105 ${
-                    isLiked
-                      ? 'text-red-600 font-semibold'
-                      : 'text-gray-600 hover:text-red-500'
+            {/* Stats */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-gray-600 text-xs sm:text-sm">
+              <button
+                onClick={handleLikeClick}
+                className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-200 hover:scale-105 ${isLiked
+                    ? 'text-red-600 font-semibold'
+                    : 'text-gray-600 hover:text-red-500'
                   }`}
-                >
-                  <FontAwesomeIcon 
-                    icon={isLiked ? faHeartSolid : faHeartRegular} 
-                    className={`text-sm sm:text-base transition-colors ${
-                      isLiked ? 'text-red-500' : 'text-red-500 opacity-60'
+              >
+                <FontAwesomeIcon
+                  icon={isLiked ? faHeartSolid : faHeartRegular}
+                  className={`text-sm sm:text-base transition-colors ${isLiked ? 'text-red-500' : 'text-red-500 opacity-60'
                     }`}
-                  />
-                  <span>{Array.isArray(projectData.likes) ? projectData.likes.length : (projectData.likes || 0)} likes</span>
-                </button>
-                <span className="flex items-center space-x-1 sm:space-x-2">
-                  <FaComment className="text-amber-500 text-sm sm:text-base" />
-                  <span>{projectData.comments?.length || 0} comments</span>
-                </span>
-                <button
-                  onClick={() => setShowParticipants(!showParticipants)}
-                  className="flex items-center space-x-1 sm:space-x-2 hover:text-green-600 transition cursor-pointer"
-                >
-                  <FaUsers className="text-green-500 text-sm sm:text-base" />
-                  <span>{projectData.participants?.length || 0} participants</span>
-                </button>
-              </div>
+                />
+                <span>{Array.isArray(projectData.likes) ? projectData.likes.length : (projectData.likes || 0)} likes</span>
+              </button>
+              <span className="flex items-center space-x-1 sm:space-x-2">
+                <FaComment className="text-amber-500 text-sm sm:text-base" />
+                <span>{projectData.comments?.length || 0} comments</span>
+              </span>
+              <button
+                onClick={() => setShowParticipants(!showParticipants)}
+                className="flex items-center space-x-1 sm:space-x-2 hover:text-green-600 transition cursor-pointer"
+              >
+                <FaUsers className="text-green-500 text-sm sm:text-base" />
+                <span>{projectData.participants?.length || 0} participants</span>
+              </button>
             </div>
+          </div>
 
-            {/* Participants List - Visible when clicked */}
-            {showParticipants && Array.isArray(projectData.participants) && projectData.participants.length > 0 && (
-              <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100/50">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <FaUsers className="text-amber-600" />
-                  Participants ({projectData.participants.length})
-                </h4>
-                <div className="space-y-2">
-                  {projectData.participants.map((participant) => {
-                    const participantUserId = participant.user?._id || participant.user;
-                    const isParticipantOwner = participantUserId?.toString() === projectData.createdBy?.toString() || participantUserId === projectData.createdBy;
-                    return (
-                      <div
-                        key={participant._id || participantUserId}
-                        className="flex items-center justify-between bg-amber-50 rounded-lg p-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleUserClick(participantUserId)}
-                            className="font-medium text-gray-900 hover:text-amber-600 transition cursor-pointer"
-                          >
-                            {participant.user?.name || 'Unknown User'}
-                          </button>
-                          {isParticipantOwner && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Owner</span>
-                          )}
-                          {participant.role && !isParticipantOwner && (
-                            <span className="text-xs text-gray-500">• {participant.role}</span>
-                          )}
-                        </div>
-                        {isOwner && !isParticipantOwner && (
-                          confirmingRemoveParticipant === participantUserId ? (
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleRemoveParticipant(participantUserId);
-                                }}
-                                disabled={loading}
-                                className="text-red-600 hover:text-red-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                type="button"
-                              >
-                                Remove
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setConfirmingRemoveParticipant(null);
-                                }}
-                                disabled={loading}
-                                className="text-gray-600 hover:text-gray-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                type="button"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
+          {/* Participants List - Visible when clicked */}
+          {showParticipants && Array.isArray(projectData.participants) && projectData.participants.length > 0 && (
+            <div className="mb-6 bg-amber-50 rounded-lg p-4 border border-amber-100/50">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <FaUsers className="text-amber-600" />
+                Participants ({projectData.participants.length})
+              </h4>
+              <div className="space-y-2">
+                {projectData.participants.map((participant) => {
+                  const participantUserId = participant.user?._id || participant.user;
+                  const isParticipantOwner = participantUserId?.toString() === projectData.createdBy?.toString() || participantUserId === projectData.createdBy;
+                  return (
+                    <div
+                      key={participant._id || participantUserId}
+                      className="flex items-center justify-between bg-amber-50 rounded-lg p-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUserClick(participantUserId)}
+                          className="font-medium text-gray-900 hover:text-amber-600 transition cursor-pointer"
+                        >
+                          {participant.user?.name || 'Unknown User'}
+                        </button>
+                        {isParticipantOwner && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Owner</span>
+                        )}
+                        {participant.role && !isParticipantOwner && (
+                          <span className="text-xs text-gray-500">• {participant.role}</span>
+                        )}
+                      </div>
+                      {isOwner && !isParticipantOwner && (
+                        confirmingRemoveParticipant === participantUserId ? (
+                          <div className="flex items-center space-x-1">
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setConfirmingRemoveParticipant(participantUserId);
+                                handleRemoveParticipant(participantUserId);
                               }}
                               disabled={loading}
-                              className="text-red-600 hover:text-red-800 transition p-1.5 rounded hover:scale-110 disabled:opacity-50"
-                              title="Remove from team"
+                              className="text-red-600 hover:text-red-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                               type="button"
                             >
-                              <FontAwesomeIcon icon={faTrashCan} className="text-xs" />
+                              Remove
                             </button>
-                          )
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConfirmingRemoveParticipant(null);
+                              }}
+                              disabled={loading}
+                              className="text-gray-600 hover:text-gray-700 transition-all px-2 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setConfirmingRemoveParticipant(participantUserId);
+                            }}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-800 transition p-1.5 rounded hover:scale-110 disabled:opacity-50"
+                            title="Remove from team"
+                            type="button"
+                          >
+                            <FontAwesomeIcon icon={faTrashCan} className="text-xs" />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-
-            {/* Divider */}
-            <hr className="my-6" />
-
-            {/* Team Chat Section - Only for joined participants */}
-            {(hasJoined || isOwner) && (
-              <ProjectTeamChat
-                projectId={projectData._id}
-                projectData={projectData}
-                isOwner={isOwner}
-                userId={userId}
-                pendingRequestsCount={pendingRequestsCount}
-                onApproveRequest={handleApproveRequest}
-                onRejectRequest={handleRejectRequest}
-                onUserClick={handleUserClick}
-                loading={loading}
-                onProjectUpdate={refreshProjectData}
-              />
-            )}
-
-            {/* Description with AI Summarize */}
-            <ProjectAISummarize 
-              projectId={projectData._id}
-              description={projectData.description}
-            />
-
-            {/* Team Requirements */}
-            {projectData.teamRequirements && (
-              <div className="mb-4 sm:mb-6">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Team Requirements</h3>
-                <p className="text-gray-700 text-sm">{projectData.teamRequirements}</p>
-              </div>
-            )}
-
-            {/* Git Link */}
-            {projectData.gitLink && (
-              <div className="mb-6">
-                <a
-                  href={projectData.gitLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  <FaExternalLinkAlt />
-                  <span>View Repository</span>
-                </a>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-row gap-2 mb-4 sm:mb-6">
-              {projectData.status === 'open' && !hasJoined && !hasPendingRequest && !isOwner && (
-                <button
-                  onClick={handleJoinClick}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm shadow-sm hover:shadow-md"
-                >
-                  <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
-                  <span>Request to Join</span>
-                </button>
-              )}
-              {hasPendingRequest && !isOwner && (
-                <button
-                  onClick={handleCancelRequest}
-                  disabled={loading}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm transition-colors disabled:opacity-50"
-                  title="Click to cancel request"
-                >
-                  <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
-                  <span>Request Pending</span>
-                  <FaTimes className="text-xs ml-1" />
-                </button>
-              )}
-              {hasJoined && !isOwner && (
-                <button
-                  disabled
-                  className="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg font-medium flex items-center justify-center space-x-1.5 text-xs"
-                >
-                  <FaCheck className="text-xs" />
-                  <span>Joined</span>
-                </button>
-              )}
-              {isOwner && projectData.status === 'open' && (
-                <div className="flex items-center gap-2 flex-wrap w-full">
-                    <button
-                      onClick={() => setShowJoinRequests(!showJoinRequests)}
-                    className="flex-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 text-xs shadow-sm hover:shadow-md min-w-0"
-                    >
-                    <FontAwesomeIcon icon={faHandshake} className="text-xs" />
-                    <span className="truncate">View Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount})`}</span>
-                    </button>
-                  <div className="relative flex-1 min-w-0">
-                    {confirmingComplete && (
-                      <div className="flex items-center gap-2 mb-1 -mt-2">
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setConfirmingComplete(false);
-                            await onComplete(projectData._id);
-                            onClose();
-                            onUpdate();
-                          }}
-                          className="px-2 sm:px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors shadow-sm"
-                        >
-                          Complete
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setConfirmingComplete(false);
-                          }}
-                          className="px-2 sm:px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!confirmingComplete) {
-                          setConfirmingComplete(true);
-                        }
-                      }}
-                      disabled={confirmingComplete}
-                      className="w-full px-2 sm:px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaCheck className="text-xs" />
-                      <span className="truncate">Mark as Complete</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+          )}
 
-            {/* Join Requests Management (for owner) */}
-            {isOwner && showJoinRequests && (
-              <div className="mb-8 bg-amber-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-4">Pending Join Requests</h4>
-                {pendingRequestsCount > 0 ? (
+          {/* Divider */}
+          <hr className="my-6" />
+
+          {/* Team Chat Section - Only for joined participants */}
+          {(hasJoined || isOwner) && (
+            <ProjectTeamChat
+              projectId={projectData._id}
+              projectData={projectData}
+              isOwner={isOwner}
+              userId={userId}
+              pendingRequestsCount={pendingRequestsCount}
+              onApproveRequest={handleApproveRequest}
+              onRejectRequest={handleRejectRequest}
+              onUserClick={handleUserClick}
+              loading={loading}
+              onProjectUpdate={refreshProjectData}
+            />
+          )}
+
+          {/* Description with AI Summarize */}
+          <ProjectAISummarize
+            projectId={projectData._id}
+            description={projectData.description}
+          />
+
+          {/* Team Requirements */}
+          {projectData.teamRequirements && (
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Team Requirements</h3>
+              <p className="text-gray-700 text-sm">{projectData.teamRequirements}</p>
+            </div>
+          )}
+
+          {/* Git Link */}
+          {projectData.gitLink && (
+            <div className="mb-6">
+              <a
+                href={projectData.gitLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium"
+              >
+                <FaExternalLinkAlt />
+                <span>View Repository</span>
+              </a>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-row gap-2 mb-4 sm:mb-6">
+            {projectData.status === 'open' && !hasJoined && !hasPendingRequest && !isOwner && (
+              <button
+                onClick={handleJoinClick}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm shadow-sm hover:shadow-md"
+              >
+                <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
+                <span>Request to Join</span>
+              </button>
+            )}
+            {hasPendingRequest && !isOwner && (
+              <button
+                onClick={handleCancelRequest}
+                disabled={loading}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 font-medium flex items-center justify-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm transition-colors disabled:opacity-50"
+                title="Click to cancel request"
+              >
+                <FontAwesomeIcon icon={faHandshake} className="text-sm sm:text-base" />
+                <span>Request Pending</span>
+                <FaTimes className="text-xs ml-1" />
+              </button>
+            )}
+            {hasJoined && !isOwner && (
+              <button
+                disabled
+                className="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg font-medium flex items-center justify-center space-x-1.5 text-xs"
+              >
+                <FaCheck className="text-xs" />
+                <span>Joined</span>
+              </button>
+            )}
+            {isOwner && projectData.status === 'open' && (
+              <div className="flex items-center gap-2 flex-wrap w-full">
+                <button
+                  onClick={() => setShowJoinRequests(!showJoinRequests)}
+                  className="flex-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-medium flex items-center justify-center space-x-1.5 text-xs shadow-sm hover:shadow-md min-w-0"
+                >
+                  <FontAwesomeIcon icon={faHandshake} className="text-xs" />
+                  <span className="truncate">View Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount})`}</span>
+                </button>
+                <div className="relative flex-1 min-w-0">
+                  {confirmingComplete && (
+                    <div className="flex items-center gap-2 mb-1 -mt-2">
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setConfirmingComplete(false);
+                          await onComplete(projectData._id);
+                          onClose();
+                          onUpdate();
+                        }}
+                        className="px-2 sm:px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                      >
+                        Complete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setConfirmingComplete(false);
+                        }}
+                        className="px-2 sm:px-3 py-1.5 bg-amber-200 text-amber-900 text-xs font-medium rounded-md hover:bg-amber-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!confirmingComplete) {
+                        setConfirmingComplete(true);
+                      }
+                    }}
+                    disabled={confirmingComplete}
+                    className="w-full px-2 sm:px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center space-x-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaCheck className="text-xs" />
+                    <span className="truncate">Mark as Complete</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Join Requests Management (for owner) */}
+          {isOwner && showJoinRequests && (
+            <div className="mb-8 bg-amber-50 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-4">Pending Join Requests</h4>
+              {pendingRequestsCount > 0 ? (
                 <div className="space-y-3">
                   {projectData.joinRequests
                     ?.filter(r => r.status === 'pending')
@@ -1909,32 +1904,32 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
                       </div>
                     ))}
                 </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">No pending join requests</p>
-                )}
-              </div>
-            )}
+              ) : (
+                <p className="text-gray-500 text-sm">No pending join requests</p>
+              )}
+            </div>
+          )}
 
-            {/* Divider */}
-            <hr className="my-8" />
+          {/* Divider */}
+          <hr className="my-8" />
 
-            {/* Discussion Section */}
-            <ProjectDiscussion
-              projectId={projectData._id}
-              projectData={projectData}
-              userId={userId}
-              loading={loading}
-              onProjectUpdate={(updatedProject) => {
-                if (updatedProject) {
-                  setProjectData(updatedProject);
-                } else {
-                  refreshProjectData();
-                }
-              }}
-            />
-          </div>
+          {/* Discussion Section */}
+          <ProjectDiscussion
+            projectId={projectData._id}
+            projectData={projectData}
+            userId={userId}
+            loading={loading}
+            onProjectUpdate={(updatedProject) => {
+              if (updatedProject) {
+                setProjectData(updatedProject);
+              } else {
+                refreshProjectData();
+              }
+            }}
+          />
+        </div>
       </div>
-      
+
       {/* Edit Modal */}
       {showEditModal && (
         <EditProjectModal
@@ -2023,7 +2018,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate at least one domain is selected
     if (formData.domains.length === 0) {
       addNotification({
@@ -2032,7 +2027,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     // Validate at least one skill is selected
     if (formData.skills.length === 0) {
       addNotification({
@@ -2041,7 +2036,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
       await projectAPI.update(project._id, formData);
@@ -2076,7 +2071,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Project</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Title */}
@@ -2130,7 +2125,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }) => {
             <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Domain Requirements <span className="text-red-500">*</span>
             </label>
-            
+
             {/* Selected Domains Display */}
             {formData.domains.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
