@@ -416,13 +416,15 @@ router.post('/login', [
 ], async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Login attempt for: ${normalizedEmail}`);
 
     // Check if user exists
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'User not found'
       });
     }
 
@@ -754,10 +756,9 @@ router.post('/forgot-password', [
     // Check if user exists
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      // Don't reveal if user exists or not for security
-      return res.json({
-        success: true,
-        message: 'If an account exists with this email, a password reset OTP has been sent'
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
     }
 

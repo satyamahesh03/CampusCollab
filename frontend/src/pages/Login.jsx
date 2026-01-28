@@ -55,6 +55,8 @@ const Login = () => {
       return;
     }
 
+    /* 
+    // Validation removed to let backend handle checks
     if (!validateEmailDomain(forgotEmail)) {
       addNotification({
         type: 'error',
@@ -62,7 +64,8 @@ const Login = () => {
         message: 'Only college mails (@mvgrce.edu.in) are accepted',
       });
       return;
-    }
+    } 
+    */
 
     setSendingOTP(true);
     try {
@@ -74,10 +77,11 @@ const Login = () => {
         message: 'Password reset OTP has been sent to your email',
       });
     } catch (error) {
+      const msg = error.response?.data?.message || error.message || 'Could not send OTP. Please try again.';
       addNotification({
         type: 'error',
         title: 'Failed to Send OTP',
-        message: error.message || 'Could not send OTP. Please try again.',
+        message: msg,
       });
     } finally {
       setSendingOTP(false);
@@ -111,7 +115,7 @@ const Login = () => {
       addNotification({
         type: 'error',
         title: 'OTP Verification Failed',
-        message: error.message || 'Invalid OTP. Please try again.',
+        message: error.response?.data?.message || error.message || 'Invalid OTP. Please try again.',
       });
       setResetOTP('');
     } finally {
@@ -186,7 +190,7 @@ const Login = () => {
       addNotification({
         type: 'error',
         title: 'Password Reset Failed',
-        message: error.message || 'Failed to reset password. Please try again.',
+        message: error.response?.data?.message || error.message || 'Failed to reset password. Please try again.',
       });
     } finally {
       setResettingPassword(false);
@@ -208,7 +212,8 @@ const Login = () => {
       });
       navigate('/');
     } catch (error) {
-      setErrorMessage(error.message || 'Invalid email or password');
+      // Show specific error from backend (e.g., "User not found" or "Invalid credentials")
+      setErrorMessage(error.response?.data?.message || error.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
