@@ -486,7 +486,7 @@ router.post('/verify-gmail-code', protect, authorize('faculty', 'admin'), (req, 
       message: 'Code verified successfully'
     });
   } else {
-    return res.status(401).json({
+    return res.status(403).json({
       success: false,
       message: 'Invalid secret code'
     });

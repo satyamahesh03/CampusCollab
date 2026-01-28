@@ -29,7 +29,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login') && !error.config?.url?.includes('verify-gmail-code')) {
       // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');

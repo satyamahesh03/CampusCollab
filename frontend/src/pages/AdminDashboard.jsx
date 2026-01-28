@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../utils/api';
 import { useGlobal } from '../context/GlobalContext';
 import Loading from '../components/Loading';
 import { FaUsers, FaProjectDiagram, FaFlag, FaBan, FaCheck, FaTimes, FaChevronDown, FaChevronRight, FaEye, FaEyeSlash, FaSearch } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
-import { formatRelativeTime, getStatusColor, formatDate } from '../utils/helpers';
+import { formatRelativeTime, getStatusColor, formatDate, departments, years } from '../utils/helpers';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -24,7 +25,9 @@ const AdminDashboard = () => {
   const [confirmingDelete, setConfirmingDelete] = useState(null); // { type, id }
   const [contentSearch, setContentSearch] = useState(''); // Search query for content
   const [userSearch, setUserSearch] = useState(''); // Search query for users
+  const [userFilters, setUserFilters] = useState({ dept: '', year: '' }); // Filters for users
   const { addNotification } = useGlobal();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
@@ -173,13 +176,17 @@ const AdminDashboard = () => {
   };
 
   // Filter users based on search query
+  // Filter users based on search query and filters
   const filteredUsers = users.filter((user) => {
-    if (!userSearch.trim()) return true;
     const searchLower = userSearch.toLowerCase();
-    return (
+    const matchesSearch = !userSearch.trim() ||
       user.name?.toLowerCase().includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower)
-    );
+      user.email?.toLowerCase().includes(searchLower);
+
+    const matchesDept = !userFilters.dept || user.department === userFilters.dept;
+    const matchesYear = !userFilters.year || user.year?.toString() === userFilters.year;
+
+    return matchesSearch && matchesDept && matchesYear;
   });
 
   // Filter content based on search query
@@ -1144,17 +1151,46 @@ const AdminDashboard = () => {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex flex-col gap-4 mb-6">
               <h2 className="text-xl sm:text-2xl font-semibold">Users</h2>
-              <div className="relative flex-1 sm:flex-initial sm:w-64">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm border-0 bg-amber-50 focus:border focus:border-amber-300 rounded-lg focus:outline-none focus:ring-amber-300"
-                />
+
+              <div className="flex flex-col md:flex-row gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border-0 bg-amber-50 focus:border focus:border-amber-300 rounded-lg focus:outline-none focus:ring-amber-300 shadow-sm"
+                  />
+                </div>
+
+                {/* Filters */}
+                <div className="flex gap-2">
+                  <select
+                    value={userFilters.dept}
+                    onChange={(e) => setUserFilters(prev => ({ ...prev, dept: e.target.value }))}
+                    className="px-3 py-2 text-sm border-0 bg-amber-50 focus:border focus:border-amber-300 rounded-lg focus:outline-none focus:ring-amber-300 shadow-sm"
+                  >
+                    <option value="">All Depts</option>
+                    {departments.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={userFilters.year}
+                    onChange={(e) => setUserFilters(prev => ({ ...prev, year: e.target.value }))}
+                    className="px-3 py-2 text-sm border-0 bg-amber-50 focus:border focus:border-amber-300 rounded-lg focus:outline-none focus:ring-amber-300 shadow-sm"
+                  >
+                    <option value="">All Years</option>
+                    {years.map(year => (
+                      <option key={year} value={year}>{year} Year</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <div className="bg-amber-50 rounded-lg shadow-sm border border-amber-200 overflow-hidden">
@@ -1173,7 +1209,12 @@ const AdminDashboard = () => {
                   <tbody className="divide-y divide-gray-200">
                     {filteredUsers.slice(0, 20).map((user) => (
                       <tr key={user._id} className="hover:bg-amber-50">
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
+                        <td
+                          className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 cursor-pointer hover:text-amber-600 hover:underline"
+                          onClick={() => navigate(`/profile?userId=${user._id}`)}
+                        >
+                          {user.name}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 capitalize">
@@ -1205,7 +1246,12 @@ const AdminDashboard = () => {
                 {filteredUsers.slice(0, 20).map((user) => (
                   <div key={user._id} className="p-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-medium text-sm text-gray-900">{user.name}</div>
+                      <div
+                        className="font-medium text-sm text-gray-900 cursor-pointer hover:text-amber-600 hover:underline"
+                        onClick={() => navigate(`/profile?userId=${user._id}`)}
+                      >
+                        {user.name}
+                      </div>
                       {user.role !== 'admin' && (
                         <button
                           onClick={() => handleSuspendUser(user._id, 'Admin action')}

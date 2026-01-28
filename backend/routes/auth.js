@@ -937,7 +937,7 @@ router.post('/reset-password', [
         websiteUrl: user.websiteUrl,
         designation: user.designation
       },
-      message: 'Password reset successfully. You have been automatically logged in.'
+      message: 'Password reset successfully.'
     });
   } catch (error) {
     console.error('Error resetting password:', error);

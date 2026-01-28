@@ -20,54 +20,54 @@ const Notification = () => {
   };
 
   return (
-    <div className="fixed top-20 right-4 z-50 space-y-2">
+    <div className="fixed top-20 right-4 z-[100] space-y-3 flex flex-col items-end pointer-events-none md:top-24 md:right-5">
       <AnimatePresence>
         {notifications.map((notification) => (
           <motion.div
             key={notification.id}
-            initial={{ opacity: 0, x: 100, scale: 0.9 }}
+            initial={{ opacity: 0, x: 50, scale: 0.95 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 100, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className={`rounded-lg shadow-lg p-3 flex items-center space-x-2 max-w-sm ${
-              notification.type === 'success' 
-                ? 'bg-green-50 border border-green-200' 
-                : notification.type === 'error'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-amber-50 border border-amber-200'
-            }`}
+            exit={{ opacity: 0, x: 20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            layout
+            className="pointer-events-auto relative w-full max-w-[calc(100vw-2rem)] md:max-w-sm overflow-hidden rounded-xl md:rounded-2xl bg-white/95 backdrop-blur-md p-3 md:p-4 shadow-xl ring-1 ring-black/5"
           >
-            {getIcon(notification.type)}
-            <div className="flex-1">
-              {notification.title && (
-                <h4 className={`font-semibold text-xs ${
-                  notification.type === 'success' 
-                    ? 'text-green-900' 
-                    : notification.type === 'error'
-                    ? 'text-red-900'
-                    : 'text-amber-900'
-                }`}>{notification.title}</h4>
-              )}
-              <p className={`text-xs font-medium ${
-                notification.type === 'success' 
-                  ? 'text-green-800' 
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-amber-800'
-              }`}>{notification.message}</p>
+            <div className={`absolute inset-0 opacity-[0.03] ${notification.type === 'success' ? 'bg-green-500' :
+              notification.type === 'error' ? 'bg-red-500' :
+                'bg-amber-500'
+              }`} />
+
+            <div className="relative flex items-start gap-3 md:gap-4">
+              {/* Icon Container with Warm Glow */}
+              <div className={`mt-0.5 flex-shrink-0 rounded-full p-1.5 md:p-2 bg-white shadow-sm ring-1 ring-black/5 ${notification.type === 'success' ? 'text-green-600' :
+                notification.type === 'error' ? 'text-red-600' :
+                  'text-amber-600'
+                }`}>
+                {getIcon(notification.type)}
+              </div>
+
+              <div className="flex-1 pt-0.5 md:pt-1">
+                {notification.title && (
+                  <h4 className={`text-xs md:text-sm font-bold leading-none mb-1 ${notification.type === 'success' ? 'text-green-900' :
+                    notification.type === 'error' ? 'text-red-900' :
+                      'text-amber-900'
+                    }`}>
+                    {notification.title}
+                  </h4>
+                )}
+                <p className="text-xs md:text-sm font-medium text-gray-600 leading-relaxed">
+                  {notification.message}
+                </p>
+              </div>
+
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="flex-shrink-0 rounded-lg p-1 md:p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all focus:outline-none"
+              >
+                <span className="sr-only">Close</span>
+                <FaTimes className="text-xs md:text-sm" />
+              </button>
             </div>
-            <button
-              onClick={() => removeNotification(notification.id)}
-              className={`hover:opacity-70 transition-opacity ${
-                notification.type === 'success' 
-                  ? 'text-green-600' 
-                  : notification.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-amber-600'
-              }`}
-            >
-              <FaTimes className="text-xs" />
-            </button>
           </motion.div>
         ))}
       </AnimatePresence>

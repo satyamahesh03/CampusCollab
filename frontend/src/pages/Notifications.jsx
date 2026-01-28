@@ -29,8 +29,8 @@ const Notifications = () => {
 
     // Set up socket listener for new notifications
     const handleNewNotification = (data) => {
-      if (data.type === 'project_join_request') {
-        // Refresh notifications when a new join request notification arrives
+      if (data.type === 'project_join_request' || data.type === 'project_join_approved') {
+        // Refresh notifications when a new join request/approval notification arrives
         fetchNotifications();
       }
     };
@@ -140,6 +140,10 @@ const Notifications = () => {
         }
       });
     }
+    // Navigate to project when join request is approved
+    if (notification.type === 'project_join_approved' && notification.projectId) {
+      navigate(`/projects/${notification.projectId}`);
+    }
   };
 
   const handleReminderClick = (reminder) => {
@@ -230,28 +234,35 @@ const Notifications = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   className={`bg-white/60 backdrop-blur-sm rounded-lg border p-3 sm:p-4 flex justify-between items-start cursor-pointer hover:shadow-lg transition-all duration-300 ${notification.type === 'account_suspended' || notification.title === 'Content Warning'
-                      ? 'border-red-400 bg-red-50/50 hover:border-red-500' // Warning/Suspended styling
-                      : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
-                        ? 'border-green-400 bg-green-50/50 hover:border-green-500' // Approved/Reactivated styling
-                        : !notification.isRead
-                          ? 'border-l-4 border-l-amber-500 border-amber-100/50 hover:border-amber-400'
-                          : 'border-amber-100/50 hover:border-amber-400'
+                    ? 'border-red-400 bg-red-50/50 hover:border-red-500' // Warning/Suspended styling
+                    : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
+                      ? 'border-green-400 bg-green-50/50 hover:border-green-500' // Approved/Reactivated styling
+                      : !notification.isRead
+                        ? 'border-l-4 border-l-amber-500 border-amber-100/50 hover:border-amber-400'
+                        : 'border-amber-100/50 hover:border-amber-400'
                     }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${notification.type === 'account_suspended' || notification.title === 'Content Warning'
-                          ? 'bg-red-100 text-red-700'
-                          : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
+                        ? 'bg-red-100 text-red-700'
+                        : notification.type === 'account_unsuspended' || notification.title === 'Content Approved'
+                          ? 'bg-green-100 text-green-700'
+                          : notification.type === 'comment_reply'
                             ? 'bg-green-100 text-green-700'
-                            : notification.type === 'comment_reply'
-                              ? 'bg-green-100 text-green-700'
-                              : notification.type === 'project_join_request'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-gray-100 text-gray-700'
+                            : notification.type === 'project_join_request'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-gray-100 text-gray-700'
                         }`}>
-                        {notification.type === 'account_suspended' ? 'Suspended' : notification.type === 'account_unsuspended' ? 'Reactivated' : notification.title === 'Content Warning' ? 'Warning' : notification.title === 'Content Approved' ? 'Approved' : (notification.type === 'comment_reply' ? 'Reply' : notification.type === 'project_join_request' ? 'Join Request' : notification.type)}
+                        {notification.type === 'account_suspended' ? 'Suspended' :
+                          notification.type === 'account_unsuspended' ? 'Reactivated' :
+                            notification.title === 'Content Warning' ? 'Warning' :
+                              notification.title === 'Content Approved' ? 'Approved' :
+                                (notification.type === 'comment_reply' ? 'Reply' :
+                                  notification.type === 'project_join_request' ? 'Join Request' :
+                                    notification.type === 'project_join_approved' ? 'Join Approved' :
+                                      notification.type)}
                       </span>
                       {!notification.isRead && (
                         <span className={`w-2 h-2 rounded-full ${notification.type === 'account_suspended' || notification.title === 'Content Warning' ? 'bg-red-500' : notification.type === 'account_unsuspended' || notification.title === 'Content Approved' ? 'bg-green-500' : 'bg-amber-500'

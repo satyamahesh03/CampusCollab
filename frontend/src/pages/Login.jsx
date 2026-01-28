@@ -27,12 +27,14 @@ const Login = () => {
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { login } = useAuth();
   const { addNotification } = useGlobal();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errorMessage) setErrorMessage('');
   };
 
   // Validate email domain
@@ -43,7 +45,7 @@ const Login = () => {
   // Handle forgot password - Send OTP
   const handleSendResetOTP = async (e) => {
     e.preventDefault();
-    
+
     if (!forgotEmail) {
       addNotification({
         type: 'error',
@@ -85,7 +87,7 @@ const Login = () => {
   // Handle verify reset OTP
   const handleVerifyResetOTP = async (e) => {
     e.preventDefault();
-    
+
     if (!resetOTP || resetOTP.length !== 6) {
       addNotification({
         type: 'error',
@@ -120,7 +122,7 @@ const Login = () => {
   // Handle reset password
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
+
     if (!resetPassword || resetPassword.length < 6) {
       addNotification({
         type: 'error',
@@ -142,7 +144,7 @@ const Login = () => {
     setResettingPassword(true);
     try {
       const response = await authAPI.resetPassword(forgotEmail, resetOTP, resetPassword);
-      
+
       // Automatically log in the user with the returned token and user data
       if (response.token && response.user) {
         login(response.user, response.token);
@@ -151,7 +153,7 @@ const Login = () => {
           title: 'Password Reset Successful',
           message: 'Your password has been reset. You have been automatically logged in.',
         });
-        
+
         // Close modal and reset state
         setShowForgotPassword(false);
         setForgotEmail('');
@@ -161,7 +163,7 @@ const Login = () => {
         setOtpSent(false);
         setOtpVerified(false);
         setShowResetPassword(false);
-        
+
         // Navigate to home page
         navigate('/');
       } else {
@@ -194,6 +196,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
 
     try {
       const response = await authAPI.login(formData);
@@ -205,11 +208,7 @@ const Login = () => {
       });
       navigate('/');
     } catch (error) {
-      addNotification({
-        type: 'error',
-        title: 'Login Failed',
-        message: error.message || 'Invalid credentials',
-      });
+      setErrorMessage(error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -235,9 +234,9 @@ const Login = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <img 
-                src={cclogo} 
-                alt="Campus Collab Logo" 
+              <img
+                src={cclogo}
+                alt="Campus Collab Logo"
                 className="h-10 w-auto object-contain select-none"
                 draggable="false"
               />
@@ -265,8 +264,9 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                  placeholder="your.email@college.edu"
+                  placeholder="your.email@mvgrce.edu.in"
                 />
               </div>
             </div>
@@ -275,8 +275,8 @@ const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                Password
-              </label>
+                  Password
+                </label>
                 <button
                   type="button"
                   onClick={() => {
@@ -301,6 +301,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
                   placeholder="••••••••"
                 />
@@ -317,6 +318,20 @@ const Login = () => {
                 </button>
               </div>
             </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-red-600 text-sm text-center overflow-hidden mb-4 font-medium"
+                >
+                  <p>{errorMessage}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Submit Button */}
             <motion.button
@@ -344,8 +359,8 @@ const Login = () => {
           <div className="mt-8 text-center">
             <p className="text-gray-600">
               Don't have an account?{' '}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-amber-600 hover:text-amber-700 font-semibold transition-colors flex items-center justify-center space-x-1 group"
               >
                 <span>Create one here</span>
@@ -431,13 +446,12 @@ const Login = () => {
                             }
                           }}
                           required
-                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
-                            forgotEmail && !validateEmailDomain(forgotEmail)
-                              ? 'border-red-300 focus:ring-red-500'
-                              : forgotEmail && validateEmailDomain(forgotEmail)
+                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${forgotEmail && !validateEmailDomain(forgotEmail)
+                            ? 'border-red-300 focus:ring-red-500'
+                            : forgotEmail && validateEmailDomain(forgotEmail)
                               ? 'border-green-300 focus:ring-green-500'
                               : 'border-amber-200/50'
-                          }`}
+                            }`}
                           placeholder="your.email@mvgrce.edu.in"
                         />
                       </div>

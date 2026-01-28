@@ -31,26 +31,26 @@ const Internships = () => {
     const fetchFilterOptions = async () => {
       try {
         const response = await internshipAPI.getAll({});
-        
+
         // Extract unique domains, departments, and years from all internships
         const uniqueDomains = [...new Set(
           response.data
             .map(internship => internship.domain)
             .filter(domain => domain)
         )].sort();
-        
+
         const uniqueDepartments = [...new Set(
           response.data
             .flatMap(internship => internship.department || [])
             .filter(dept => dept)
         )].sort();
-        
+
         const uniqueYears = [...new Set(
           response.data
             .flatMap(internship => internship.eligibleYears || [])
             .filter(year => year)
         )].sort((a, b) => a - b);
-        
+
         setAvailableDomains(uniqueDomains);
         setAvailableDepartments(uniqueDepartments);
         setAvailableYears(uniqueYears);
@@ -58,7 +58,7 @@ const Internships = () => {
         // Silently fail - filters will use defaults
       }
     };
-    
+
     if (!internshipId) {
       fetchFilterOptions();
     }
@@ -85,7 +85,7 @@ const Internships = () => {
             const itemId = r.itemId || r.item?._id;
             return itemId?.toString();
           });
-        
+
         return prevInternships.map(item => {
           const isInReminders = reminderItemIds.includes(item._id?.toString());
           // Always update based on reminders (reminders are source of truth)
@@ -130,7 +130,7 @@ const Internships = () => {
             const itemId = r.itemId || r.item?._id;
             return itemId?.toString();
           });
-        
+
         return newInternships.map(newItem => {
           const prevItem = prevInternships.find(p => p._id === newItem._id);
           // Check if item is in reminders list
@@ -150,9 +150,9 @@ const Internships = () => {
 
   const handleSave = async (id) => {
     if (!user) {
-      addNotification({ 
-        type: 'error', 
-        message: 'Please login to save internships' 
+      addNotification({
+        type: 'error',
+        message: 'Please login to save internships'
       });
       return;
     }
@@ -162,34 +162,34 @@ const Internships = () => {
       // Check both the list and the selected internship (if viewing detail)
       const internship = internships.find(i => i._id === id) || (selectedInternship && selectedInternship._id === id ? selectedInternship : null);
       if (!internship) {
-        addNotification({ 
-          type: 'error', 
-          message: 'Internship not found' 
+        addNotification({
+          type: 'error',
+          message: 'Internship not found'
         });
         return;
       }
 
-      const wasSaved = Array.isArray(internship.likes) && internship.likes.some(likeId => 
+      const wasSaved = Array.isArray(internship.likes) && internship.likes.some(likeId =>
         likeId === user.id || likeId.toString() === user.id?.toString()
       );
-      
+
       // Optimistic update - update UI immediately
-      setInternships(prevInternships => 
+      setInternships(prevInternships =>
         prevInternships.map(i => {
           if (i._id === id) {
             // If likes is an array, toggle the user ID
             if (Array.isArray(i.likes)) {
-              const newLikes = wasSaved 
+              const newLikes = wasSaved
                 ? i.likes.filter(likeId => likeId !== user.id && likeId?.toString() !== user.id?.toString())
                 : [...i.likes, user.id];
               return { ...i, likes: newLikes };
             } else {
               // If likes is a number, convert to array format for optimistic update
               const currentCount = typeof i.likes === 'number' ? i.likes : 0;
-              return { 
-                ...i, 
-                likes: wasSaved 
-                  ? currentCount - 1 
+              return {
+                ...i,
+                likes: wasSaved
+                  ? currentCount - 1
                   : currentCount + 1,
                 _isSaved: !wasSaved // Track saved state separately
               };
@@ -198,29 +198,29 @@ const Internships = () => {
           return i;
         })
       );
-      
+
       await internshipAPI.like(id);
-      
-      addNotification({ 
-        type: 'success', 
-        message: wasSaved ? 'Removed from reminders!' : 'Saved to reminders!' 
+
+      addNotification({
+        type: 'success',
+        message: wasSaved ? 'Removed from reminders!' : 'Saved to reminders!'
       });
-      
+
       // Refresh the internships list
       fetchInternships();
-      
+
       // If viewing this internship's detail, refresh the selected internship
       if (selectedInternship && selectedInternship._id === id) {
         fetchSingleInternship(id);
       }
-      
+
       // Refresh reminders in GlobalContext
       refreshReminders();
     } catch (error) {
       console.error('Error saving internship:', error);
-      addNotification({ 
-        type: 'error', 
-        message: error?.message || 'Failed to update internship' 
+      addNotification({
+        type: 'error',
+        message: error?.message || 'Failed to update internship'
       });
     }
   };
@@ -270,9 +270,9 @@ const Internships = () => {
           )}
         </div>
       </div>
-      <FilterBar 
-        filters={filters} 
-        setFilters={setFilters} 
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
         showYear={false}
         domains={availableDomains.length > 0 ? availableDomains : null}
         departments={availableDepartments.length > 0 ? availableDepartments : null}
@@ -282,46 +282,42 @@ const Internships = () => {
       <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
         <button
           onClick={() => setFilters({ ...filters, mode: undefined })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
-            !filters.mode
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${!filters.mode
               ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           All Modes
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'virtual' })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
-            filters.mode === 'virtual'
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${filters.mode === 'virtual'
               ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           Virtual
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'offline' })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
-            filters.mode === 'offline'
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${filters.mode === 'offline'
               ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           Offline
         </button>
         <button
           onClick={() => setFilters({ ...filters, mode: 'hybrid' })}
-          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${
-            filters.mode === 'hybrid'
+          className={`px-3 sm:px-4 py-2 rounded-lg transition text-xs sm:text-sm flex-1 sm:flex-initial ${filters.mode === 'hybrid'
               ? 'bg-amber-500 text-white'
               : 'bg-gray-200 text-gray-700'
-          }`}
+            }`}
         >
           Hybrid
         </button>
       </div>
-      
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {[1, 2, 3, 4, 5, 6].map((index) => (
@@ -370,7 +366,7 @@ const Internships = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {internships.map((internship, index) => {
             const isOwner = internship.postedBy?._id === user?.id || internship.postedBy === user?.id;
-            
+
             return (
               <motion.div
                 key={internship._id}
@@ -390,11 +386,10 @@ const Internships = () => {
                         e.stopPropagation();
                         handleSave(internship._id);
                       }}
-                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
-                        (Array.isArray(internship.likes) && internship.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || internship._isSaved
-                          ? 'text-amber-600' 
+                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${(Array.isArray(internship.likes) && internship.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || internship._isSaved
+                          ? 'text-amber-600'
                           : 'text-gray-400'
-                      } hover:text-amber-600 transition`}
+                        } hover:text-amber-600 transition`}
                     >
                       <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
@@ -459,35 +454,35 @@ const Internships = () => {
                   </div>
                 </div>
 
-              <p className="text-amber-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">{internship.company}</p>
+                <p className="text-amber-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">{internship.company}</p>
 
-              {/* Domain Badge */}
-              <div className="mb-2 sm:mb-3">
-                <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(internship.domain)}`}>
-                  {internship.domain}
-                </span>
-              </div>
+                {/* Domain Badge */}
+                <div className="mb-2 sm:mb-3">
+                  <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getDomainColor(internship.domain)}`}>
+                    {internship.domain}
+                  </span>
+                </div>
 
-              {/* Key Info */}
-              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600 mt-auto">
-                <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <FaMapMarkerAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
-                  <span className="break-words">{internship.location} • {internship.mode}</span>
+                {/* Key Info */}
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600 mt-auto">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaMapMarkerAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span className="break-words">{internship.location} • {internship.mode}</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaClock className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span>{internship.duration}</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaMoneyBillWave className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span>{internship.stipend}</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <FaCalendarAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
+                    <span>Apply by {formatDate(internship.applicationDeadline)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <FaClock className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
-                  <span>{internship.duration}</span>
-                </div>
-                <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <FaMoneyBillWave className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
-                  <span>{internship.stipend}</span>
-                </div>
-                <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <FaCalendarAlt className="text-gray-400 text-xs sm:text-sm flex-shrink-0" />
-                  <span>Apply by {formatDate(internship.applicationDeadline)}</span>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
             );
           })}
         </div>
@@ -506,7 +501,7 @@ const Internships = () => {
 const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user } = useAuth();
-  const isSaved = Array.isArray(internship.likes) && internship.likes.some(likeId => 
+  const isSaved = Array.isArray(internship.likes) && internship.likes.some(likeId =>
     likeId === userId || likeId.toString() === userId?.toString()
   );
   const isOwner = internship.postedBy?._id === user?.id || internship.postedBy === user?.id;
@@ -529,87 +524,86 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
         <div className="bg-transparent rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
           {/* Header */}
           <div className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                <div className="flex-1 pr-0 sm:pr-8">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                      {internship.title}
-                    </h2>
-                    {isOwner && (
-                      <button
-                        onClick={() => setShowEditModal(true)}
-                        className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
-                        title="Edit internship"
-                        type="button"
-                      >
-                        <FaEdit className="text-base sm:text-lg" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-lg sm:text-xl text-amber-600 font-semibold">
-                    {internship.company}
-                  </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <div className="flex-1 pr-0 sm:pr-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                    {internship.title}
+                  </h2>
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit internship"
+                      type="button"
+                    >
+                      <FaEdit className="text-base sm:text-lg" />
+                    </button>
+                  )}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSave(internship._id);
-                  }}
-                  className={`p-2 transition ${
-                    isSaved
-                      ? 'text-amber-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                <p className="text-lg sm:text-xl text-amber-600 font-semibold">
+                  {internship.company}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSave(internship._id);
+                }}
+                className={`p-2 transition ${isSaved
+                    ? 'text-amber-600'
+                    : 'text-gray-600 hover:text-gray-900'
                   }`}
-                >
-                  <FaBookmark size={24} />
-                </button>
+              >
+                <FaBookmark size={24} />
+              </button>
+            </div>
+
+            {/* Domain Badge */}
+            <div className="mb-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDomainColor(internship.domain)}`}>
+                {internship.domain}
+              </span>
+            </div>
+
+            {/* Quick Info Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaMapMarkerAlt className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Location</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.location}</p>
+                <p className="text-xs text-gray-600 capitalize">{internship.mode}</p>
               </div>
 
-              {/* Domain Badge */}
-              <div className="mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDomainColor(internship.domain)}`}>
-                  {internship.domain}
-                </span>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaClock className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Duration</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.duration}</p>
               </div>
 
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaMapMarkerAlt className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Location</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.location}</p>
-                  <p className="text-xs text-gray-600 capitalize">{internship.mode}</p>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaMoneyBillWave className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Stipend</span>
                 </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.stipend}</p>
+              </div>
 
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaClock className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Duration</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.duration}</p>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaCalendarAlt className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Deadline</span>
                 </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaMoneyBillWave className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Stipend</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{internship.stipend}</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaCalendarAlt className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Deadline</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">
-                    {formatDate(internship.applicationDeadline)}
-                  </p>
-                </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
+                  {formatDate(internship.applicationDeadline)}
+                </p>
               </div>
             </div>
+          </div>
 
           {/* Divider */}
           <hr className="my-6" />
@@ -671,7 +665,7 @@ const InternshipDetailView = ({ internship, onClose, onSave, userId }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Edit Modal */}
       {showEditModal && (
         <EditInternshipModal
@@ -720,7 +714,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate at least one department is selected
     if (formData.department.length === 0) {
       addNotification({
@@ -729,7 +723,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
       await internshipAPI.create(formData);
@@ -754,7 +748,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
@@ -765,7 +759,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Post Internship Opportunity</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -896,7 +890,7 @@ const CreateInternshipModal = ({ onClose, onSuccess }) => {
             <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Eligible Departments <span className="text-red-500">*</span>
             </label>
-            
+
             {/* Selected Departments Display */}
             {formData.department.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
@@ -1029,7 +1023,7 @@ const EditInternshipModal = ({ internship, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate at least one department is selected
     if (formData.department.length === 0) {
       addNotification({
@@ -1038,7 +1032,7 @@ const EditInternshipModal = ({ internship, onClose, onSuccess }) => {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
       await internshipAPI.update(internship._id, formData);
@@ -1074,7 +1068,7 @@ const EditInternshipModal = ({ internship, onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Internship</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -1205,7 +1199,7 @@ const EditInternshipModal = ({ internship, onClose, onSuccess }) => {
             <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
               Eligible Departments <span className="text-red-500">*</span>
             </label>
-            
+
             {/* Selected Departments Display */}
             {formData.department.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 p-3 bg-amber-100 rounded-lg border border-amber-200">

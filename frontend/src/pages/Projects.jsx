@@ -319,8 +319,8 @@ const Projects = () => {
         <button
           onClick={() => setFilters({ status: 'open', sort: undefined })}
           className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${filters.status === 'open'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700'
+            ? 'bg-green-600 text-white'
+            : 'bg-gray-200 text-gray-700'
             }`}
         >
           Active
@@ -328,8 +328,8 @@ const Projects = () => {
         <button
           onClick={() => setFilters({ status: 'closed', sort: undefined })}
           className={`px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex-1 sm:flex-initial ${filters.status === 'closed'
-              ? 'bg-gray-600 text-white'
-              : 'bg-gray-200 text-gray-700'
+            ? 'bg-gray-600 text-white'
+            : 'bg-gray-200 text-gray-700'
             }`}
         >
           Completed
@@ -648,7 +648,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
@@ -1250,8 +1250,8 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               onClick={() => onVote(commentId, reply._id, 'upvote')}
               disabled={loading || projectStatus === 'closed'}
               className={`flex items-center space-x-1.5 transition font-medium ${isReplyUpvoted
-                  ? 'text-orange-500 hover:text-orange-600'
-                  : 'text-gray-500 hover:text-orange-500'
+                ? 'text-orange-500 hover:text-orange-600'
+                : 'text-gray-500 hover:text-orange-500'
                 } ${projectStatus === 'closed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               title="Vote"
             >
@@ -1613,8 +1613,8 @@ const ProjectDetailView = ({ project, onClose, onLike, onJoin, onComplete, onDel
               <button
                 onClick={handleLikeClick}
                 className={`flex items-center space-x-1 sm:space-x-2 transition-all duration-200 hover:scale-105 ${isLiked
-                    ? 'text-red-600 font-semibold'
-                    : 'text-gray-600 hover:text-red-500'
+                  ? 'text-red-600 font-semibold'
+                  : 'text-gray-600 hover:text-red-500'
                   }`}
               >
                 <FontAwesomeIcon

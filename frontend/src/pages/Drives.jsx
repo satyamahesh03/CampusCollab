@@ -966,12 +966,12 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gray-50 rounded-lg max-w-5xl w-full max-h-[95vh] flex flex-col relative overflow-hidden shadow-2xl"
+        className="bg-amber-50 rounded-xl w-full max-w-7xl max-h-[95vh] flex flex-col relative overflow-hidden shadow-2xl border border-amber-100"
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-white border-b border-gray-200 flex justify-between items-center flex-shrink-0 z-10">
+        <div className="px-6 py-4 bg-white border-b border-amber-200 flex justify-between items-center flex-shrink-0 z-10">
           <h2 className="text-xl font-bold text-gray-800">Post Placement Drive</h2>
           <button
             onClick={onClose}
@@ -982,34 +982,32 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
 
           {/* Smart Fill Section */}
-          <div className="bg-amber-50 rounded-xl p-5 mb-8 border border-amber-100 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <svg className="w-32 h-32 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
-            </div>
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 mb-8 border border-amber-200 relative overflow-hidden shadow-sm">
+
             <div className="relative z-10">
-              <label className="block text-sm font-bold text-amber-900 mb-2 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <label className="block text-sm md:text-base font-bold text-amber-900 mb-2 flex items-center">
+                <svg className="w-5 h-5 md:w-6 md:h-6 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 Smart Fill
-                <span className="ml-2 text-[10px] font-bold tracking-wider uppercase text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full">AI Powered</span>
+                <span className="ml-2 md:ml-3 text-[10px] font-bold tracking-wider uppercase text-amber-800 bg-amber-200/60 border border-amber-300 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full shadow-sm">AI Powered</span>
               </label>
-              <p className="text-sm text-amber-800 mb-3">
-                Paste the full email or notification text below. Our AI will extract all details including salary, dates, and eligibility.
+              <p className="text-xs md:text-sm text-amber-800/80 mb-3 md:mb-4 font-medium leading-relaxed max-w-2xl">
+                Paste the full email or notification text below. Our AI will automatically extract all details including salary, dates, and eligibility criteria.
               </p>
               <textarea
                 value={parseText}
                 onChange={(e) => setParseText(e.target.value)}
-                className="w-full px-4 py-3 text-sm border-2 border-amber-200 rounded-lg focus:ring-0 focus:border-amber-400 bg-white mb-3 placeholder-gray-400 transition-colors"
-                rows={3}
+                className="w-full px-3 py-3 md:px-4 md:py-4 text-xs md:text-sm border-2 border-amber-200/60 rounded-xl focus:ring-4 focus:ring-amber-100 focus:border-amber-400 bg-white/80 backdrop-blur-sm mb-3 md:mb-4 placeholder-amber-900/30 text-gray-800 transition-all shadow-inner"
+                rows={4}
                 placeholder="Paste drive details text here..."
               />
               <button
                 type="button"
                 onClick={handleSmartFill}
                 disabled={isParsing || !parseText.trim()}
-                className="px-5 py-2.5 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition flex items-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-xs md:text-sm font-bold hover:shadow-lg hover:to-orange-700 transition-all transform active:scale-95 flex items-center disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:transform-none"
               >
                 {isParsing ? (
                   <>
@@ -1030,51 +1028,51 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
             {/* Section 1: Company & Role */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                <FaBriefcase className="text-amber-500" /> Company & Role
+              <h3 className="text-base md:text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <FaBriefcase className="text-amber-500 w-4 h-4 md:w-5 md:h-5" /> Company & Role
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="md:col-span-2">
-                  <label className="form-label">Drive Title <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Drive Title <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., Campus Placement Drive 2026"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Company Name <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Company Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., Google"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Job Role <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Job Role <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.jobRole}
                     onChange={(e) => setFormData({ ...formData, jobRole: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., Software Engineer"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="form-label">Job Location <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Job Location <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., Hyderabad / Remote"
                   />
                 </div>
@@ -1083,48 +1081,48 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
             {/* Section 2: Compensation & Structure */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                <FaMoneyBillWave className="text-green-500" /> Compensation & Structure
+              <h3 className="text-base md:text-lg font-semibold text-gray-700 border-b border-amber-200 pb-2 flex items-center gap-2">
+                <FaMoneyBillWave className="text-green-500 w-4 h-4 md:w-5 md:h-5" /> Compensation & Structure
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="form-label">Full-Time Package (CTC) <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Full-Time Package (CTC) <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.package}
                     onChange={(e) => setFormData({ ...formData, package: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., 6 LPA or Not defined"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Internship Stipend</label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Internship Stipend</label>
                   <input
                     type="text"
                     value={formData.stipend}
                     onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., 20,000/month or Unpaid"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Internship Duration</label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Internship Duration</label>
                   <input
                     type="text"
                     value={formData.internshipDuration}
                     onChange={(e) => setFormData({ ...formData, internshipDuration: e.target.value })}
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., 6 Months"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Service Agreement / Bond</label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Service Agreement / Bond</label>
                   <input
                     type="text"
                     value={formData.serviceAgreement}
                     onChange={(e) => setFormData({ ...formData, serviceAgreement: e.target.value })}
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., 2 Years Bond or None"
                   />
                 </div>
@@ -1133,38 +1131,38 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
             {/* Section 3: Timeline & Registration */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                <FaCalendarAlt className="text-blue-500" /> Timeline & Registration
+              <h3 className="text-base md:text-lg font-semibold text-gray-700 border-b border-amber-200 pb-2 flex items-center gap-2">
+                <FaCalendarAlt className="text-blue-500 w-4 h-4 md:w-5 md:h-5" /> Timeline & Registration
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="form-label">Drive Date <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Drive Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={formData.driveDate}
                     onChange={(e) => setFormData({ ...formData, driveDate: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none text-gray-700 font-medium text-sm md:text-base"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Registration Deadline <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Registration Deadline <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={formData.registrationDeadline}
                     onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none text-gray-700 font-medium text-sm md:text-base"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="form-label">Registration Link <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Registration Link <span className="text-red-500">*</span></label>
                   <input
                     type="url"
                     value={formData.registrationLink}
                     onChange={(e) => setFormData({ ...formData, registrationLink: e.target.value })}
                     required
-                    className="form-input text-blue-600 underline"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-blue-600 text-sm md:text-base"
                     placeholder="https://forms.gle/..."
                   />
                 </div>
@@ -1173,30 +1171,30 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
             {/* Section 4: Eligibility */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                <FaGraduationCap className="text-purple-500" /> Eligibility Criteria
+              <h3 className="text-base md:text-lg font-semibold text-gray-700 border-b border-amber-200 pb-2 flex items-center gap-2">
+                <FaGraduationCap className="text-purple-500 w-4 h-4 md:w-5 md:h-5" /> Eligibility Criteria
               </h3>
 
               <div className="space-y-3">
-                <label className="form-label">Eligible Departments <span className="text-red-500">*</span></label>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Eligible Departments <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.department.map(dept => (
-                    <span key={dept} className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium flex items-center gap-2">
+                    <span key={dept} className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium flex items-center gap-1.5 border border-amber-200">
                       {dept}
-                      <button type="button" onClick={() => toggleDepartment(dept)} className="hover:text-red-600"><FaTimes /></button>
+                      <button type="button" onClick={() => toggleDepartment(dept)} className="hover:text-red-600"><FaTimes className="w-3 h-3" /></button>
                     </span>
                   ))}
                 </div>
-                <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto bg-gray-50 flex flex-wrap gap-3">
+                <div className="border-2 border-amber-100 rounded-xl p-3 max-h-40 overflow-y-auto bg-white/50 flex flex-wrap gap-2">
                   {departments.map((dept) => (
-                    <label key={dept} className="flex items-center space-x-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-100 shadow-sm">
+                    <label key={dept} className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50 transition-all">
                       <input
                         type="checkbox"
                         checked={formData.department.includes(dept)}
                         onChange={() => toggleDepartment(dept)}
-                        className="rounded text-amber-600 focus:ring-amber-500"
+                        className="rounded text-amber-600 focus:ring-amber-500 border-gray-300 w-4 h-4"
                       />
-                      <span className="text-sm text-gray-700">{dept}</span>
+                      <span className="text-xs md:text-sm font-medium text-gray-700">{dept}</span>
                     </label>
                   ))}
                 </div>
@@ -1206,7 +1204,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                   <input
                     type="text"
                     placeholder="Add other (e.g. M.Tech, BBA)"
-                    className="form-input py-1 text-sm flex-1"
+                    className="flex-1 px-3 py-2 md:px-4 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none text-xs md:text-sm"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1235,7 +1233,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                         input.value = '';
                       }
                     }}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium"
+                    className="px-4 py-2 bg-amber-200 text-amber-900 rounded-xl hover:bg-amber-300 text-sm font-bold border border-amber-300"
                   >
                     Add
                   </button>
@@ -1244,10 +1242,10 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="form-label">Eligible Graduation Years <span className="text-red-500">*</span></label>
-                  <div className="flex flex-wrap gap-3 mt-1">
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Eligible Graduation Years <span className="text-red-500">*</span></label>
+                  <div className="flex flex-wrap gap-2 md:gap-3 mt-1">
                     {[1, 2, 3, 4].map((year) => (
-                      <label key={year} className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm hover:border-amber-300">
+                      <label key={year} className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50 transition-all">
                         <input
                           type="checkbox"
                           checked={formData.eligibleYears.includes(year)}
@@ -1257,22 +1255,22 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
                               : formData.eligibleYears.filter(y => y !== year);
                             setFormData({ ...formData, eligibleYears: years });
                           }}
-                          className="rounded text-amber-600 focus:ring-amber-500"
+                          className="rounded text-amber-600 focus:ring-amber-500 border-gray-300 w-4 h-4"
                         />
-                        <span className="text-sm font-medium text-gray-700">Year {year}</span>
+                        <span className="text-xs md:text-sm font-medium text-gray-700">Year {year}</span>
                       </label>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="form-label">Minimum CGPA <span className="text-red-500">*</span></label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Minimum CGPA <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.cgpaCriteria}
                     onChange={(e) => setFormData({ ...formData, cgpaCriteria: e.target.value })}
                     required
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g., 7.0"
                   />
                 </div>
@@ -1281,41 +1279,41 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
 
             {/* Section 5: Detailed Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+              <h3 className="text-base md:text-lg font-semibold text-gray-700 border-b border-amber-200 pb-2 flex items-center gap-2">
                 <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
                 Detailed Information
               </h3>
 
               <div>
-                <label className="form-label">Full Description <span className="text-red-500">*</span></label>
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Full Description <span className="text-red-500">*</span></label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   required
                   rows={12}
-                  className="form-input font-mono text-sm"
+                  className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium font-mono text-xs md:text-sm leading-relaxed"
                   placeholder="Paste the full job description here..."
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="form-label">Selection Process</label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Selection Process</label>
                   <textarea
                     value={formData.selectionProcess}
                     onChange={(e) => setFormData({ ...formData, selectionProcess: e.target.value })}
                     rows={3}
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="e.g. 1. Resume Screening&#10;2. Online Assessment&#10;3. Technical Interview"
                   />
                 </div>
                 <div>
-                  <label className="form-label">Additional Requirements</label>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Additional Requirements</label>
                   <textarea
                     value={formData.requirements}
                     onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
                     rows={3}
-                    className="form-input"
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 bg-white transition-all outline-none placeholder-gray-400 font-medium text-sm md:text-base"
                     placeholder="Specific skills, certifications, laptop requirements, etc."
                   />
                 </div>
@@ -1325,97 +1323,102 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
           </form>
         </div>
 
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col gap-4 flex-shrink-0">
+        <div className="px-4 py-4 md:px-6 bg-amber-50 border-t border-amber-200 flex flex-col md:flex-row items-center justify-between gap-4 flex-shrink-0">
 
           {/* Gmail Verification Section */}
-          <div className="flex items-center justify-between">
+          <div className="w-full md:w-auto flex justify-center md:justify-start order-2 md:order-1">
             {!showGmailCode && !isGmailVerified ? (
               <button
                 type="button"
                 onClick={() => setShowGmailCode(true)}
-                className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-medium transition text-sm"
+                className="flex items-center gap-2 text-amber-900 hover:text-red-600 font-medium transition text-sm py-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 Send Emails to Students
               </button>
             ) : isGmailVerified ? (
-              <div className="flex items-center gap-2 text-green-600 font-medium text-sm bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
+              <div className="flex items-center gap-2 text-green-600 font-medium text-sm bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 w-full md:w-auto justify-center">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                 Emails will be sent to matched students
               </div>
             ) : (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4 duration-300">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!gmailCode) return;
+                  try {
+                    setVerifyingCode(true);
+                    await driveAPI.verifyGmailCode(gmailCode);
+                    setIsGmailVerified(true);
+                    setShowGmailCode(false);
+                    addNotification({ type: 'success', message: 'Code verified! Emails will be sent.' });
+                  } catch (err) {
+                    addNotification({ type: 'error', message: 'Invalid secret code' });
+                  } finally {
+                    setVerifyingCode(false);
+                  }
+                }}
+                className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4 duration-300 w-full md:w-auto justify-center"
+              >
+                <input type="text" name="username" autoComplete="username" style={{ display: 'none' }} />
                 <input
                   type="password"
                   value={gmailCode}
                   onChange={(e) => setGmailCode(e.target.value)}
-                  placeholder="Enter secret code"
-                  className="px-3 py-1.5 border border-gray-300 rounded text-sm w-40 focus:ring-2 focus:ring-red-200 focus:border-red-300 outline-none"
+                  placeholder="Secret code"
+                  autoComplete="new-password"
+                  className="px-3 py-2 md:py-1.5 border border-gray-300 rounded text-sm w-32 md:w-40 focus:ring-2 focus:ring-red-200 focus:border-red-300 outline-none"
                 />
                 <button
-                  type="button"
-                  onClick={async () => {
-                    if (!gmailCode) return;
-                    try {
-                      setVerifyingCode(true);
-                      await driveAPI.verifyGmailCode(gmailCode);
-                      setIsGmailVerified(true);
-                      setShowGmailCode(false);
-                      addNotification({ type: 'success', message: 'Code verified! Emails will be sent.' });
-                    } catch (err) {
-                      addNotification({ type: 'error', message: 'Invalid secret code' });
-                    } finally {
-                      setVerifyingCode(false);
-                    }
-                  }}
+                  type="submit"
                   disabled={verifyingCode}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                  className="px-3 py-2 md:py-1.5 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50"
                 >
                   {verifyingCode ? '...' : 'Verify'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowGmailCode(false); setGmailCode(''); }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-2 md:p-0"
                 >
                   <FaTimes />
                 </button>
-              </div>
+              </form>
             )}
+          </div>
 
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="create-drive-form"
-                disabled={loading}
-                className="px-8 py-2.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {isGmailVerified ? 'Posting & Sending...' : 'Post Drive'}
-                  </>
-                ) : (
-                  'Post Drive'
-                )}
-              </button>
-            </div>
+          <div className="grid grid-cols-2 md:flex md:flex-row gap-3 w-full md:w-auto order-1 md:order-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full md:w-auto px-4 py-2 rounded-lg border border-amber-200 text-amber-900 font-medium hover:bg-amber-100 transition text-center justify-center flex text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="create-drive-form"
+              disabled={loading}
+              className="w-full md:w-auto px-6 py-2 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isGmailVerified ? 'Posting & Sending...' : 'Post Drive'}
+                </>
+              ) : (
+                'Post Drive'
+              )}
+            </button>
           </div>
         </div>
-      </motion.div>
+      </motion.div >
 
       {/* CSS Helper for inputs */}
-      <style>{`
+      < style > {`
         .form-label {
           display: block;
           font-size: 0.875rem;
@@ -1439,7 +1442,7 @@ const CreateDriveModal = ({ onClose, onSuccess }) => {
           border-color: #F59E0B;
           background-color: #FFFFFF;
         }
-      `}</style>
+      `}</style >
     </div >
   );
 };

@@ -29,20 +29,20 @@ const Hackathons = () => {
     const fetchFilterOptions = async () => {
       try {
         const response = await hackathonAPI.getAll({});
-        
+
         // Extract unique domains from all hackathons
         const uniqueDomains = [...new Set(
           response.data
             .map(hackathon => hackathon.domain)
             .filter(domain => domain)
         )].sort();
-        
+
         setAvailableDomains(uniqueDomains);
       } catch (error) {
         // Silently fail - filters will use defaults
       }
     };
-    
+
     if (!hackathonId) {
       fetchFilterOptions();
     }
@@ -69,7 +69,7 @@ const Hackathons = () => {
             const itemId = r.itemId || r.item?._id;
             return itemId?.toString();
           });
-        
+
         return prevHackathons.map(item => {
           const isInReminders = reminderItemIds.includes(item._id?.toString());
           // Always update based on reminders (reminders are source of truth)
@@ -114,7 +114,7 @@ const Hackathons = () => {
             const itemId = r.itemId || r.item?._id;
             return itemId?.toString();
           });
-        
+
         return newHackathons.map(newItem => {
           const prevItem = prevHackathons.find(p => p._id === newItem._id);
           // Check if item is in reminders list
@@ -134,49 +134,49 @@ const Hackathons = () => {
 
   const handleSave = async (id, e) => {
     if (e) e.stopPropagation();
-    
+
     if (!user) {
-      addNotification({ 
-        type: 'error', 
-        message: 'Please login to save hackathons' 
+      addNotification({
+        type: 'error',
+        message: 'Please login to save hackathons'
       });
       return;
     }
-    
+
     // Find the hackathon and check if it's already saved BEFORE the API call
     // Check both the list and the selected hackathon (if viewing detail)
     const hackathon = hackathons.find(h => h._id === id) || (selectedHackathon && selectedHackathon._id === id ? selectedHackathon : null);
     if (!hackathon) {
-      addNotification({ 
-        type: 'error', 
-        message: 'Hackathon not found' 
+      addNotification({
+        type: 'error',
+        message: 'Hackathon not found'
       });
       return;
     }
 
     // Check if already saved by comparing user ID with likes array
-    const wasSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => 
+    const wasSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId =>
       likeId === user.id || likeId.toString() === user.id?.toString()
     );
-    
+
     try {
       // Optimistic update - update UI immediately
-      setHackathons(prevHackathons => 
+      setHackathons(prevHackathons =>
         prevHackathons.map(h => {
           if (h._id === id) {
             // If likes is an array, toggle the user ID
             if (Array.isArray(h.likes)) {
-              const newLikes = wasSaved 
+              const newLikes = wasSaved
                 ? h.likes.filter(likeId => likeId !== user.id && likeId?.toString() !== user.id?.toString())
                 : [...h.likes, user.id];
               return { ...h, likes: newLikes };
             } else {
               // If likes is a number, convert to array format for optimistic update
               const currentCount = typeof h.likes === 'number' ? h.likes : 0;
-              return { 
-                ...h, 
-                likes: wasSaved 
-                  ? currentCount - 1 
+              return {
+                ...h,
+                likes: wasSaved
+                  ? currentCount - 1
                   : currentCount + 1,
                 _isSaved: !wasSaved // Track saved state separately
               };
@@ -185,31 +185,31 @@ const Hackathons = () => {
           return h;
         })
       );
-      
+
       // Make the API call
       await hackathonAPI.like(id);
-      
+
       // Show success notification immediately
-      addNotification({ 
-        type: 'success', 
-        message: wasSaved ? 'Removed from reminders!' : 'Saved to reminders!' 
+      addNotification({
+        type: 'success',
+        message: wasSaved ? 'Removed from reminders!' : 'Saved to reminders!'
       });
-      
+
       // Refresh the hackathons list
       fetchHackathons();
-      
+
       // If viewing this hackathon's detail, refresh the selected hackathon
       if (selectedHackathon && selectedHackathon._id === id) {
         fetchSingleHackathon(id);
       }
-      
+
       // Refresh reminders in GlobalContext
       refreshReminders();
     } catch (error) {
       console.error('Error saving hackathon:', error);
-      addNotification({ 
-        type: 'error', 
-        message: error?.message || 'Failed to update hackathon' 
+      addNotification({
+        type: 'error',
+        message: error?.message || 'Failed to update hackathon'
       });
     }
   };
@@ -259,14 +259,14 @@ const Hackathons = () => {
           )}
         </div>
       </div>
-      <FilterBar 
-        filters={filters} 
-        setFilters={setFilters} 
-        showYear={false} 
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        showYear={false}
         showDepartment={false}
         domains={availableDomains.length > 0 ? availableDomains : null}
       />
-      
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {[1, 2, 3, 4, 5, 6].map((index) => (
@@ -316,7 +316,7 @@ const Hackathons = () => {
           {hackathons.map((hackathon, index) => {
             const isOwner = hackathon.postedBy?._id === user?.id || hackathon.postedBy === user?.id;
             const timePeriod = `${formatDate(hackathon.startDate)} - ${formatDate(hackathon.endDate)}`;
-            
+
             return (
               <motion.div
                 key={hackathon._id}
@@ -334,11 +334,10 @@ const Hackathons = () => {
                   <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <button
                       onClick={(e) => handleSave(hackathon._id, e)}
-                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${
-                        (Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || hackathon._isSaved
-                          ? 'text-amber-600' 
+                      className={`p-1.5 sm:p-2 min-w-[32px] min-h-[32px] flex items-center justify-center ${(Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => likeId === user?.id || likeId.toString() === user?.id?.toString())) || hackathon._isSaved
+                          ? 'text-amber-600'
                           : 'text-gray-400'
-                      } hover:text-amber-600 transition`}
+                        } hover:text-amber-600 transition`}
                     >
                       <FaBookmark size={18} className="sm:w-5 sm:h-5" />
                     </button>
@@ -449,7 +448,7 @@ const Hackathons = () => {
 const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user } = useAuth();
-  const isSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId => 
+  const isSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId =>
     likeId === userId || likeId.toString() === userId?.toString()
   );
   const isOwner = hackathon.postedBy?._id === user?.id || hackathon.postedBy === user?.id;
@@ -473,93 +472,92 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
         <div className="bg-transparent rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
           {/* Header */}
           <div className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                <div className="flex-1 pr-0 sm:pr-8">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                      {hackathon.title}
-                    </h2>
-                    {isOwner && (
-                      <button
-                        onClick={() => setShowEditModal(true)}
-                        className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
-                        title="Edit hackathon"
-                        type="button"
-                      >
-                        <FaEdit className="text-base sm:text-lg" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-lg sm:text-xl text-amber-600 font-semibold">
-                    Organized by {hackathon.organizer}
-                  </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <div className="flex-1 pr-0 sm:pr-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                    {hackathon.title}
+                  </h2>
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Edit hackathon"
+                      type="button"
+                    >
+                      <FaEdit className="text-base sm:text-lg" />
+                    </button>
+                  )}
                 </div>
-                <button
-                  onClick={(e) => onSave(hackathon._id, e)}
-                  className={`p-2 transition ${
-                    isSaved
-                      ? 'text-amber-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                <p className="text-lg sm:text-xl text-amber-600 font-semibold">
+                  Organized by {hackathon.organizer}
+                </p>
+              </div>
+              <button
+                onClick={(e) => onSave(hackathon._id, e)}
+                className={`p-2 transition ${isSaved
+                    ? 'text-amber-600'
+                    : 'text-gray-600 hover:text-gray-900'
                   }`}
-                >
-                  <FaBookmark size={24} />
-                </button>
-              </div>
-
-              {/* Domain Badge */}
-              <div className="mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDomainColor(hackathon.domain)}`}>
-                  {hackathon.domain}
-                </span>
-              </div>
-
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaCalendarAlt className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Event Period</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {formatDate(hackathon.startDate)}
-                  </p>
-                  <p className="text-xs text-gray-600">to</p>
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {formatDate(hackathon.endDate)}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaMapMarkerAlt className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Location</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{hackathon.location}</p>
-                  <p className="text-xs text-gray-600 capitalize">{hackathon.mode}</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
-                    <FaClock className="text-xs sm:text-sm" />
-                    <span className="text-xs font-medium">Register By</span>
-                  </div>
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">
-                    {formatDate(hackathon.registrationDeadline)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Prizes */}
-              {hackathon.prizes && (
-                <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <FaTrophy className="text-yellow-600 text-xl" />
-                    <h3 className="font-semibold text-gray-900">Prize Pool</h3>
-                  </div>
-                  <p className="text-gray-800 font-medium">{hackathon.prizes}</p>
-                </div>
-              )}
+              >
+                <FaBookmark size={24} />
+              </button>
             </div>
+
+            {/* Domain Badge */}
+            <div className="mb-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDomainColor(hackathon.domain)}`}>
+                {hackathon.domain}
+              </span>
+            </div>
+
+            {/* Quick Info Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaCalendarAlt className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Event Period</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {formatDate(hackathon.startDate)}
+                </p>
+                <p className="text-xs text-gray-600">to</p>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {formatDate(hackathon.endDate)}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaMapMarkerAlt className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Location</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">{hackathon.location}</p>
+                <p className="text-xs text-gray-600 capitalize">{hackathon.mode}</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 text-gray-500 mb-1">
+                  <FaClock className="text-xs sm:text-sm" />
+                  <span className="text-xs font-medium">Register By</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
+                  {formatDate(hackathon.registrationDeadline)}
+                </p>
+              </div>
+            </div>
+
+            {/* Prizes */}
+            {hackathon.prizes && (
+              <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4 mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <FaTrophy className="text-yellow-600 text-xl" />
+                  <h3 className="font-semibold text-gray-900">Prize Pool</h3>
+                </div>
+                <p className="text-gray-800 font-medium">{hackathon.prizes}</p>
+              </div>
+            )}
+          </div>
 
           {/* Divider */}
           <hr className="my-6" />
@@ -608,7 +606,7 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Edit Modal */}
       {showEditModal && (
         <EditHackathonModal
@@ -666,7 +664,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
+        className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 sm:p-6 md:p-8 lg:p-10 max-w-3xl md:max-w-4xl lg:max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative"
       >
         {/* Close Button - Top Right */}
         <button
@@ -677,7 +675,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Post Hackathon</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -928,7 +926,7 @@ const EditHackathonModal = ({ hackathon, onClose, onSuccess }) => {
         >
           <FaTimes className="text-lg" />
         </button>
-        
+
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 pr-10 text-amber-900">Edit Hackathon</h2>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">

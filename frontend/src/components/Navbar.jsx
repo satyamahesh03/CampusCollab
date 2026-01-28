@@ -4,7 +4,7 @@ import { useGlobal } from '../context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import cclogo from '../assets/cclogo.png';
-import { 
+import {
   Menu,
   X,
   Bell,
@@ -44,11 +44,11 @@ const Navbar = () => {
   // Truncate name at word boundary if longer than 15 characters
   const truncateName = (name, maxLength = 15) => {
     if (!name || name.length <= maxLength) return name;
-    
+
     // Find the last space before maxLength
     const truncated = name.substring(0, maxLength);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
-    
+
     // If space found, truncate at that space; otherwise truncate at maxLength
     if (lastSpaceIndex > 0) {
       return name.substring(0, lastSpaceIndex);
@@ -95,9 +95,9 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img 
-              src={cclogo} 
-              alt="Campus Collab Logo" 
+            <img
+              src={cclogo}
+              alt="Campus Collab Logo"
               className="h-8 sm:h-10 w-auto object-contain select-none"
               draggable="false"
             />
@@ -112,11 +112,10 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive(item.path)
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(item.path)
                         ? 'bg-amber-50 text-amber-700 border border-amber-200'
                         : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50'
-                    }`}
+                      }`}
                   >
                     <Icon size={16} />
                     <span>{item.name}</span>
@@ -148,9 +147,8 @@ const Navbar = () => {
                   >
                     <Bell size={20} className={hasNewReminders || unreadNotificationCount > 0 ? 'text-amber-600' : ''} />
                     {(reminders.length > 0 || unreadNotificationCount > 0) && (
-                      <span className={`absolute top-0 right-0 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center font-medium ${
-                        hasNewReminders || unreadNotificationCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                      }`}>
+                      <span className={`absolute top-0 right-0 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center font-medium ${hasNewReminders || unreadNotificationCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                        }`}>
                         {reminders.length + unreadNotificationCount}
                       </span>
                     )}
@@ -178,10 +176,11 @@ const Navbar = () => {
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                       {user?.profilePicture ? (
-                        <img 
-                          src={user.profilePicture} 
-                          alt={user?.name || 'User'} 
-                          className="w-full h-full object-cover"
+                        <img
+                          src={user.profilePicture}
+                          alt={user?.name || 'User'}
+                          className="w-full h-full object-cover select-none"
+                          draggable="false"
                         />
                       ) : (
                         user?.name?.charAt(0)?.toUpperCase()
@@ -202,10 +201,11 @@ const Navbar = () => {
                         <div className="px-4 py-3 border-b border-amber-100/50 flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden flex-shrink-0">
                             {user?.profilePicture ? (
-                              <img 
-                                src={user.profilePicture} 
-                                alt={user?.name || 'User'} 
-                                className="w-full h-full object-cover"
+                              <img
+                                src={user.profilePicture}
+                                alt={user?.name || 'User'}
+                                className="w-full h-full object-cover select-none"
+                                draggable="false"
                               />
                             ) : (
                               user?.name?.charAt(0)?.toUpperCase()
@@ -213,7 +213,7 @@ const Navbar = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-900 truncate">{truncateName(user?.name)}</p>
-                          <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                            <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                           </div>
                         </div>
                         <div className="py-1">
@@ -302,9 +302,9 @@ const Navbar = () => {
                 {/* Close Button Header */}
                 <div className="flex justify-between items-center px-6 py-4 border-b border-amber-100/50 bg-transparent">
                   <div className="flex items-center space-x-2">
-                    <img 
-                      src={cclogo} 
-                      alt="Campus Collab Logo" 
+                    <img
+                      src={cclogo}
+                      alt="Campus Collab Logo"
                       className="h-8 w-auto object-contain select-none"
                       draggable="false"
                     />
@@ -333,11 +333,10 @@ const Navbar = () => {
                       >
                         <Link
                           to={item.path}
-                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                            isActive(item.path)
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(item.path)
                               ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 transform scale-105'
                               : 'text-gray-700 hover:text-amber-600 hover:bg-amber-50/80 hover:shadow-md'
-                          }`}
+                            }`}
                           onClick={() => setShowMobileMenu(false)}
                         >
                           <Icon size={20} className={isActive(item.path) ? 'text-white' : 'text-gray-600'} />

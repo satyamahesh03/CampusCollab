@@ -4,7 +4,7 @@ import { authAPI, chatAPI, projectAPI } from '../utils/api';
 import { getRoleColor, departments } from '../utils/helpers';
 import { useGlobal } from '../context/GlobalContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Camera, Mail, Building2, Calendar, Award, Globe, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, FolderKanban, Hash } from 'lucide-react';
+import { Camera, Mail, BookOpen, Edit2, Save, X, Plus, Trash2, Upload, Check, AlertCircle, Image as ImageIcon, ArrowLeft, MessageCircle, Globe } from 'lucide-react';
 import Loading from '../components/Loading';
 
 const Profile = () => {
@@ -20,7 +20,6 @@ const Profile = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [imageInfo, setImageInfo] = useState({ name: '', size: '', type: '' });
   const fileInputRef = useRef(null);
-  const projectsDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     department: '',
@@ -37,7 +36,6 @@ const Profile = () => {
   const [messageLoading, setMessageLoading] = useState(false);
   const [joinedProjects, setJoinedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-  const [showProjects, setShowProjects] = useState(false);
 
   // Determine if viewing another user's profile
   const isViewingOtherUser = userIdParam && userIdParam !== user?.id;
@@ -92,23 +90,6 @@ const Profile = () => {
 
     loadProjects();
   }, [displayUser]);
-
-  // Close projects dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (projectsDropdownRef.current && !projectsDropdownRef.current.contains(event.target)) {
-        setShowProjects(false);
-      }
-    };
-
-    if (showProjects) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showProjects]);
 
   useEffect(() => {
     if (user && !isViewingOtherUser) {
@@ -465,648 +446,362 @@ const Profile = () => {
   const bioPercentage = (formData.bio.length / 300) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100 py-6 md:py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Back button when viewing another user */}
+    <div className="min-h-screen bg-amber-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Back button */}
         {isViewingOtherUser && (
           <button
             onClick={() => window.history.back()}
-            className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-amber-600 transition-colors font-medium"
+            className="mb-8 flex items-center space-x-2 text-gray-500 hover:text-amber-700 transition-colors font-medium group"
           >
-            <ArrowLeft size={20} />
-            <span>Back</span>
+            <div className="p-2 bg-white rounded-full shadow-sm group-hover:shadow-md transition-all">
+              <ArrowLeft size={18} />
+            </div>
+            <span>Back to Profile</span>
           </button>
         )}
-        {/* Header Card */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 overflow-hidden mb-6">
-          {/* Profile Info Section */}
-          <div className="px-4 md:px-8 py-6 md:py-8">
-            <div className="flex flex-col md:flex-row md:items-center md:space-x-6 relative">
-              {/* Profile Picture */}
-              <div className="relative group mb-4 md:mb-0">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg border-4 border-gray-200 shadow-2xl overflow-hidden bg-gradient-to-br from-amber-500 to-yellow-500 ring-4 ring-amber-100">
-                  {(isViewingOtherUser ? displayUser?.profilePicture : imagePreview) ? (
-                    <img
-                      src={isViewingOtherUser ? displayUser?.profilePicture : imagePreview}
-                      alt={displayUser?.name || formData.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold">
-                      {getInitials(displayUser?.name || formData.name || user?.name || 'U')}
-                    </div>
-                  )}
+
+        {/* Modern Open Header Layout */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-16">
+          {/* Profile Picture */}
+          <div className="relative group flex-shrink-0">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white ring-1 ring-amber-100 relative z-10">
+              {(isViewingOtherUser ? displayUser?.profilePicture : imagePreview) ? (
+                <img
+                  src={isViewingOtherUser ? displayUser?.profilePicture : imagePreview}
+                  alt={displayUser?.name || formData.name}
+                  className="w-full h-full object-cover select-none transition-transform duration-500 group-hover:scale-110"
+                  draggable="false"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 text-white text-4xl font-bold">
+                  {getInitials(displayUser?.name || formData.name || user?.name || 'U')}
                 </div>
-                {isEditing && (
-                  <>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          fileInputRef.current?.click();
-                          setShowImageUploadHelp(true);
-                        }}
-                        className="w-24 h-24 md:w-32 md:h-32 rounded-lg bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
-                      >
-                        <Camera size={24} className="mb-1" />
-                        <span className="text-xs font-medium">Change Photo</span>
-                        <span className="text-xs mt-1 opacity-75">Max 5MB</span>
-                      </button>
-                      {imagePreview && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-110"
-                          title="Remove image"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                    {/* Upload status badge */}
-                    {imagePreview && imageInfo.name && (
-                      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1">
-                        <Check size={12} />
-                        Ready
-                      </div>
-                    )}
-                  </>
-                )}
+              )}
+            </div>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setShowImageUploadHelp(true);
+                }}
+                className="absolute bottom-0 right-0 p-3 bg-gray-900 text-white rounded-full shadow-lg hover:bg-black transition-all z-20"
+                title="Change Photo"
+              >
+                <Camera size={18} />
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Name & Role Info */}
+          <div className="flex-1 min-w-0 text-center md:text-left w-full">
+            {isEditing ? (
+              <div className="mb-4">
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Your Name"
+                  className="text-2xl md:text-5xl font-bold text-gray-900 bg-transparent border-b-2 border-gray-300 focus:border-gray-900 outline-none w-full placeholder-gray-300 text-center md:text-left"
+                  required
                 />
               </div>
-
-              {/* Name and Role */}
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="mb-3">
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Enter your full name"
-                      className="text-3xl font-bold text-gray-900 border-b-2 border-gray-300 focus:border-amber-600 outline-none bg-transparent pb-2 w-full transition-colors"
-                      required
-                    />
-                    {!formData.name.trim() && (
-                      <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        Name is required
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{capitalizeName(displayUser?.name || '')}</h1>
-                )}
-
-                <div className="flex flex-wrap items-center gap-3 mt-4">
-                  <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold capitalize ${getRoleColor(displayUser?.role)} shadow-sm`}>
-                    {displayUser?.role}
-                  </span>
-                </div>
-
-                {/* Academic Info - Under Name */}
-                <div className="mt-4 md:mt-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                    {displayUser?.role === 'student' ? (
-                      <>
-                        {/* Roll Number (Students - First) */}
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-blue-100 rounded-lg">
-                            <Hash size={16} className="text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 font-medium">Roll Number</p>
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                name="rollNumber"
-                                value={formData.rollNumber}
-                                onChange={(e) => {
-                                  // Allow alphanumeric characters, convert to uppercase, limit to 10 characters
-                                  const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
-                                  setFormData(prev => ({ ...prev, rollNumber: value }));
-                                }}
-                                placeholder="22331a0575"
-                                maxLength="10"
-                                className="w-full mt-0.5 px-2 py-1 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium uppercase"
-                              />
-                            ) : (
-                              <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                                {displayUser?.rollNumber || '-'}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Year (Students - Second) */}
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-amber-100 rounded-lg">
-                            <Calendar size={16} className="text-amber-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 font-medium">Year of Study</p>
-                            {isEditing ? (
-                              <select
-                                name="year"
-                                value={formData.year}
-                                onChange={handleChange}
-                                className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none text-sm font-medium"
-                                required
-                              >
-                                <option value="">Select Year</option>
-                                <option value="1">1st Year</option>
-                                <option value="2">2nd Year</option>
-                                <option value="3">3rd Year</option>
-                                <option value="4">4th Year</option>
-                              </select>
-                            ) : (
-                              <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                                {displayUser?.year ? `Year ${displayUser.year}` : 'Not specified'}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Department (Students - Third) */}
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-purple-100 rounded-lg">
-                            <Building2 size={16} className="text-purple-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 font-medium">Department</p>
-                            {isEditing ? (
-                              <select
-                                name="department"
-                                value={formData.department}
-                                onChange={handleChange}
-                                className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
-                                required
-                              >
-                                <option value="">Select Department</option>
-                                {departments.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : displayUser?.role === 'faculty' ? (
-                      <>
-                        {/* Designation (Faculty - First) */}
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-amber-100 rounded-lg">
-                            <Award size={16} className="text-amber-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 font-medium">Designation</p>
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                name="designation"
-                                value={formData.designation}
-                                onChange={handleChange}
-                                placeholder="e.g., Assistant Professor"
-                                className="w-full mt-0.5 px-2 py-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-transparent outline-none text-sm font-medium"
-                              />
-                            ) : (
-                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.designation || 'Not specified'}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Department (Faculty - Second) */}
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-purple-100 rounded-lg">
-                            <Building2 size={16} className="text-purple-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-500 font-medium">Department</p>
-                            {isEditing ? (
-                              <select
-                                name="department"
-                                value={formData.department}
-                                onChange={handleChange}
-                                className="w-full mt-0.5 px-2 py-1 border border-purple-200 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-transparent outline-none text-sm font-medium"
-                                required
-                              >
-                                <option value="">Select Department</option>
-                                {departments.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <p className="text-sm font-semibold text-gray-900 mt-0.5">{displayUser?.department || 'Not specified'}</p>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Joined Projects Icon - Right Side */}
-              {displayUser?.role === 'student' && (
-                <div ref={projectsDropdownRef} className="absolute top-0 right-0 flex flex-col items-end gap-1 z-10">
-                  <button
-                    onClick={() => setShowProjects(prev => !prev)}
-                    className="group relative flex flex-col items-center gap-1"
-                    title="Joined Projects"
-                  >
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-110">
-                      <FolderKanban size={18} className="md:w-5 md:h-5 text-white" />
-                    </div>
-                    <span className="text-[10px] md:text-xs font-medium text-gray-600 group-hover:text-amber-600 transition-colors">
-                      Projects
-                    </span>
-                  </button>
-
-                  {/* Projects Dropdown */}
-                  {showProjects && (
-                    <div className="absolute top-14 right-0 w-72 md:w-80 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-100/50 z-20 flex flex-col" style={{ maxHeight: '600px' }}>
-                      <div className="p-3 border-b border-amber-100/50 bg-gradient-to-r from-amber-50 to-yellow-50 flex-shrink-0">
-                        <h3 className="text-sm font-semibold text-gray-900">Joined Projects</h3>
-                        <p className="text-xs text-gray-600 mt-0.5">{joinedProjects.length} project{joinedProjects.length !== 1 ? 's' : ''}</p>
-                      </div>
-                      <div
-                        className="overflow-y-auto overflow-x-hidden"
-                        style={{
-                          maxHeight: '520px',
-                          WebkitOverflowScrolling: 'touch',
-                          scrollbarWidth: 'thin',
-                          scrollbarColor: '#cbd5e1 #f1f5f9'
-                        }}
-                      >
-                        {projectsLoading ? (
-                          <div className="p-4 text-center text-gray-500 text-sm">Loading projects...</div>
-                        ) : joinedProjects.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500 text-sm">No joined projects yet.</div>
-                        ) : (
-                          <div className="divide-y divide-gray-100">
-                            {joinedProjects.map((proj) => (
-                              <button
-                                key={proj._id}
-                                onClick={() => {
-                                  navigate(`/projects/${proj._id}`);
-                                  setShowProjects(false);
-                                }}
-                                className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
-                              >
-                                <p className="font-semibold text-sm text-gray-900 mb-1 truncate">{proj.title}</p>
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs text-gray-600 truncate flex-1">
-                                    {proj.domains?.join(', ') || 'General'}
-                                  </p>
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 capitalize whitespace-nowrap flex-shrink-0">
-                                    {proj.status}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Edit/Save/Message Buttons */}
-            <div className="flex justify-end mt-4 md:mt-6">
-              {isViewingOtherUser ? (
-                <button
-                  onClick={handleMessage}
-                  disabled={!viewedUser || messageLoading}
-                  className="bg-amber-500 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <MessageCircle size={18} />
-                  {messageLoading ? 'Starting...' : 'Message'}
-                </button>
-              ) : (
-                !isEditing ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-amber-500 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-                  >
-                    <Edit2 size={18} />
-                    Edit Profile
-                  </button>
-                ) : (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleCancel}
-                      disabled={loading}
-                      className="bg-gray-300 text-gray-700 px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <X size={18} />
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={18} />
-                          Save Changes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* Image Info Display - Only shown in edit mode with image */}
-            {isEditing && imageInfo.name && (
-              <div className="mt-6 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <ImageIcon size={24} className="text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-                    Image Ready for Upload
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Compressed</span>
-                  </h4>
-                  <div className="space-y-1 text-sm">
-                    <p className="text-gray-700">
-                      <span className="font-medium">Name:</span> {imageInfo.name}
-                    </p>
-                    <p className="text-gray-700">
-                      <span className="font-medium">Size:</span> <span className="text-green-600 font-semibold">{imageInfo.size}</span>
-                    </p>
-                    {imageInfo.type && (
-                      <p className="text-gray-700">
-                        <span className="font-medium">Format:</span> {imageInfo.type.split('/')[1]?.toUpperCase() || 'JPEG'}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      ✓ Optimized for fast upload and storage
-                    </p>
-                  </div>
-                </div>
-                <Check size={24} className="text-green-600 mt-1" />
-              </div>
+            ) : (
+              <h1 className="text-2xl md:text-5xl font-bold text-gray-900 mb-3 tracking-tight">
+                {capitalizeName(displayUser?.name || '')}
+              </h1>
             )}
 
-            {/* Image Upload Help - First time editing */}
-            {isEditing && !imagePreview && showImageUploadHelp && (
-              <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <Upload size={20} className="text-amber-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-amber-900 mb-2">Upload Profile Picture</h4>
-                    <ul className="text-sm text-amber-800 space-y-1">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-600 rounded-full"></div>
-                        Click on the profile circle above
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-600 rounded-full"></div>
-                        Maximum file size: 5MB
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-600 rounded-full"></div>
-                        Supported formats: JPG, PNG, GIF, WebP
-                      </li>
-                    </ul>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-gray-600">
+              <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold capitalize ${getRoleColor(displayUser?.role)}`}>
+                {displayUser?.role}
+              </span>
+              {(displayUser?.department || formData.department) && (
+                <span className="flex items-center gap-2 text-sm md:text-lg">
+                  <span className="hidden md:block w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                  {isEditing ? (
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className="bg-transparent border-b border-gray-300 focus:border-gray-900 outline-none py-1"
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    displayUser?.department
+                  )}
+                </span>
+              )}
+            </div>
+
+            {/* Academic Details - Simplified Horizontal List */}
+            <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-3 text-gray-500">
+              {displayUser?.role === 'student' && (
+                <>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Roll Number</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="rollNumber"
+                        value={formData.rollNumber}
+                        disabled
+                        onChange={(e) => { }}
+                        className="font-medium text-gray-500 bg-transparent border-b border-gray-200 cursor-not-allowed outline-none w-32 text-center md:text-left"
+                        title="Roll number cannot be changed"
+                      />
+                    ) : (
+                      <span className="font-medium text-gray-900">{displayUser?.rollNumber || '-'}</span>
+                    )}
                   </div>
+                  <div className="flex flex-col items-center md:items-start">
+                    <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Year</span>
+                    {isEditing ? (
+                      <select
+                        name="year"
+                        value={formData.year}
+                        disabled
+                        onChange={() => { }}
+                        className="font-medium text-gray-500 bg-transparent border-b border-gray-200 cursor-not-allowed outline-none"
+                        title="Year cannot be changed"
+                      >
+                        <option value="">Select</option>
+                        <option value="1">1st</option>
+                        <option value="2">2nd</option>
+                        <option value="3">3rd</option>
+                        <option value="4">4th</option>
+                      </select>
+                    ) : (
+                      <span className="font-medium text-gray-900">{displayUser?.year ? `${displayUser.year} Year` : '-'}</span>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex-shrink-0 w-full md:w-auto mt-4 md:mt-0">
+            {isViewingOtherUser ? (
+              <button
+                onClick={handleMessage}
+                className="w-full md:w-auto bg-gray-900 text-white px-8 py-3 rounded-full font-medium shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+              >
+                <MessageCircle size={20} />
+                Message
+              </button>
+            ) : (
+              !isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full md:w-auto bg-white text-gray-900 border-2 border-gray-200 px-8 py-3 rounded-full font-bold hover:border-gray-900 transition-all flex items-center justify-center gap-2"
+                >
+                  <Edit2 size={18} />
+                  Edit Profile
+                </button>
+              ) : (
+                <div className="flex flex-col-reverse md:flex-row gap-3">
                   <button
-                    onClick={() => setShowImageUploadHelp(false)}
-                    className="text-amber-600 hover:text-amber-800 transition-colors"
+                    onClick={handleCancel}
+                    className="w-full md:w-auto px-6 py-3 rounded-full font-medium text-gray-600 hover:bg-gray-100 transition-all"
                   >
-                    <X size={20} />
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="w-full md:w-auto bg-gray-900 text-white px-8 py-3 rounded-full font-medium shadow-xl hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
 
-        {/* Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Skills Section (Students Only) */}
-            {displayUser?.role === 'student' && (
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-amber-100 rounded-lg mr-3">
-                      <Award className="text-amber-600" size={24} />
-                    </div>
-                    Skills
-                  </div>
-                  {!isEditing && displayUser?.skills && displayUser?.skills.length > 0 && (
-                    <span className="text-sm text-gray-500 font-normal">
-                      {displayUser?.skills.length} skill{displayUser?.skills.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </h2>
-                {isEditing ? (
-                  <div>
-                    <div className="flex gap-2 mb-4">
-                      <input
-                        type="text"
-                        value={newSkill}
-                        onChange={(e) => setNewSkill(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                        placeholder="e.g., React, Python, Design..."
-                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
-                        maxLength="30"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddSkill}
-                        disabled={!newSkill.trim()}
-                        className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-2 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                      >
-                        <Plus size={18} />
-                        Add
-                      </button>
-                    </div>
-                    {formData.skills.length >= 8 && formData.skills.length < 10 && (
-                      <p className="text-sm text-amber-600 mb-3 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        You can add {10 - formData.skills.length} more skill{10 - formData.skills.length !== 1 ? 's' : ''}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {formData.skills.map((skill, index) => (
-                        <span
-                          key={index}
-                          className="px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 rounded-full text-sm font-medium flex items-center gap-2 border border-amber-200 shadow-sm hover:shadow-md transition-all"
-                        >
-                          {skill}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSkill(skill)}
-                            className="text-amber-900 hover:text-red-600 transition-colors hover:scale-110 transform"
-                            title="Remove skill"
-                          >
-                            <X size={16} />
-                          </button>
-                        </span>
-                      ))}
-                      {formData.skills.length === 0 && (
-                        <p className="text-gray-400 italic text-sm flex items-center gap-2">
-                          <AlertCircle size={16} />
-                          Add your skills to showcase your expertise (up to 10 skills)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {displayUser?.skills && displayUser?.skills.length > 0 ? (
-                      displayUser?.skills.map((skill, index) => (
-                        <span
-                          key={index}
-                          className="px-4 py-2 bg-gradient-to-r from-primary-50 to-indigo-50 text-amber-700 rounded-full text-sm font-medium border border-amber-200 shadow-sm hover:shadow-md transition-all transform hover:scale-105"
-                        >
-                          {skill}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-400 italic flex items-center gap-2">
-                        <AlertCircle size={16} />
-                        {isViewingOtherUser ? 'No skills added yet.' : 'No skills added yet. Add skills to help others know your expertise!'}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Modern Content Grid - No Cards, just clean sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 border-t border-gray-200 pt-12">
+
+          {/* Main Content Column */}
+          <div className="lg:col-span-8 space-y-16">
 
             {/* About Section */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-amber-100 rounded-lg mr-3">
-                  <BookOpen className="text-amber-600" size={24} />
-                </div>
+            <section>
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                 About
               </h2>
               {isEditing ? (
-                <div>
-                  <div className="relative">
-                    <textarea
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleChange}
-                      rows="5"
-                      maxLength="300"
-                      placeholder="Tell us about yourself... Share your interests, goals, or what makes you unique!"
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none transition-colors ${bioPercentage > 90 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
-                        }`}
-                    />
-                    {/* Character counter with progress bar */}
-                    <div className="mt-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`text-sm font-medium ${bioPercentage > 90 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                          {formData.bio.length} / 300 characters
-                        </span>
-                        <span className={`text-xs ${bioCharsRemaining < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'
-                          }`}>
-                          {bioCharsRemaining} remaining
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 rounded-full ${bioPercentage > 90 ? 'bg-red-500' : bioPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
-                          style={{ width: `${bioPercentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                <div className="relative">
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    rows="6"
+                    maxLength="300"
+                    placeholder="Write a short bio..."
+                    className="w-full p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-gray-900 outline-none text-lg leading-relaxed resize-none transition-all placeholder-gray-300"
+                  />
+                  <div className="text-right mt-2 text-sm text-gray-400">
+                    {formData.bio.length}/300
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-700 leading-relaxed text-base">
-                  {displayUser?.bio || (
-                    <span className="italic text-gray-400 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      {isViewingOtherUser ? 'No bio added yet.' : 'No bio added yet. Click "Edit Profile" to add one and tell others about yourself!'}
-                    </span>
-                  )}
+                <p className="text-sm md:text-xl text-gray-600 leading-relaxed font-light">
+                  {displayUser?.bio || <span className="text-gray-400 italic">No bio added yet.</span>}
                 </p>
               )}
-            </div>
+            </section>
+
+            {/* Skills Section */}
+            {displayUser?.role === 'student' && (
+              <section>
+                <h2 className="text-lg md:text-2xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+                  Skills & Expertise
+                </h2>
+
+                {isEditing && (
+                  <div className="flex gap-4 mb-8">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                      placeholder="Add a skill..."
+                      className="flex-1 px-6 py-3 bg-white border-2 border-gray-200 rounded-full focus:border-gray-900 outline-none text-lg"
+                    />
+                    <button
+                      onClick={handleAddSkill}
+                      disabled={!newSkill.trim()}
+                      className="w-12 h-12 flex items-center justify-center bg-black text-white rounded-full hover:bg-gray-800 disabled:opacity-50 transition-all"
+                    >
+                      <Plus size={24} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  {/* Skill Chips */}
+                  {(isEditing ? formData.skills : displayUser?.skills || []).map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1.5 md:px-6 md:py-2.5 bg-white border border-amber-200 rounded-full text-amber-900 font-medium text-xs md:text-base hover:border-amber-400 transition-colors flex items-center gap-2 md:gap-3 truncate"
+                      style={{ maxWidth: '100%' }}
+                    >
+                      {skill}
+                      {isEditing && (
+                        <button onClick={() => handleRemoveSkill(skill)} className="text-amber-500 hover:text-red-500">
+                          <X size={16} />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+
+                  {(!displayUser?.skills?.length && !isEditing) && (
+                    <p className="text-gray-400 italic">No skills listed.</p>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
 
-          {/* Right Column - Contact & Info */}
-          <div className="space-y-6">
-            {/* Contact Information */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Info</h2>
-              <div className="space-y-4">
-                {/* Email */}
-                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                  <div className="p-2 bg-amber-100 rounded-lg">
-                    <Mail size={20} className="text-amber-600" />
+          {/* Right Sidebar Column */}
+          <div className="lg:col-span-4 space-y-12">
+
+            {/* Contact Info */}
+            <section>
+              <h3 className="text-base md:text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Contact</h3>
+              <div className="space-y-6">
+                <div className="group flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                    <Mail size={18} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Email</p>
-                    <p className="text-gray-900 font-medium break-all text-sm">{displayUser?.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-500 mb-1">Email</p>
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${displayUser?.email}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-900 font-medium truncate hover:text-amber-600 hover:underline cursor-pointer block"
+                      title="Compose email in Gmail"
+                    >
+                      {displayUser?.email}
+                    </a>
                   </div>
                 </div>
 
-                {/* Website (Students Only) */}
                 {displayUser?.role === 'student' && (
-                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Globe size={20} className="text-green-600" />
+                  <div className="group flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                      <Globe size={18} />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-green-600 font-semibold uppercase tracking-wide mb-1">Website / LinkedIn</p>
+                    <div className="min-w-0 w-full">
+                      <p className="text-sm font-semibold text-gray-500 mb-1">Website / Portfolio</p>
                       {isEditing ? (
                         <input
                           type="url"
                           name="websiteUrl"
                           value={formData.websiteUrl}
                           onChange={handleChange}
-                          placeholder="https://linkedin.com/in/..."
-                          className="w-full px-3 py-2 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+                          placeholder="https://..."
+                          className="w-full bg-transparent border-b border-gray-300 focus:border-black outline-none py-1 text-gray-900"
                         />
                       ) : displayUser?.websiteUrl ? (
-                        <a
-                          href={displayUser?.websiteUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-700 font-medium hover:underline break-all text-sm flex items-center gap-1"
-                        >
-                          {displayUser?.websiteUrl}
-                          <Upload size={12} className="transform rotate-45" />
+                        <a href={displayUser.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-gray-900 font-medium hover:underline flex items-center gap-1 truncate">
+                          View Site <Upload size={12} className="rotate-45" />
                         </a>
                       ) : (
-                        <p className="text-gray-400 italic text-sm">Not added</p>
+                        <p className="text-gray-400 text-sm">Not provided</p>
                       )}
                     </div>
                   </div>
                 )}
               </div>
-            </div>
+            </section>
+
+            {/* Projects Widget (Student Only) */}
+            {displayUser?.role === 'student' && (
+              <section>
+                <h3 className="text-base md:text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider flex items-center justify-between">
+                  Projects
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">{joinedProjects.length}</span>
+                </h3>
+
+                <div className="space-y-3">
+                  {projectsLoading ? (
+                    <p className="text-sm text-gray-400">Loading...</p>
+                  ) : joinedProjects.length > 0 ? (
+                    joinedProjects.map(proj => (
+                      <button
+                        key={proj._id}
+                        onClick={() => navigate(`/projects/${proj._id}`)}
+                        className="w-full text-left group p-4 rounded-2xl bg-white border border-amber-100 hover:border-amber-300 hover:shadow-md transition-all flex items-center justify-between"
+                      >
+                        <span className="font-medium text-gray-900 truncate pr-4">{proj.title}</span>
+                        <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                          <ArrowLeft size={14} className="rotate-180" />
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400">No active projects.</p>
+                  )}
+                </div>
+              </section>
+            )}
 
           </div>
         </div>
