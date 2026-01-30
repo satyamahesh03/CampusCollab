@@ -572,12 +572,84 @@ router.post('/:id/send-emails', protect, authorize('faculty', 'admin'), async (r
 
     console.log(`Found ${eligibleStudents.length} eligible students for drive: ${drive.title}`);
 
-    // Configure Email Transporter
-    // In a real production app, use a robust service like SendGrid, AWS SES, etc.
-    // For this use case, we use Gmail SMTP if credentials exist.
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    // Configure Email Sending Service
+    const sgMail = require('@sendgrid/mail');
+
+    // Send emails
+    if (process.env.SENDGRID_API_KEY) {
+      console.log('Using SendGrid for email delivery');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+      const emailPromises = eligibleStudents.map(student => {
+        const msg = {
+          to: student.email,
+          from: process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com', // Verified sender
+          subject: `New Placement Drive: ${drive.company} - ${drive.jobRole}`,
+          html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 0; border: 1px solid #fcd34d; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+              <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">New Opportunity Alert</h2>
+              </div>
+              
+              <div style="padding: 30px; background-color: #fffbeb;">
+                <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${student.name}</strong>,</p>
+                <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 25px;">A new placement drive has been announced that matches your profile details. Please review the criteria below.</p>
+                
+                <div style="background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                  <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 20px; border-bottom: 2px solid #fcd34d; padding-bottom: 10px;">${drive.company}</h3>
+                  
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Role</p>
+                      <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${drive.jobRole}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Package</p>
+                      <p style="margin: 0; color: #059669; font-weight: 600; font-size: 16px;">${drive.package}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Location</p>
+                      <p style="margin: 0; color: #111827; font-weight: 500; font-size: 16px;">${drive.location}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Deadline</p>
+                      <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 16px;">${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
+                    </div>
+                  </div>
+                  
+                  <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Description</p>
+                    <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; line-height: 1.5;">${drive.description}</div>
+                  </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                  <a href="https://cc.satyapage.in/drives" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
+                    View Details & Apply
+                  </a>
+                  <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
+                </div>
+              </div>
+              
+              <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 12px; color: #6b7280; margin: 0;">&copy; ${new Date().getFullYear()} Campus Collab Placement Cell. All rights reserved.</p>
+              </div>
+            </div>
+          `
+        };
+
+        return sgMail.send(msg).catch(err => console.error(`Failed to send email to ${student.email}:`, err.message));
+      });
+
+      await Promise.all(emailPromises);
+      console.log(`Emails sent via SendGrid to ${eligibleStudents.length} students.`);
+
+    } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      console.log('Using Nodemailer (SMTP) for email delivery');
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // Use TLS
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
