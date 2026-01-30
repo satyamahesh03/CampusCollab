@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
@@ -6,14 +6,14 @@ import { authAPI } from '../utils/api';
 import { departments, years } from '../utils/helpers';
 import { motion } from 'framer-motion';
 import cclogo from '../assets/cclogo.png';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  Sparkles, 
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Sparkles,
   GraduationCap,
   Shield,
   CheckCircle,
@@ -41,14 +41,20 @@ const Register = () => {
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
-  const { register } = useAuth();
+  const { register: registerUser, isAuthenticated } = useAuth();
   const { addNotification } = useGlobal();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
+
     // Reset OTP verification if email changes
     if (name === 'email' && otpSent) {
       setOtpSent(false);
@@ -65,7 +71,7 @@ const Register = () => {
   // Handle sending OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email) {
       addNotification({
         type: 'error',
@@ -94,7 +100,7 @@ const Register = () => {
         title: 'OTP Sent',
         message: 'Please check your email for the verification code',
       });
-      
+
       // Start countdown timer
       const timer = setInterval(() => {
         setOtpResendTimer((prev) => {
@@ -119,7 +125,7 @@ const Register = () => {
   // Handle OTP verification
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    
+
     if (!otp || otp.length !== 6) {
       addNotification({
         type: 'error',
@@ -185,7 +191,7 @@ const Register = () => {
 
     try {
       const response = await authAPI.register(formData);
-      register(response.user, response.token);
+      registerUser(response.user, response.token);
       addNotification({
         type: 'success',
         title: 'Registration Successful',
@@ -223,9 +229,9 @@ const Register = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <img 
-                src={cclogo} 
-                alt="Campus Collab Logo" 
+              <img
+                src={cclogo}
+                alt="Campus Collab Logo"
                 className="h-10 w-auto object-contain select-none"
                 draggable="false"
               />
@@ -261,13 +267,12 @@ const Register = () => {
                     }}
                     required
                     disabled={otpSent}
-                    className={`w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
-                      formData.email && !validateEmailDomain(formData.email) 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : formData.email && validateEmailDomain(formData.email)
+                    className={`w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${formData.email && !validateEmailDomain(formData.email)
+                      ? 'border-red-300 focus:ring-red-500'
+                      : formData.email && validateEmailDomain(formData.email)
                         ? 'border-green-300 focus:ring-green-500'
                         : 'border-gray-200'
-                    } ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      } ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
                     placeholder="your.email@mvgrce.edu.in"
                   />
                 </div>
@@ -408,178 +413,178 @@ const Register = () => {
               {/* Registration Fields - Only show after OTP verification */}
               {otpVerified && (
                 <>
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <User className="h-5 w-5 text-amber-600" />
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        <User className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-              </div>
 
-              {/* Role */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Role
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    {formData.role === 'student' ? (
-                      <GraduationCap className="h-5 w-5 text-amber-600" />
-                    ) : (
-                      <Shield className="h-5 w-5 text-amber-600" />
-                    )}
+                  {/* Role */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Role
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        {formData.role === 'student' ? (
+                          <GraduationCap className="h-5 w-5 text-amber-600" />
+                        ) : (
+                          <Shield className="h-5 w-5 text-amber-600" />
+                        )}
+                      </div>
+                      <select
+                        name="role"
+                        value={formData.role}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50/50 appearance-none"
+                      >
+                        <option value="student">Student</option>
+                        <option value="faculty">Faculty</option>
+                      </select>
+                    </div>
                   </div>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50/50 appearance-none"
-                  >
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                  </select>
-                </div>
-              </div>
 
-              {/* Department */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Department
-                </label>
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Year (for students) */}
-              {formData.role === 'student' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Year of Study
-                  </label>
-                  <select
-                    name="year"
-                    value={formData.year}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                  >
-                    <option value="">Select Year</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        Year {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Faculty Code */}
-              {formData.role === 'faculty' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Faculty Code
-                  </label>
-                  <input
-                    type="text"
-                    name="facultyCode"
-                    value={formData.facultyCode}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                    placeholder="Enter faculty registration code"
-                  />
-                </div>
-              )}
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <Lock className="h-5 w-5 text-amber-600" />
+                  {/* Department */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Department
+                    </label>
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
 
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <Lock className="h-5 w-5 text-amber-600" />
+                  {/* Year (for students) */}
+                  {formData.role === 'student' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Year of Study
+                      </label>
+                      <select
+                        name="year"
+                        value={formData.year}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                      >
+                        <option value="">Select Year</option>
+                        {years.map((year) => (
+                          <option key={year} value={year}>
+                            Year {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Faculty Code */}
+                  {formData.role === 'faculty' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Faculty Code
+                      </label>
+                      <input
+                        type="text"
+                        name="facultyCode"
+                        value={formData.facultyCode}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                        placeholder="Enter faculty registration code"
+                      />
+                    </div>
+                  )}
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        <Lock className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        <Lock className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-12 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -612,8 +617,8 @@ const Register = () => {
           <div className="mt-8 text-center">
             <p className="text-gray-600">
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-amber-600 hover:text-amber-700 font-semibold transition-colors flex items-center justify-center space-x-1 group"
               >
                 <span>Sign in here</span>

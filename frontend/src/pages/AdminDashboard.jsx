@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { adminAPI } from '../utils/api';
 import { useGlobal } from '../context/GlobalContext';
 import Loading from '../components/Loading';
@@ -14,7 +14,8 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [content, setContent] = useState({ projects: [], internships: [], hackathons: [], drives: [], courses: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const { section } = useParams();
+  const activeTab = section || 'overview';
   const [expandedSection, setExpandedSection] = useState(null);
   const [contentFilters, setContentFilters] = useState({
     projects: 'active',
@@ -242,25 +243,25 @@ const AdminDashboard = () => {
         {/* Tabs - Horizontal Scroll on Mobile */}
         <div className="flex overflow-x-auto pb-2 mb-6 sm:mb-8 bg-amber-50/60 backdrop-blur-sm rounded-lg border border-amber-100/50 p-1 gap-2 no-scrollbar">
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() => navigate('/admin')}
             className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'overview' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
           >
             Overview
           </button>
           <button
-            onClick={() => setActiveTab('content')}
-            className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'content' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
+            onClick={() => navigate('/admin/content-management')}
+            className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'content-management' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
           >
             Content Management
           </button>
           <button
-            onClick={() => setActiveTab('reports')}
+            onClick={() => navigate('/admin/reports')}
             className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'reports' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
           >
             Reports {stats?.reports?.pending > 0 && <span className="ml-2 bg-white text-amber-600 font-bold text-xs px-1.5 py-0.5 rounded-full shadow-sm">{stats.reports.pending}</span>}
           </button>
           <button
-            onClick={() => setActiveTab('users')}
+            onClick={() => navigate('/admin/users')}
             className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'users' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
           >
             Users
@@ -326,7 +327,8 @@ const AdminDashboard = () => {
         )}
 
         {/* Content Management Tab */}
-        {activeTab === 'content' && (
+        {/* Content Management Tab */}
+        {activeTab === 'content-management' && (
           <div className="space-y-3 sm:space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl font-semibold">Manage All Content</h2>

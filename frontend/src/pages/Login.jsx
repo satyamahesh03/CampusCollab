@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
@@ -28,9 +28,15 @@ const Login = () => {
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { addNotification } = useGlobal();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

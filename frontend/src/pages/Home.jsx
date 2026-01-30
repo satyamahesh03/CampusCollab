@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { projectAPI, hackathonAPI, internshipAPI, driveAPI, courseLinkAPI, statsAPI } from '../utils/api';
 import { motion } from 'framer-motion';
 import cclogo from '../assets/cclogo.png';
-import { 
-  Briefcase, 
-  Code, 
-  GraduationCap, 
-  BookOpen, 
-  Lightbulb, 
+import {
+  Briefcase,
+  Code,
+  GraduationCap,
+  BookOpen,
+  Lightbulb,
   TrendingUp,
   MessageCircle,
   Calendar,
@@ -281,7 +281,7 @@ const Home = () => {
         <div className="absolute inset-0 opacity-30">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,rgba(245,158,11,0.1)_1px,transparent_0)] bg-[size:40px_40px]"></div>
         </div>
-        
+
         {/* Simple Color Patches */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-32 right-[15%] w-64 h-64 bg-amber-200/20 rounded-3xl blur-2xl rotate-12"></div>
@@ -304,14 +304,14 @@ const Home = () => {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="mb-6 flex justify-center"
               >
-                <img 
-                  src={cclogo} 
-                  alt="Campus Collab Logo" 
+                <img
+                  src={cclogo}
+                  alt="Campus Collab Logo"
                   className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain select-none"
                   draggable="false"
                 />
               </motion.div>
-              
+
               <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent">
                   Campus Collab
@@ -331,7 +331,7 @@ const Home = () => {
                   transition={{ delay: 0.3, duration: 0.6 }}
                   className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 mb-10"
                 >
-                  <motion.div 
+                  <motion.div
                     className="flex items-center gap-2"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 300 }}
@@ -343,7 +343,7 @@ const Home = () => {
                       <FaUsers className="text-amber-600" size={20} />
                     </motion.div>
                     <div className="text-left">
-                      <motion.div 
+                      <motion.div
                         className="text-2xl sm:text-3xl font-bold text-gray-900"
                         animate={{ scale: [1, 1.05, 1] }}
                         transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
@@ -353,14 +353,14 @@ const Home = () => {
                       <div className="text-xs text-gray-600">Users</div>
                     </div>
                   </motion.div>
-                  
-                  <motion.div 
+
+                  <motion.div
                     className="w-px h-12 bg-gray-300"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  
-                  <motion.div 
+
+                  <motion.div
                     className="flex items-center gap-2"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 300 }}
@@ -372,7 +372,7 @@ const Home = () => {
                       <Briefcase className="text-yellow-600" size={20} />
                     </motion.div>
                     <div className="text-left">
-                      <motion.div 
+                      <motion.div
                         className="text-2xl sm:text-3xl font-bold text-gray-900"
                         animate={{ scale: [1, 1.05, 1] }}
                         transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
@@ -396,7 +396,7 @@ const Home = () => {
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    animate={{ 
+                    animate={{
                       boxShadow: [
                         "0 10px 25px rgba(245, 158, 11, 0.3)",
                         "0 15px 35px rgba(245, 158, 11, 0.4)",
@@ -443,7 +443,7 @@ const Home = () => {
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ 
+                animate={{
                   opacity: [0.3, 0.6, 0.3],
                   scale: [1, 1.1, 1],
                   x: [0, Math.sin(index) * 20, 0],
@@ -458,15 +458,15 @@ const Home = () => {
                 className="absolute"
                 style={{
                   top: `${15 + index * 12}%`,
-                  ...(index % 2 === 0 
+                  ...(index % 2 === 0
                     ? { left: `${10 + index * 10}%` }
                     : { right: `${10 + (index - 1) * 10}%` }
                   ),
                 }}
               >
-                <Icon 
-                  size={32} 
-                  className="text-amber-300/40" 
+                <Icon
+                  size={32}
+                  className="text-amber-300/40"
                 />
               </motion.div>
             ))}
@@ -636,79 +636,79 @@ const Home = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <div 
+                  <div
                     onClick={(e) => handleNavigate(e, `/projects?open=${project._id}`)}
                     className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full flex flex-col"
                   >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
-                              {project.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                              {project.description}
-                            </p>
-                          </div>
-                          <div className="ml-2">
-                            <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-100 to-red-100 text-orange-600 px-3 py-1 rounded-full">
-                              <TrendingUp size={14} />
-                              <span className="text-xs font-bold">#{index + 1}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {project.domains?.slice(0, 2).map((domain) => (
-                            <span
-                              key={domain}
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getDomainColor(domain)}`}
-                            >
-                              {domain}
-                            </span>
-                          ))}
-                          {project.domains?.length > 2 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                              +{project.domains.length - 2} more
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100 mt-auto">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-1">
-                              <Heart size={16} className="text-red-500" />
-                              <span className="font-medium">{project.likes?.length || 0}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <FaComment className="text-blue-500" />
-                              <span className="font-medium">{project.comments?.length || 0}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <FaUsers className="text-green-500" />
-                              <span className="font-medium">{project.participants?.length || 0}</span>
-                            </div>
-                          </div>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
+                          {project.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {project.description}
+                        </p>
+                      </div>
+                      <div className="ml-2">
+                        <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-100 to-red-100 text-orange-600 px-3 py-1 rounded-full">
+                          <TrendingUp size={14} />
+                          <span className="text-xs font-bold">#{index + 1}</span>
                         </div>
                       </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl">
-                <TrendingUp size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">No trending projects yet. Be the first to create one!</p>
-              </div>
-            )}
+                    </div>
 
-            <div className="text-center">
-              <div
-                onClick={(e) => handleNavigate(e, '/projects')}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
-              >
-                <span>View All Projects</span>
-                <ArrowRight size={20} />
-              </div>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {project.domains?.slice(0, 2).map((domain) => (
+                        <span
+                          key={domain}
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getDomainColor(domain)}`}
+                        >
+                          {domain}
+                        </span>
+                      ))}
+                      {project.domains?.length > 2 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                          +{project.domains.length - 2} more
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100 mt-auto">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-1">
+                          <Heart size={16} className="text-red-500" />
+                          <span className="font-medium">{project.likes?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <FaComment className="text-blue-500" />
+                          <span className="font-medium">{project.comments?.length || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <FaUsers className="text-green-500" />
+                          <span className="font-medium">{project.participants?.length || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <TrendingUp size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No trending projects yet. Be the first to create one!</p>
+            </div>
+          )}
+
+          <div className="text-center">
+            <div
+              onClick={(e) => handleNavigate(e, '/projects')}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+            >
+              <span>View All Projects</span>
+              <ArrowRight size={20} />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -743,7 +743,7 @@ const Home = () => {
                       <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center">
                       <div className="h-4 w-4 bg-gray-200 rounded mr-2"></div>
@@ -776,33 +776,33 @@ const Home = () => {
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     viewport={{ once: true }}
                   >
-                    <div 
+                    <div
                       onClick={(e) => handleNavigate(e, `/drives/${drive._id}`)}
                       className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 border border-amber-100/50 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full"
                     >
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
-                                {drive.title}
-                              </h3>
-                              <p className="text-sm font-semibold text-amber-600 mb-2">{drive.company}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 mb-4">
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Calendar size={16} className="mr-2 text-amber-500" />
-                              <span>{formatDate(drive.driveDate)}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <GraduationCap size={16} className="mr-2 text-yellow-500" />
-                              <span>{drive.jobRole}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Briefcase size={16} className="mr-2 text-amber-500" />
-                              <span>{drive.package}</span>
-                            </div>
-                          </div>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 hover:text-amber-600 transition">
+                            {drive.title}
+                          </h3>
+                          <p className="text-sm font-semibold text-amber-600 mb-2">{drive.company}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar size={16} className="mr-2 text-amber-500" />
+                          <span>{formatDate(drive.driveDate)}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <GraduationCap size={16} className="mr-2 text-yellow-500" />
+                          <span>{drive.jobRole}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Briefcase size={16} className="mr-2 text-amber-500" />
+                          <span>{drive.package}</span>
+                        </div>
+                      </div>
 
                       <div className="pt-4 border-t border-amber-100">
                         <div className="text-xs text-amber-600 font-semibold">View Details →</div>
@@ -832,210 +832,207 @@ const Home = () => {
 
       {/* Statistics Section */}
       <section ref={statsRef} className="py-20">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Platform Statistics</h2>
-              <p className="text-xl text-gray-600">See what's been posted recently</p>
-            </motion.div>
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Platform Statistics</h2>
+            <p className="text-xl text-gray-600">See what's been posted recently</p>
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="max-w-6xl mx-auto"
-            >
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-4 sm:p-6 md:p-8">
-                {/* Period Toggle */}
-                <div className="flex justify-center mb-6 sm:mb-8">
-                  <div className="inline-flex bg-gray-100 rounded-lg p-1">
-                    <button
-                      onClick={() => setStatsPeriod('week')}
-                      className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${
-                        statsPeriod === 'week'
-                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
-                          : 'text-gray-600 hover:text-gray-900'
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="max-w-6xl mx-auto"
+          >
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-100/50 p-4 sm:p-6 md:p-8">
+              {/* Period Toggle */}
+              <div className="flex justify-center mb-6 sm:mb-8">
+                <div className="inline-flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setStatsPeriod('week')}
+                    className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${statsPeriod === 'week'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
+                        : 'text-gray-600 hover:text-gray-900'
                       }`}
-                    >
-                      This Week
-                    </button>
-                    <button
-                      onClick={() => setStatsPeriod('month')}
-                      className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${
-                        statsPeriod === 'month'
-                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
-                          : 'text-gray-600 hover:text-gray-900'
+                  >
+                    This Week
+                  </button>
+                  <button
+                    onClick={() => setStatsPeriod('month')}
+                    className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 ${statsPeriod === 'month'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg'
+                        : 'text-gray-600 hover:text-gray-900'
                       }`}
-                    >
-                      This Month
-                    </button>
-                  </div>
+                  >
+                    This Month
+                  </button>
                 </div>
+              </div>
 
-                {/* Category Filter Buttons */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-                  {[
-                    { key: 'Projects', color: '#3b82f6', icon: <Briefcase size={14} /> }, // Bright Blue
-                    { key: 'Internships', color: '#10b981', icon: <GraduationCap size={14} /> }, // Emerald Green
-                    { key: 'Hackathons', color: '#8b5cf6', icon: <Code size={14} /> }, // Violet Purple
-                    { key: 'Drives', color: '#ef4444', icon: <Target size={14} /> }, // Red
-                    { key: 'Courses', color: '#ec4899', icon: <BookOpen size={14} /> }, // Pink/Magenta
-                  ].map((cat) => (
-                    <button
-                      key={cat.key}
-                      onClick={() => toggleCategory(cat.key)}
-                      className={`flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 ${
-                        activeCategories[cat.key]
-                          ? 'bg-white/60 backdrop-blur-sm border-2 border-amber-200/50'
-                          : 'bg-gray-100/50 border-2 border-transparent opacity-50'
+              {/* Category Filter Buttons */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+                {[
+                  { key: 'Projects', color: '#3b82f6', icon: <Briefcase size={14} /> }, // Bright Blue
+                  { key: 'Internships', color: '#10b981', icon: <GraduationCap size={14} /> }, // Emerald Green
+                  { key: 'Hackathons', color: '#8b5cf6', icon: <Code size={14} /> }, // Violet Purple
+                  { key: 'Drives', color: '#ef4444', icon: <Target size={14} /> }, // Red
+                  { key: 'Courses', color: '#ec4899', icon: <BookOpen size={14} /> }, // Pink/Magenta
+                ].map((cat) => (
+                  <button
+                    key={cat.key}
+                    onClick={() => toggleCategory(cat.key)}
+                    className={`flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 ${activeCategories[cat.key]
+                        ? 'bg-white/60 backdrop-blur-sm border-2 border-amber-200/50'
+                        : 'bg-gray-100/50 border-2 border-transparent opacity-50'
                       }`}
-                      style={{
-                        borderColor: activeCategories[cat.key] ? cat.color : 'transparent',
-                        color: activeCategories[cat.key] ? cat.color : '#6b7280',
-                        backgroundColor: activeCategories[cat.key] ? `${cat.color}15` : 'transparent'
-                      }}
-                    >
-                      <div style={{ color: cat.color }} className="sm:hidden">{cat.icon}</div>
-                      <div style={{ color: cat.color }} className="hidden sm:block">{cat.icon}</div>
-                        <span className="hidden sm:inline">{cat.key}</span>
-                        <span className="sm:hidden">{cat.key.substring(0, 3)}</span>
-                      {activeCategories[cat.key] && (
-                        <span 
-                          className="text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-semibold"
-                          style={{ 
-                            backgroundColor: `${cat.color}20`,
-                            color: cat.color
-                          }}
-                        >
-                          {cat.key === 'Projects' ? postedStats.projects :
-                           cat.key === 'Internships' ? postedStats.internships :
-                           cat.key === 'Hackathons' ? postedStats.hackathons :
-                           cat.key === 'Drives' ? postedStats.drives :
-                           postedStats.courses}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                    style={{
+                      borderColor: activeCategories[cat.key] ? cat.color : 'transparent',
+                      color: activeCategories[cat.key] ? cat.color : '#6b7280',
+                      backgroundColor: activeCategories[cat.key] ? `${cat.color}15` : 'transparent'
+                    }}
+                  >
+                    <div style={{ color: cat.color }} className="sm:hidden">{cat.icon}</div>
+                    <div style={{ color: cat.color }} className="hidden sm:block">{cat.icon}</div>
+                    <span className="hidden sm:inline">{cat.key}</span>
+                    <span className="sm:hidden">{cat.key.substring(0, 3)}</span>
+                    {activeCategories[cat.key] && (
+                      <span
+                        className="text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-semibold"
+                        style={{
+                          backgroundColor: `${cat.color}20`,
+                          color: cat.color
+                        }}
+                      >
+                        {cat.key === 'Projects' ? postedStats.projects :
+                          cat.key === 'Internships' ? postedStats.internships :
+                            cat.key === 'Hackathons' ? postedStats.hackathons :
+                              cat.key === 'Drives' ? postedStats.drives :
+                                postedStats.courses}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-                {/* Line Chart */}
-                {loadingStats ? (
-                  <div className="w-full animate-pulse">
-                    <div className="w-full min-h-[300px] bg-gray-100 rounded-lg relative overflow-hidden">
-                      {/* Y-axis skeleton */}
-                      <div className="absolute left-0 top-0 bottom-0 w-10 bg-gray-200"></div>
-                      {/* X-axis skeleton */}
-                      <div className="absolute bottom-0 left-10 right-0 h-12 bg-gray-200"></div>
-                      {/* Chart area with bars */}
-                      <div className="absolute left-12 top-4 right-4 bottom-16 flex items-end justify-between gap-2">
-                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                          <div 
-                            key={i} 
-                            className="flex-1 bg-gray-200 rounded-t" 
-                            style={{ height: `${30 + (i * 8)}%` }}
-                          ></div>
-                        ))}
-                      </div>
-                      {/* Legend skeleton */}
-                      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <div key={i} className="flex items-center space-x-2">
-                            <div className="h-3 w-3 bg-gray-300 rounded"></div>
-                            <div className="h-3 bg-gray-300 rounded w-16"></div>
-                          </div>
-                        ))}
-                      </div>
+              {/* Line Chart */}
+              {loadingStats ? (
+                <div className="w-full animate-pulse">
+                  <div className="w-full min-h-[300px] bg-gray-100 rounded-lg relative overflow-hidden">
+                    {/* Y-axis skeleton */}
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-gray-200"></div>
+                    {/* X-axis skeleton */}
+                    <div className="absolute bottom-0 left-10 right-0 h-12 bg-gray-200"></div>
+                    {/* Chart area with bars */}
+                    <div className="absolute left-12 top-4 right-4 bottom-16 flex items-end justify-between gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                        <div
+                          key={i}
+                          className="flex-1 bg-gray-200 rounded-t"
+                          style={{ height: `${30 + (i * 8)}%` }}
+                        ></div>
+                      ))}
+                    </div>
+                    {/* Legend skeleton */}
+                    <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex items-center space-x-2">
+                          <div className="h-3 w-3 bg-gray-300 rounded"></div>
+                          <div className="h-3 bg-gray-300 rounded w-16"></div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ) : chartData.length > 0 ? (
-                  <div className="w-full overflow-x-auto">
-                    <div className="w-full min-w-[300px] min-h-[300px]" style={{ height: '300px', position: 'relative' }}>
-                      <ResponsiveContainer width="100%" height={300} minHeight={300}>
-                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: statsPeriod === 'month' ? 60 : 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis 
-                            dataKey="label" 
-                            stroke="#6b7280"
-                            style={{ fontSize: statsPeriod === 'month' ? '11px' : '10px' }}
-                            angle={statsPeriod === 'month' ? -45 : -45}
-                            textAnchor="end"
-                            height={statsPeriod === 'month' ? 100 : 60}
-                            interval={0}
-                            tick={{ fill: '#6b7280' }}
-                            tickFormatter={(value) => value || ''}
-                          />
-                          <YAxis 
-                            stroke="#6b7280"
-                            style={{ fontSize: '10px' }}
-                            width={40}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.6)', 
-                              backdropFilter: 'blur(4px)',
-                              border: '1px solid rgba(245, 158, 11, 0.2)',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                              fontSize: '12px',
-                              padding: '8px'
-                            }}
-                          />
-                          <Legend 
-                            wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }}
-                            iconType="line"
-                            iconSize={12}
-                          />
+                </div>
+              ) : chartData.length > 0 ? (
+                <div className="w-full overflow-x-auto">
+                  <div className="w-full min-w-[300px] min-h-[300px]" style={{ height: '300px', position: 'relative' }}>
+                    <ResponsiveContainer width="100%" height={300} minHeight={300}>
+                      <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: statsPeriod === 'month' ? 60 : 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="label"
+                          stroke="#6b7280"
+                          style={{ fontSize: statsPeriod === 'month' ? '11px' : '10px' }}
+                          angle={statsPeriod === 'month' ? -45 : -45}
+                          textAnchor="end"
+                          height={statsPeriod === 'month' ? 100 : 60}
+                          interval={0}
+                          tick={{ fill: '#6b7280' }}
+                          tickFormatter={(value) => value || ''}
+                        />
+                        <YAxis
+                          stroke="#6b7280"
+                          style={{ fontSize: '10px' }}
+                          width={40}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                            backdropFilter: 'blur(4px)',
+                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            fontSize: '12px',
+                            padding: '8px'
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }}
+                          iconType="line"
+                          iconSize={12}
+                        />
                         {activeCategories.Projects && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Projects" 
-                            stroke="#3b82f6" 
+                          <Line
+                            type="monotone"
+                            dataKey="Projects"
+                            stroke="#3b82f6"
                             strokeWidth={3}
                             dot={{ r: 4, fill: '#3b82f6' }}
                             activeDot={{ r: 6, fill: '#3b82f6', stroke: '#2563eb', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Internships && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Internships" 
-                            stroke="#10b981" 
+                          <Line
+                            type="monotone"
+                            dataKey="Internships"
+                            stroke="#10b981"
                             strokeWidth={3}
                             dot={{ r: 4, fill: '#10b981' }}
                             activeDot={{ r: 6, fill: '#10b981', stroke: '#059669', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Hackathons && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Hackathons" 
-                            stroke="#8b5cf6" 
+                          <Line
+                            type="monotone"
+                            dataKey="Hackathons"
+                            stroke="#8b5cf6"
                             strokeWidth={3}
                             dot={{ r: 4, fill: '#8b5cf6' }}
                             activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#7c3aed', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Drives && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Drives" 
-                            stroke="#ef4444" 
+                          <Line
+                            type="monotone"
+                            dataKey="Drives"
+                            stroke="#ef4444"
                             strokeWidth={3}
                             dot={{ r: 4, fill: '#ef4444' }}
                             activeDot={{ r: 6, fill: '#ef4444', stroke: '#dc2626', strokeWidth: 2 }}
                           />
                         )}
                         {activeCategories.Courses && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Courses" 
-                            stroke="#ec4899" 
+                          <Line
+                            type="monotone"
+                            dataKey="Courses"
+                            stroke="#ec4899"
                             strokeWidth={3}
                             dot={{ r: 4, fill: '#ec4899' }}
                             activeDot={{ r: 6, fill: '#ec4899', stroke: '#db2777', strokeWidth: 2 }}
@@ -1043,22 +1040,22 @@ const Home = () => {
                         )}
                       </LineChart>
                     </ResponsiveContainer>
-                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <BarChart3 size={48} className="mx-auto mb-4 text-gray-300" />
-                    <p>No data available for the selected period</p>
-                  </div>
-                )}
-
-                <div className="mt-6 text-center text-sm text-gray-500">
-                  Showing posts created {statsPeriod === 'week' ? 'day-wise in the last 7 days' : 'week-wise in the last 4 weeks'}
                 </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <BarChart3 size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p>No data available for the selected period</p>
+                </div>
+              )}
+
+              <div className="mt-6 text-center text-sm text-gray-500">
+                Showing posts created {statsPeriod === 'week' ? 'day-wise in the last 7 days' : 'week-wise in the last 4 weeks'}
               </div>
-            </motion.div>
-          </div>
-        </section>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Quick Actions for Students */}
       {isAuthenticated && user?.role === 'student' && (

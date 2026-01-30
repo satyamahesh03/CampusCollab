@@ -31,8 +31,8 @@ const Footer = () => {
             <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">Contact Us</h3>
             <ul className="space-y-2 sm:space-y-2.5">
               <li>
-                <a 
-                  href="mailto:campuscollabofficial@gmail.com" 
+                <a
+                  href="mailto:campuscollabofficial@gmail.com"
                   className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
                   <div className="p-1.5 sm:p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors flex-shrink-0">
@@ -42,9 +42,9 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a 
-                  href="https://wa.me/919494252900" 
-                  target="_blank" 
+                <a
+                  href="https://wa.me/919494252900"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
@@ -55,9 +55,9 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a 
-                  href="https://www.google.com/maps/search/MVGR+College+of+Engineering" 
-                  target="_blank" 
+                <a
+                  href="https://www.google.com/maps/search/MVGR+College+of+Engineering"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-amber-600 transition-colors group"
                 >
@@ -75,7 +75,7 @@ const Footer = () => {
         <div className="border-t border-amber-200/50 pt-3 sm:pt-4">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-2 text-gray-700 text-xs sm:text-sm">
-              <span>&copy; 2026 Campus Collab. All rights reserved.</span>
+              <span>&copy; {new Date().getFullYear()} Campus Collab. All rights reserved.</span>
             </div>
           </div>
         </div>

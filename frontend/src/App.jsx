@@ -20,168 +20,174 @@ import Recommendations from './pages/Recommendations';
 import AdminDashboard from './pages/AdminDashboard';
 import Chats from './pages/Chats';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 
 function AppContent() {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
-  
+
   return (
-          <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
-            <Navbar />
-            <Notification />
-            <main className="relative">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50 to-yellow-100">
+      <Navbar />
+      <Notification />
+      <main className="relative">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/projects"
-                  element={
-                    <ProtectedRoute>
-                      <Projects />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/projects/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Projects />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/internships"
-                  element={
-                    <ProtectedRoute>
-                      <Internships />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/internships/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Internships />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/hackathons"
-                  element={
-                    <ProtectedRoute>
-                      <Hackathons />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/hackathons/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Hackathons />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/drives"
-                  element={
-                    <ProtectedRoute>
-                      <Drives />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/drives/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Drives />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/courses"
-                  element={
-                    <ProtectedRoute>
-                      <CourseLinks />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/courses/:id"
-                  element={
-                    <ProtectedRoute>
-                      <CourseLinks />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/notifications"
-                  element={
-                    <ProtectedRoute>
-                      <Notifications />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reminders"
-                  element={
-                    <ProtectedRoute>
-                      <Notifications />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/recommendations"
-                  element={
-                    <ProtectedRoute roles={['student']}>
-                      <Recommendations />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/chats"
-                  element={
-                    <ProtectedRoute>
-                      <Chats />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/chats/:chatId"
-                  element={
-                    <ProtectedRoute>
-                      <Chats />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
+          {/* Protected Routes */}
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/internships"
+            element={
+              <ProtectedRoute>
+                <Internships />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/internships/:id"
+            element={
+              <ProtectedRoute>
+                <Internships />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hackathons"
+            element={
+              <ProtectedRoute>
+                <Hackathons />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hackathons/:id"
+            element={
+              <ProtectedRoute>
+                <Hackathons />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/drives"
+            element={
+              <ProtectedRoute>
+                <Drives />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/drives/:id"
+            element={
+              <ProtectedRoute>
+                <Drives />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses"
+            element={
+              <ProtectedRoute>
+                <CourseLinks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses/:id"
+            element={
+              <ProtectedRoute>
+                <CourseLinks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reminders"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recommendations"
+            element={
+              <ProtectedRoute roles={['student']}>
+                <Recommendations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <Chats />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats/:chatId"
+            element={
+              <ProtectedRoute>
+                <Chats />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-                {/* Admin Routes */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute roles={['admin']}>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
+          {/* Admin Routes */}
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={<Navigate to="/admin/overview" replace />}
+          />
+          <Route
+            path="/admin/:section"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
+          {/* Fallback */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
       {isHomePage && <Footer />}
-          </div>
+    </div>
   );
 }
 
