@@ -16,9 +16,9 @@ const app = express();
 const server = http.createServer(app);
 
 // Configure allowed origins from environment variable or use defaults
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173', 'http://localhost:3000', 'https://campuscollaborg.vercel.app'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'https://campuscollaborg.vercel.app', 'https://www.campuscollaborg.vercel.app', 'https://cc.satyapage.in'];
 
 // Normalize origins (remove trailing slashes)
 const normalizedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
@@ -30,10 +30,10 @@ const io = socketio(server, {
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       // Normalize the incoming origin (remove trailing slash)
       const normalizedOrigin = origin.replace(/\/$/, '');
-      
+
       if (normalizedOrigins.includes(normalizedOrigin) || normalizedOrigins.includes('*')) {
         callback(null, true);
       } else {
@@ -60,10 +60,10 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Normalize the incoming origin (remove trailing slash)
     const normalizedOrigin = origin.replace(/\/$/, '');
-    
+
     // Check if origin is in allowed list
     if (normalizedOrigins.includes(normalizedOrigin) || normalizedOrigins.includes('*')) {
       callback(null, true);
@@ -117,7 +117,7 @@ const onlineUsers = new Map(); // userId -> { socketId, lastSeen }
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return next(new Error('Authentication error: No token provided'));
     }
@@ -151,20 +151,20 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Unauthorized: User ID mismatch' });
       return;
     }
-    
+
     onlineUsers.set(userId, { socketId: socket.id, lastSeen: new Date() });
     socket.userId = userId;
-    
+
     // Join user-specific room for notifications
     socket.join(`user-${userId}`);
-    
+
     // Broadcast to all clients
-    io.emit('user-status-change', { 
-      userId, 
+    io.emit('user-status-change', {
+      userId,
       online: true,
       onlineUsers: Array.from(onlineUsers.keys())
     });
-    
+
     console.log(`User ${userId} is online. Total online: ${onlineUsers.size}`);
   });
 
@@ -195,7 +195,7 @@ io.on('connection', (socket) => {
 
       // Find chat and restore if deleted by sender
       let chat = await Chat.findById(chatId).populate('participants');
-      
+
       if (!chat) {
         socket.emit('message-error', {
           message: 'Chat not found'
@@ -210,7 +210,7 @@ io.on('connection', (socket) => {
         });
         return;
       }
-      
+
       // No need to restore chat anymore since we're using hard delete
 
       // Check if user is blocked
@@ -239,11 +239,11 @@ io.on('connection', (socket) => {
         // Check if chat is pending and enforce 2-message limit
         if (chat.status === 'pending') {
           const isInitiator = chat.initiatedBy && chat.initiatedBy.equals(userId);
-          
+
           if (isInitiator) {
             // Count messages sent by initiator
             const initiatorMessages = chat.messages.filter(msg => msg.sender && msg.sender.equals(userId));
-            
+
             if (initiatorMessages.length >= 2) {
               socket.emit('message-error', {
                 message: 'You can only send 2 messages before the other person approves'
@@ -264,17 +264,17 @@ io.on('connection', (socket) => {
           content: content,
           status: 'sent'
         };
-        
+
         chat.messages.push(newMessage);
-        
+
         // Update unread count for the other participant (already declared above)
         if (!chat.unreadCount) chat.unreadCount = new Map();
         const currentUnread = chat.unreadCount.get(otherParticipant._id.toString()) || 0;
         chat.unreadCount.set(otherParticipant._id.toString(), currentUnread + 1);
-        
+
         chat.lastMessage = Date.now();
         await chat.save();
-        
+
         // Populate chat messages sender before emitting
         await chat.populate('messages.sender', 'name profilePicture');
 
@@ -327,7 +327,7 @@ io.on('connection', (socket) => {
     try {
       const { chatId, userId } = data;
       const chat = await Chat.findById(chatId);
-      
+
       if (chat) {
         let updated = false;
         chat.messages.forEach(msg => {
@@ -346,7 +346,7 @@ io.on('connection', (socket) => {
           await chat.save();
           // Emit to all participants that messages were read
           io.to(chatId).emit('messages-read', { userId, chatId });
-          
+
           // Also emit individual status updates for each message that was marked as read
           chat.messages.forEach(msg => {
             if (!msg.sender.equals(userId) && msg.status === 'read') {
@@ -369,14 +369,14 @@ io.on('connection', (socket) => {
     try {
       const { chatId, messageId, userId } = data;
       const chat = await Chat.findById(chatId);
-      
+
       if (chat) {
         const message = chat.messages.id(messageId);
         if (message && message.sender.equals(userId)) {
           message.isDeleted = true;
           message.content = 'This message was deleted';
           await chat.save();
-          
+
           io.to(chatId).emit('message-deleted', { chatId, messageId });
         }
       }
@@ -482,15 +482,15 @@ io.on('connection', (socket) => {
         userData.lastSeen = new Date();
       }
       onlineUsers.delete(socket.userId);
-      
+
       // Broadcast to all clients
-      io.emit('user-status-change', { 
-        userId: socket.userId, 
+      io.emit('user-status-change', {
+        userId: socket.userId,
         online: false,
         lastSeen: new Date(),
         onlineUsers: Array.from(onlineUsers.keys())
       });
-      
+
       console.log(`User ${socket.userId} went offline. Total online: ${onlineUsers.size}`);
     }
     console.log('Client disconnected:', socket.id);
