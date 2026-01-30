@@ -591,32 +591,54 @@ router.post('/:id/send-emails', protect, authorize('faculty', 'admin'), async (r
           to: student.email,
           subject: `New Placement Drive: ${drive.company} - ${drive.jobRole}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-              <h2 style="color: #d97706;">New Opportunity Alert! 🚀</h2>
-              <p>Hello <strong>${student.name}</strong>,</p>
-              <p>A new placement drive has been announced that matches your profile.</p>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 0; border: 1px solid #fcd34d; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+              <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">New Opportunity Alert</h2>
+              </div>
               
-              <div style="background-color: #fffbeb; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <h3 style="margin-top: 0; color: #1f2937;">${drive.company}</h3>
-                <p><strong>Role:</strong> ${drive.jobRole}</p>
-                <p><strong>Package:</strong> ${drive.package}</p>
-                <p><strong>Location:</strong> ${drive.location}</p>
-                <p><strong>Last Date:</strong> ${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
+              <div style="padding: 30px; background-color: #fffbeb;">
+                <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${student.name}</strong>,</p>
+                <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 25px;">A new placement drive has been announced that matches your profile details. Please review the criteria below.</p>
                 
-                <hr style="margin: 15px 0; border: 0; border-top: 1px dashed #ccc;" />
-                
-                <p><strong>Description:</strong></p>
-                <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; margin-bottom: 15px;">
-                  ${drive.description}
+                <div style="background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                  <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 20px; border-bottom: 2px solid #fcd34d; padding-bottom: 10px;">${drive.company}</h3>
+                  
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Role</p>
+                      <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${drive.jobRole}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Package</p>
+                      <p style="margin: 0; color: #059669; font-weight: 600; font-size: 16px;">${drive.package}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Location</p>
+                      <p style="margin: 0; color: #111827; font-weight: 500; font-size: 16px;">${drive.location}</p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Deadline</p>
+                      <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 16px;">${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
+                    </div>
+                  </div>
+                  
+                  <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Description</p>
+                    <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; line-height: 1.5;">${drive.description}</div>
+                  </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                  <a href="https://campuscollaborg.vercel.app/drives/${drive._id}" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
+                    View Details & Apply
+                  </a>
+                  <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
                 </div>
               </div>
-
-              <p>Don't miss out! Check the registration link and apply before the deadline.</p>
               
-              <a href="${drive.registrationLink}" style="display: inline-block; background-color: #d97706; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Apply Now</a>
-              
-              <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;" />
-              <p style="font-size: 12px; color: #6b7280;">Best Regards,<br/>CampusCollab Team</p>
+              <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 12px; color: #6b7280; margin: 0;">&copy; ${new Date().getFullYear()} Campus Collab Placement Cell. All rights reserved.</p>
+              </div>
             </div>
           `
         };
