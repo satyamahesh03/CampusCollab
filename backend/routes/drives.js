@@ -629,7 +629,7 @@ router.post('/:id/send-emails', protect, authorize('faculty', 'admin'), async (r
                 </div>
 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://campuscollaborg.vercel.app/drives/${drive._id}" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
+                  <a href="https://cc.satyapage.in/drives" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
                     View Details & Apply
                   </a>
                   <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
