@@ -20,6 +20,11 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:5173', 'http://localhost:3000', 'https://campuscollaborg.vercel.app', 'https://www.campuscollaborg.vercel.app', 'https://cc.satyapage.in'];
 
+// Ensure critical origins are always allowed, even if Env var is set but missing them
+if (!allowedOrigins.includes('https://cc.satyapage.in')) {
+  allowedOrigins.push('https://cc.satyapage.in');
+}
+
 // Normalize origins (remove trailing slashes)
 const normalizedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
 
