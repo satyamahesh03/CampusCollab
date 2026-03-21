@@ -40,8 +40,8 @@ router.get('/dashboard', protect, authorize('admin'), cacheMiddleware(60), async
       Drive.countDocuments(),
       Report.countDocuments({ status: 'pending' }),
       Report.countDocuments(),
-      Project.find().sort({ likes: -1 }).limit(5).populate('createdBy', 'name department'),
-      Report.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(10).populate('reportedUser', 'name email role')
+      Project.find().sort({ likes: -1 }).limit(5).populate('createdBy', 'name department').lean(),
+      Report.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(10).populate('reportedUser', 'name email role').lean()
     ]);
 
     res.json({
@@ -234,7 +234,8 @@ router.get('/reports', protect, authorize('admin'), cacheMiddleware(60), async (
     const reports = await Report.find(query)
       .populate('reportedUser', 'name email role')
       .populate('reviewedBy', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
