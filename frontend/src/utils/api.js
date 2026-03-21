@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://campuscollab-odlh.onrender.com/api';
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6500/api';
-
-
+const isProd = typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_URL = isProd ? 'https://campuscollab-odlh.onrender.com/api' : (import.meta.env.VITE_API_URL || 'http://localhost:6500/api');
+export const BACKEND_URL = API_URL.replace('/api', '');
 const api = axios.create({
   baseURL: API_URL,
   headers: {
