@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { hackathonAPI } from '../utils/api';
+import { hackathonAPI, BACKEND_URL } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useGlobal } from '../context/GlobalContext';
 import { formatDate, getDomainColor, domains, departments } from '../utils/helpers';
@@ -19,8 +19,7 @@ const Hackathons = () => {
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:6500';
-    return `${backendUrl}${url}`;
+    return `${BACKEND_URL}${url}`;
   };
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);

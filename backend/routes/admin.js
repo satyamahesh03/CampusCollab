@@ -579,7 +579,8 @@ router.get('/content/projects', protect, authorize('admin'), cacheMiddleware(60)
 
     const projects = await Project.find(query)
       .populate('createdBy', 'name department')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
@@ -602,7 +603,8 @@ router.get('/content/internships', protect, authorize('admin'), cacheMiddleware(
   try {
     const internships = await Internship.find({})
       .populate('postedBy', 'name department')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
@@ -625,7 +627,8 @@ router.get('/content/hackathons', protect, authorize('admin'), cacheMiddleware(6
   try {
     const hackathons = await Hackathon.find({})
       .populate('postedBy', 'name department')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
@@ -657,7 +660,8 @@ router.get('/content/drives', protect, authorize('admin'), cacheMiddleware(60), 
 
     const drives = await Drive.find(query)
       .populate('postedBy', 'name department')
-      .sort({ driveDate: status === 'completed' ? -1 : 1 });
+      .sort({ driveDate: status === 'completed' ? -1 : 1 })
+      .lean();
 
     res.json({
       success: true,
@@ -681,7 +685,8 @@ router.get('/content/course-links', protect, authorize('admin'), cacheMiddleware
     const CourseLink = require('../models/CourseLink');
     const courseLinks = await CourseLink.find({})
       .populate('postedBy', 'name department')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
