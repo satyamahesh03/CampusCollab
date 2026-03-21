@@ -4,6 +4,7 @@ const Project = require('../models/Project');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const { checkAbusiveContent, analyzeContent } = require('../middleware/abusiveContentDetection');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
@@ -157,7 +158,7 @@ module.exports = (io) => {
   // @route   GET /api/projects
   // @desc    Get all projects with filtering
   // @access  Public
-  router.get('/', async (req, res) => {
+  router.get('/', cacheMiddleware(300), async (req, res) => {
     try {
       const { domain, status, search, sort, skill } = req.query;
       let query = {};

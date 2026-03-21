@@ -14,6 +14,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 const Hackathons = () => {
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to resolve absolute image URLs for uploaded files
+  const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:6500';
+    return `${backendUrl}${url}`;
+  };
   const [filters, setFilters] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedHackathon, setSelectedHackathon] = useState(null);
@@ -227,6 +235,7 @@ const Hackathons = () => {
           }}
           onSave={handleSave}
           userId={user?.id}
+          getImageUrl={getImageUrl}
         />
         {/* Create Modal */}
         {showCreateModal && (
@@ -323,14 +332,25 @@ const Hackathons = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 border border-transparent hover:border-amber-300 h-full flex flex-col"
+                className="group bg-white/60 backdrop-blur-sm rounded-lg cursor-pointer p-6 sm:p-8 border border-transparent hover:border-amber-300 h-full flex flex-col"
                 onClick={() => navigate(`/hackathons/${hackathon._id}`)}
               >
                 {/* Header with Title and Actions */}
                 <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-amber-600 transition flex-1">
-                    {hackathon.title}
-                  </h3>
+                  <div className="flex items-center gap-2 flex-1">
+                    {hackathon.imageUrl && (
+                      <div className="w-[30px] h-[30px] rounded shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <img 
+                          src={getImageUrl(hackathon.imageUrl)} 
+                          alt={hackathon.title} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                    )}
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-amber-600 transition truncate">
+                      {hackathon.title}
+                    </h3>
+                  </div>
                   <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <button
                       onClick={(e) => handleSave(hackathon._id, e)}
@@ -445,7 +465,7 @@ const Hackathons = () => {
   );
 };
 
-const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
+const HackathonDetailView = ({ hackathon, onClose, onSave, userId, getImageUrl }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user } = useAuth();
   const isSaved = Array.isArray(hackathon.likes) && hackathon.likes.some(likeId =>
@@ -475,6 +495,11 @@ const HackathonDetailView = ({ hackathon, onClose, onSave, userId }) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
               <div className="flex-1 pr-0 sm:pr-8">
                 <div className="flex items-center gap-2 mb-2">
+                  {hackathon.imageUrl && (
+                    <div className="w-[50px] h-[50px] rounded shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <img src={getImageUrl(hackathon.imageUrl)} alt={hackathon.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                     {hackathon.title}
                   </h2>
@@ -635,6 +660,7 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
     domain: '',
     prizes: '',
   });
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { addNotification } = useGlobal();
 
@@ -642,7 +668,17 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await hackathonAPI.create(formData);
+      const submitData = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '') {
+          submitData.append(key, formData[key]);
+        }
+      });
+      if (imageFile) {
+        submitData.append('image', imageFile);
+      }
+
+      await hackathonAPI.create(submitData);
       addNotification({
         type: 'success',
         message: 'Hackathon posted successfully!',
@@ -832,6 +868,17 @@ const CreateHackathonModal = ({ onClose, onSuccess }) => {
             />
           </div>
 
+          {/* Image Upload */}
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Cover Image (Optional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files[0])}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
+            />
+          </div>
+
           {/* Registration Link */}
           <div>
             <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">
@@ -887,6 +934,7 @@ const EditHackathonModal = ({ hackathon, onClose, onSuccess }) => {
     domain: hackathon.domain || '',
     prizes: hackathon.prizes || '',
   });
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { addNotification } = useGlobal();
 
@@ -894,7 +942,19 @@ const EditHackathonModal = ({ hackathon, onClose, onSuccess }) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await hackathonAPI.update(hackathon._id, formData);
+      const submitData = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '') {
+          submitData.append(key, formData[key]);
+        }
+      });
+      if (imageFile) {
+        submitData.append('image', imageFile);
+      } else if (!hackathon.imageUrl) {
+         submitData.append('imageUrl', ''); // Keep it empty if no image existed
+      }
+      
+      await hackathonAPI.update(hackathon._id, submitData);
       addNotification({
         type: 'success',
         message: 'Hackathon updated successfully!',
@@ -1055,6 +1115,15 @@ const EditHackathonModal = ({ hackathon, onClose, onSuccess }) => {
               type="text"
               value={formData.prizes}
               onChange={(e) => setFormData({ ...formData, prizes: e.target.value })}
+              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-amber-900">Cover Image (Upload new to replace)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files[0])}
               className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white focus:outline-none"
             />
           </div>

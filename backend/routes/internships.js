@@ -3,11 +3,12 @@ const router = express.Router();
 const Internship = require('../models/Internship');
 const Reminder = require('../models/Reminder');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 
 // @route   GET /api/internships
 // @desc    Get all internships with filtering
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(300), async (req, res) => {
   try {
     const { domain, department, year, search, mode } = req.query;
     let query = {};

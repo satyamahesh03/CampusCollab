@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const CourseLink = require('../models/CourseLink');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -50,7 +51,7 @@ const extractSkills = (text) => {
 // @route   GET /api/course-links
 // @desc    Get all course links with filtering
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(300), async (req, res) => {
   try {
     const { category, department, subject, search } = req.query;
     let query = {};

@@ -31,25 +31,38 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    fetchTabData(activeTab);
+  }, [activeTab]);
 
-  const fetchDashboardData = async () => {
+  const fetchTabData = async (tab) => {
     try {
       setLoading(true);
-      const [dashboardRes, reportsRes, usersRes] = await Promise.all([
-        adminAPI.getDashboard(),
-        adminAPI.getReports({ status: 'pending' }),
-        adminAPI.getUsers({}),
-      ]);
-      setStats(dashboardRes.data);
-      setReports(reportsRes.data);
-      setUsers(usersRes.data);
+      if (tab === 'overview') {
+        const dashboardRes = await adminAPI.getDashboard();
+        setStats(dashboardRes.data);
+      } else if (tab === 'reports') {
+        const reportsRes = await adminAPI.getReports({ status: 'pending' });
+        setReports(reportsRes.data);
+      } else if (tab === 'users') {
+        const usersRes = await adminAPI.getUsers({});
+        setUsers(usersRes.data);
+      } else if (tab === 'content-management') {
+        // Sections fetch data when expanded. But we may want dashboard stats for badges
+        if (!stats) {
+          const dashboardRes = await adminAPI.getDashboard();
+          setStats(dashboardRes.data);
+        }
+      }
     } catch (error) {
-      addNotification({ type: 'error', message: 'Failed to fetch dashboard data' });
+      addNotification({ type: 'error', message: `Failed to fetch ${tab} data` });
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchDashboardData = async () => {
+    // Keep this function to refresh the data of the current tab on actions
+    await fetchTabData(activeTab);
   };
 
   const fetchContentByType = async (type, filter) => {

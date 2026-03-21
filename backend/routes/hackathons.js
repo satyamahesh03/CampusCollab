@@ -3,11 +3,53 @@ const router = express.Router();
 const Hackathon = require('../models/Hackathon');
 const Reminder = require('../models/Reminder');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Set up storage engine
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, 'hackathon-' + Date.now() + Math.floor(Math.random() * 1000) + path.extname(file.originalname));
+  }
+});
+
+// Check File Type
+function checkFileType(file, cb) {
+  const filetypes = /jpeg|jpg|png|gif|webp/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Images Only!'));
+  }
+}
+
+// Init upload
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5000000 }, // 5MB limit
+  fileFilter: function (req, file, cb) {
+    checkFileType(file, cb);
+  }
+});
 
 // @route   GET /api/hackathons
 // @desc    Get all hackathons with filtering
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(300), async (req, res) => {
   try {
     const { domain, year, search, sort } = req.query;
     let query = {};
@@ -74,6 +116,7 @@ router.get('/', async (req, res) => {
             location: 1,
             prizes: 1,
             registrationLink: 1,
+            imageUrl: 1,
             likes: 1,
             createdAt: 1,
             postedBy: 1
@@ -82,7 +125,7 @@ router.get('/', async (req, res) => {
       ]);
     } else {
       hackathons = await Hackathon.find(query)
-        .select('title organizer description domain startDate endDate registrationDeadline mode location prizes registrationLink likes createdAt postedBy')
+        .select('title organizer description domain startDate endDate registrationDeadline mode location prizes registrationLink imageUrl likes createdAt postedBy')
         .populate('postedBy', 'name department role')
         .lean()
         .sort({ createdAt: -1 })
@@ -116,12 +159,23 @@ router.get('/', async (req, res) => {
 // @route   POST /api/hackathons
 // @desc    Create a new hackathon
 // @access  Private (Faculty & Students)
-router.post('/', protect, authorize('student', 'faculty'), async (req, res) => {
+router.post('/', protect, authorize('student', 'faculty'), upload.single('image'), async (req, res) => {
   try {
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = '/uploads/' + req.file.filename;
+    } else if (req.body.imageUrl && typeof req.body.imageUrl === 'string') {
+      imageUrl = req.body.imageUrl;
+    }
+
     const hackathonData = {
       ...req.body,
       postedBy: req.user._id
     };
+
+    if (imageUrl) {
+      hackathonData.imageUrl = imageUrl;
+    }
 
     const hackathon = await Hackathon.create(hackathonData);
 
@@ -141,7 +195,7 @@ router.post('/', protect, authorize('student', 'faculty'), async (req, res) => {
 // @route   PUT /api/hackathons/:id
 // @desc    Update a hackathon (owner only)
 // @access  Private (Hackathon Owner)
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', protect, upload.single('image'), async (req, res) => {
   try {
     const hackathon = await Hackathon.findById(req.params.id);
 
@@ -166,6 +220,13 @@ router.put('/:id', protect, async (req, res) => {
         hackathon[key] = req.body[key];
       }
     });
+
+    if (req.file) {
+      hackathon.imageUrl = '/uploads/' + req.file.filename;
+    } else if (req.body.imageUrl === '') {
+      // Allow clearing the image
+      hackathon.imageUrl = '';
+    }
 
     await hackathon.save();
 

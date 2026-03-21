@@ -7,6 +7,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { invalidateCacheOnMutation } = require('./middleware/cacheMiddleware');
 const jwt = require('jsonwebtoken');
 const Chat = require('./models/Chat');
 const User = require('./models/User');
@@ -57,8 +58,12 @@ const io = socketio(server, {
 // Connect to database
 connectDB();
 
+const path = require('path');
+
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false
+}));
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, or server-to-server requests)
@@ -91,6 +96,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev'));
+
+// Static folder for file uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Cache Invalidation Middleware
+app.use('/api', invalidateCacheOnMutation);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

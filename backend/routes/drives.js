@@ -3,6 +3,7 @@ const router = express.Router();
 const Drive = require('../models/Drive');
 const Reminder = require('../models/Reminder');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 
@@ -174,7 +175,7 @@ router.post('/parse-description', protect, authorize('faculty', 'admin'), async 
 // @route   GET /api/drives
 // @desc    Get all placement drives with filtering
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(300), async (req, res) => {
   try {
     const { department, year, search, status } = req.query;
     let query = {};

@@ -18,6 +18,10 @@ const hackathonSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  imageUrl: {
+    type: String,
+    trim: true
+  },
   department: [{
     type: String
   }],

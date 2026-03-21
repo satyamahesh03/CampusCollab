@@ -7,37 +7,42 @@ const Internship = require('../models/Internship');
 const Hackathon = require('../models/Hackathon');
 const Drive = require('../models/Drive');
 const { protect, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 
 // @route   GET /api/admin/dashboard
 // @desc    Get admin dashboard statistics
 // @access  Private (Admin)
-router.get('/dashboard', protect, authorize('admin'), async (req, res) => {
+router.get('/dashboard', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalStudents = await User.countDocuments({ role: 'student' });
-    const totalFaculty = await User.countDocuments({ role: 'faculty' });
-    const suspendedUsers = await User.countDocuments({ isSuspended: true });
-
-    const totalProjects = await Project.countDocuments();
-    const activeProjects = await Project.countDocuments({ status: 'open' });
-    const totalInternships = await Internship.countDocuments();
-    const totalHackathons = await Hackathon.countDocuments();
-    const totalDrives = await Drive.countDocuments();
-
-    const pendingReports = await Report.countDocuments({ status: 'pending' });
-    const totalReports = await Report.countDocuments();
-
-    // Get trending projects
-    const trendingProjects = await Project.find()
-      .sort({ likes: -1 })
-      .limit(5)
-      .populate('createdBy', 'name department');
-
-    // Get recent reports
-    const recentReports = await Report.find({ status: 'pending' })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate('reportedUser', 'name email role');
+    const [
+      totalUsers,
+      totalStudents,
+      totalFaculty,
+      suspendedUsers,
+      totalProjects,
+      activeProjects,
+      totalInternships,
+      totalHackathons,
+      totalDrives,
+      pendingReports,
+      totalReports,
+      trendingProjects,
+      recentReports
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'faculty' }),
+      User.countDocuments({ isSuspended: true }),
+      Project.countDocuments(),
+      Project.countDocuments({ status: 'open' }),
+      Internship.countDocuments(),
+      Hackathon.countDocuments(),
+      Drive.countDocuments(),
+      Report.countDocuments({ status: 'pending' }),
+      Report.countDocuments(),
+      Project.find().sort({ likes: -1 }).limit(5).populate('createdBy', 'name department'),
+      Report.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(10).populate('reportedUser', 'name email role')
+    ]);
 
     res.json({
       success: true,
@@ -75,7 +80,7 @@ router.get('/dashboard', protect, authorize('admin'), async (req, res) => {
 // @route   GET /api/admin/users
 // @desc    Get all users
 // @access  Private (Admin)
-router.get('/users', protect, authorize('admin'), async (req, res) => {
+router.get('/users', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const { role, search, status } = req.query;
     let query = {};
@@ -213,7 +218,7 @@ router.delete('/users/:id', protect, authorize('admin'), async (req, res) => {
 // @route   GET /api/admin/reports
 // @desc    Get all reports
 // @access  Private (Admin)
-router.get('/reports', protect, authorize('admin'), async (req, res) => {
+router.get('/reports', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const { status, type } = req.query;
     let query = {};
@@ -558,7 +563,7 @@ router.delete('/course-links/:id', protect, authorize('admin'), async (req, res)
 // @route   GET /api/admin/content/projects
 // @desc    Get all projects (including hidden) for admin
 // @access  Private (Admin)
-router.get('/content/projects', protect, authorize('admin'), async (req, res) => {
+router.get('/content/projects', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const { status } = req.query;
     let query = {};
@@ -592,7 +597,7 @@ router.get('/content/projects', protect, authorize('admin'), async (req, res) =>
 // @route   GET /api/admin/content/internships
 // @desc    Get all internships (including hidden) for admin
 // @access  Private (Admin)
-router.get('/content/internships', protect, authorize('admin'), async (req, res) => {
+router.get('/content/internships', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const internships = await Internship.find({})
       .populate('postedBy', 'name department')
@@ -615,7 +620,7 @@ router.get('/content/internships', protect, authorize('admin'), async (req, res)
 // @route   GET /api/admin/content/hackathons
 // @desc    Get all hackathons (including hidden) for admin
 // @access  Private (Admin)
-router.get('/content/hackathons', protect, authorize('admin'), async (req, res) => {
+router.get('/content/hackathons', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const hackathons = await Hackathon.find({})
       .populate('postedBy', 'name department')
@@ -638,7 +643,7 @@ router.get('/content/hackathons', protect, authorize('admin'), async (req, res) 
 // @route   GET /api/admin/content/drives
 // @desc    Get all drives (including hidden) for admin
 // @access  Private (Admin)
-router.get('/content/drives', protect, authorize('admin'), async (req, res) => {
+router.get('/content/drives', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const { status } = req.query;
     let query = {};
@@ -670,7 +675,7 @@ router.get('/content/drives', protect, authorize('admin'), async (req, res) => {
 // @route   GET /api/admin/content/course-links
 // @desc    Get all course links (including hidden) for admin
 // @access  Private (Admin)
-router.get('/content/course-links', protect, authorize('admin'), async (req, res) => {
+router.get('/content/course-links', protect, authorize('admin'), cacheMiddleware(60), async (req, res) => {
   try {
     const CourseLink = require('../models/CourseLink');
     const courseLinks = await CourseLink.find({})
