@@ -5,27 +5,32 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const { getSignedJwtToken, protect } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 
 // Email domain validation - only allow @mvgrce.edu.in
 const ALLOWED_EMAIL_DOMAIN = '@mvgrce.edu.in';
 
-// Send email using SendGrid API (recommended for cloud hosting)
-const sendEmailViaSendGrid = async (to, subject, html, from) => {
-  if (!process.env.SENDGRID_API_KEY) {
-    throw new Error('SENDGRID_API_KEY not configured');
+// Send email using Resend API (recommended for cloud hosting)
+const sendEmailViaResend = async (to, subject, html, from) => {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY not configured');
   }
 
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const fromAddress = from || process.env.FROM_EMAIL || 'noreply@campuscollab.com';
 
-  const msg = {
-    to: to,
-    from: from || process.env.FROM_EMAIL || 'noreply@campuscollab.com',
+  const { data, error } = await resend.emails.send({
+    from: fromAddress,
+    to: [to],
     subject: subject,
     html: html,
-  };
+  });
 
-  return await sgMail.send(msg);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 };
 
 // Configure nodemailer transporter (for non-SendGrid services)
@@ -149,7 +154,6 @@ router.post('/send-otp', [
 
     // Send OTP via email
     try {
-      // Determine "from" email based on email service
       let fromEmail = process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com';
 
       const emailHtml = `
@@ -167,49 +171,61 @@ router.post('/send-otp', [
         </div>
       `;
 
-      // Use SendGrid API if available (recommended for cloud hosting)
-      if (process.env.SENDGRID_API_KEY) {
-        console.log(`📧 Sending OTP email via SendGrid API to: ${normalizedEmail}`);
-        console.log(`📧 From email: ${fromEmail}`);
+      let emailSent = false;
+      let lastError = null;
 
-        const emailResult = await sendEmailViaSendGrid(
-          normalizedEmail,
-          'Campus Collab - Email Verification OTP',
-          emailHtml,
-          fromEmail
-        );
-
-        console.log(`✅ Email sent successfully via SendGrid! Status: ${emailResult[0]?.statusCode || 'N/A'}`);
-
-        res.json({
-          success: true,
-          message: 'OTP sent successfully to your email'
-        });
-      } else {
-        // Fallback to nodemailer for other services
-        const transporter = createTransporter();
-        const emailService = process.env.RESEND_API_KEY ? 'Resend'
-          : process.env.SMTP_HOST ? 'Custom SMTP'
-            : 'Gmail';
-
-        console.log(`📧 Sending OTP email via ${emailService} to: ${normalizedEmail}`);
-        console.log(`📧 From email: ${fromEmail}`);
-
-        const mailOptions = {
-          from: fromEmail,
-          to: normalizedEmail,
-          subject: 'Campus Collab - Email Verification OTP',
-          html: emailHtml
-        };
-
-        const emailResult = await sendEmailWithTimeout(transporter, mailOptions, 15000); // 15 second timeout
-        console.log(`✅ Email sent successfully! Message ID: ${emailResult.messageId || 'N/A'}`);
-
-        res.json({
-          success: true,
-          message: 'OTP sent successfully to your email'
-        });
+      // 1. Try Resend API SDK first (recommended for cloud hosting)
+      if (process.env.RESEND_API_KEY) {
+        try {
+          console.log(`📧 Attempting OTP email via Resend API: ${normalizedEmail}`);
+          await sendEmailViaResend(
+            normalizedEmail,
+            'Campus Collab - Email Verification OTP',
+            emailHtml,
+            fromEmail
+          );
+          console.log(`✅ Email sent successfully via Resend API!`);
+          emailSent = true;
+        } catch (resendError) {
+          console.warn('⚠️ Resend API failed, trying fallback Nodemailer SMTP...', resendError.message);
+          lastError = resendError;
+        }
       }
+
+      // 2. Fallback to Nodemailer (SMTP/Resend)
+      if (!emailSent) {
+        try {
+          const transporter = createTransporter();
+          const emailService = process.env.RESEND_API_KEY ? 'Resend'
+            : process.env.SMTP_HOST ? 'Custom SMTP'
+              : 'Gmail';
+
+          console.log(`📧 Sending OTP email via ${emailService} to: ${normalizedEmail}`);
+
+          const mailOptions = {
+            from: `"CampusCollab" <${fromEmail}>`,
+            to: normalizedEmail,
+            subject: 'Campus Collab - Email Verification OTP',
+            html: emailHtml
+          };
+
+          await sendEmailWithTimeout(transporter, mailOptions, 15000);
+          console.log(`✅ Email sent successfully via ${emailService}!`);
+          emailSent = true;
+        } catch (smtpError) {
+          console.error('❌ Fallback email failed also:', smtpError.message);
+          lastError = lastError || smtpError;
+        }
+      }
+
+      if (!emailSent) {
+        throw lastError || new Error('All email delivery methods failed');
+      }
+
+      res.json({
+        success: true,
+        message: 'OTP sent successfully to your email'
+      });
     } catch (emailError) {
       console.error('❌ Error sending email:', emailError);
       console.error('Error code:', emailError.code);
@@ -794,24 +810,43 @@ router.post('/forgot-password', [
         </div>
       `;
 
-      // Use SendGrid API if available
-      if (process.env.SENDGRID_API_KEY) {
-        await sendEmailViaSendGrid(
-          normalizedEmail,
-          'Password Reset OTP - Campus Collab',
-          emailHtml,
-          fromEmail
-        );
-      } else {
-        // Fallback to nodemailer
-        const transporter = createTransporter();
-        const mailOptions = {
-          from: fromEmail,
-          to: normalizedEmail,
-          subject: 'Password Reset OTP - Campus Collab',
-          html: emailHtml
-        };
-        await sendEmailWithTimeout(transporter, mailOptions, 15000);
+      let emailSent = false;
+      let lastError = null;
+
+      // 1. Try Resend API SDK first
+      if (process.env.RESEND_API_KEY) {
+        try {
+          console.log(`📧 Attempting Password Reset email via Resend API: ${normalizedEmail}`);
+          await sendEmailViaResend(
+            normalizedEmail,
+            'Password Reset OTP - Campus Collab',
+            emailHtml,
+            fromEmail
+          );
+          console.log(`✅ Password Reset Email sent via Resend API!`);
+          emailSent = true;
+        } catch (resendError) {
+          console.warn('⚠️ Resend password reset failed, trying fallback...', resendError.message);
+          lastError = resendError;
+        }
+      }
+
+      // 2. Fallback to nodemailer
+      if (!emailSent) {
+        try {
+          const transporter = createTransporter();
+          const mailOptions = {
+            from: `"CampusCollab" <${fromEmail}>`,
+            to: normalizedEmail,
+            subject: 'Password Reset OTP - Campus Collab',
+            html: emailHtml
+          };
+          await sendEmailWithTimeout(transporter, mailOptions, 15000);
+          emailSent = true;
+        } catch (smtpError) {
+          console.error('❌ Fallback password reset email failed also:', smtpError.message);
+          lastError = lastError || smtpError;
+        }
       }
     } catch (emailError) {
       console.error('Error sending password reset email:', emailError);

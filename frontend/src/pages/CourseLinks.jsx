@@ -35,7 +35,7 @@ const CourseLinks = () => {
         const uniqueDepartments = [...new Set(
           response.data
             .map(course => course.department)
-            .filter(dept => dept)
+            .filter(dept => dept && dept !== 'All') // Filter out "All" as it's a special filter value ""
         )].sort();
         
         setAvailableDepartments(uniqueDepartments);
@@ -306,7 +306,7 @@ const CourseLinks = () => {
                     </span>
                     {course.postedBy?.department && (
                       <span className="ml-1.5 sm:ml-2 text-gray-500">
-                        • {course.postedBy.department}
+                        • {course.postedBy.role === 'faculty' ? (course.department === 'All' ? 'All Departments' : course.department) : course.postedBy.department}
                       </span>
                     )}
                   </div>
@@ -494,6 +494,9 @@ const CreateCourseLinkModal = ({ onClose, onSuccess }) => {
               className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-amber-500"
             >
               <option value="">Select Department</option>
+              {user?.role === 'faculty' || user?.role === 'admin' ? (
+                <option value="All">All Departments</option>
+              ) : null}
               {departments.map((dept) => (
                 <option key={dept} value={dept}>
                   {dept}

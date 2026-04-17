@@ -64,7 +64,7 @@ router.get('/', cacheMiddleware(300), async (req, res) => {
     }
 
     if (department) {
-      query.department = department;
+      query.department = { $in: [department, 'All'] };
     }
 
     if (subject) {

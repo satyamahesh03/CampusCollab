@@ -999,7 +999,7 @@ const AdminDashboard = () => {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">{course.category}</td>
-                            <td className="px-4 py-3 text-sm">{course.department}</td>
+                            <td className="px-4 py-3 text-sm">{course.department === 'All' ? 'All Departments' : course.department}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 rounded text-xs ${course.isHidden ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                                 {course.isHidden ? 'Hidden' : 'Visible'}
@@ -1051,7 +1051,7 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <div className="text-xs text-gray-600">Category: {course.category}</div>
-                        <div className="text-xs text-gray-600">Department: {course.department}</div>
+                        <div className="text-xs text-gray-600">Department: {course.department === 'All' ? 'All Departments' : course.department}</div>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-1 rounded text-xs ${course.isHidden ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                             {course.isHidden ? 'Hidden' : 'Visible'}

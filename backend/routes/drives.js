@@ -258,6 +258,13 @@ router.post('/', protect, authorize('faculty', 'admin'), async (req, res) => {
       postedBy: req.user._id
     };
 
+    // Sanitize fields that must be strings. Sometimes the AI parsing returns them as arrays.
+    ['title', 'company', 'jobRole', 'package', 'location', 'requirements', 'stipend', 'internshipDuration', 'serviceAgreement', 'selectionProcess'].forEach(field => {
+      if (Array.isArray(driveData[field])) {
+        driveData[field] = driveData[field].join(', ');
+      }
+    });
+
     const drive = await Drive.create(driveData);
 
     res.status(201).json({
@@ -573,169 +580,157 @@ router.post('/:id/send-emails', protect, authorize('faculty', 'admin'), async (r
 
     console.log(`Found ${eligibleStudents.length} eligible students for drive: ${drive.title}`);
 
-    // Configure Email Sending Service
-    const sgMail = require('@sendgrid/mail');
-
-    // Send emails
-    if (process.env.SENDGRID_API_KEY) {
-      console.log('Using SendGrid for email delivery');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-      const emailPromises = eligibleStudents.map(student => {
-        const msg = {
-          to: student.email,
-          from: process.env.FROM_EMAIL || process.env.SMTP_USER || 'noreply@campuscollab.com', // Verified sender
-          subject: `New Placement Drive: ${drive.company} - ${drive.jobRole}`,
-          html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 0; border: 1px solid #fcd34d; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-              <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
-                <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">New Opportunity Alert</h2>
+    // Shared Email Template Generator
+    const generateEmailHtml = (student, drive) => `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 0; border: 1px solid #fcd34d; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+        <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
+          <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">New Opportunity Alert</h2>
+        </div>
+        
+        <div style="padding: 30px; background-color: #fffbeb;">
+          <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${student.name}</strong>,</p>
+          <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 25px;">A new placement drive has been announced that matches your profile details. Please review the criteria below.</p>
+          
+          <div style="background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 20px; border-bottom: 2px solid #fcd34d; padding-bottom: 10px;">${drive.company}</h3>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+              <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Role</p>
+                <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${drive.jobRole}</p>
               </div>
-              
-              <div style="padding: 30px; background-color: #fffbeb;">
-                <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${student.name}</strong>,</p>
-                <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 25px;">A new placement drive has been announced that matches your profile details. Please review the criteria below.</p>
-                
-                <div style="background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                  <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 20px; border-bottom: 2px solid #fcd34d; padding-bottom: 10px;">${drive.company}</h3>
-                  
-                  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Role</p>
-                      <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${drive.jobRole}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Package</p>
-                      <p style="margin: 0; color: #059669; font-weight: 600; font-size: 16px;">${drive.package}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Location</p>
-                      <p style="margin: 0; color: #111827; font-weight: 500; font-size: 16px;">${drive.location}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Deadline</p>
-                      <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 16px;">${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
-                    </div>
-                  </div>
-                  
-                  <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
-                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Description</p>
-                    <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; line-height: 1.5;">${drive.description}</div>
-                  </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://cc.satyapage.in/drives" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
-                    View Details & Apply
-                  </a>
-                  <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
-                </div>
+              <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Package</p>
+                <p style="margin: 0; color: #059669; font-weight: 600; font-size: 16px;">${drive.package}</p>
               </div>
-              
-              <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                <p style="font-size: 12px; color: #6b7280; margin: 0;">&copy; ${new Date().getFullYear()} Campus Collab Placement Cell. All rights reserved.</p>
+              <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Location</p>
+                <p style="margin: 0; color: #111827; font-weight: 500; font-size: 16px;">${drive.location}</p>
+              </div>
+              <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Deadline</p>
+                <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 16px;">${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
               </div>
             </div>
-          `
-        };
+            
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+              <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Description</p>
+              <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; line-height: 1.5;">${drive.description}</div>
+            </div>
+          </div>
 
-        return sgMail.send(msg).catch(err => console.error(`Failed to send email to ${student.email}:`, err.message));
-      });
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="https://cc.satyapage.in/drives" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
+              View Details & Apply
+            </a>
+            <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
+          </div>
+        </div>
+        
+        <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="font-size: 12px; color: #6b7280; margin: 0;">&copy; ${new Date().getFullYear()} Campus Collab Placement Cell. All rights reserved.</p>
+        </div>
+      </div>
+    `;
 
-      await Promise.all(emailPromises);
-      console.log(`Emails sent via SendGrid to ${eligibleStudents.length} students.`);
+    // Email delivery results tracking
+    let successCount = 0;
+    let failCount = 0;
+    let deliveryMethod = 'none';
 
-    } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      console.log('Using Nodemailer (SMTP) for email delivery');
+    // 1. Try Resend first if configured
+    if (process.env.RESEND_API_KEY) {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      deliveryMethod = 'resend';
+      console.log('Attempting email delivery via Resend Batch API...');
+
+      try {
+        const fromEmail = process.env.FROM_EMAIL || 'noreply@campuscollab.com';
+        
+        // Setup emails for Resend
+        const emailBatch = eligibleStudents.map(student => ({
+          from: `"CampusCollab Placement Cell" <${fromEmail}>`,
+          to: [student.email],
+          subject: `New Placement Drive: ${drive.company} - ${drive.jobRole}`,
+          html: generateEmailHtml(student, drive)
+        }));
+
+        // Resend batch sending (max 100 per request)
+        for (let i = 0; i < emailBatch.length; i += 100) {
+          const batch = emailBatch.slice(i, i + 100);
+          const { data, error } = await resend.batch.send(batch);
+          
+          if (error) {
+            console.error('Resend batch error:', error);
+            failCount += batch.length;
+          } else {
+            successCount += batch.length;
+          }
+        }
+      } catch (error) {
+        console.warn('Resend major failure. Checking for fallback...', error.message);
+      }
+    }
+
+    // 2. Fallback to SMTP if Resend failed or was not configured
+    if (successCount === 0 && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      console.log('Using/Falling back to Nodemailer (SMTP) for email delivery');
+      deliveryMethod = 'smtp';
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // Use TLS
+        secure: false,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
         }
       });
 
-      // Send emails in parallel (or use a queue in production)
+      // Reset counts for retry
+      successCount = 0;
+      failCount = 0;
+
       const emailPromises = eligibleStudents.map(student => {
         const mailOptions = {
           from: `"CampusCollab Placement Cell" <${process.env.SMTP_USER}>`,
           to: student.email,
           subject: `New Placement Drive: ${drive.company} - ${drive.jobRole}`,
-          html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 0; border: 1px solid #fcd34d; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-              <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
-                <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">New Opportunity Alert</h2>
-              </div>
-              
-              <div style="padding: 30px; background-color: #fffbeb;">
-                <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${student.name}</strong>,</p>
-                <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 25px;">A new placement drive has been announced that matches your profile details. Please review the criteria below.</p>
-                
-                <div style="background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                  <h3 style="margin-top: 0; margin-bottom: 15px; color: #111827; font-size: 20px; border-bottom: 2px solid #fcd34d; padding-bottom: 10px;">${drive.company}</h3>
-                  
-                  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Role</p>
-                      <p style="margin: 0; color: #111827; font-weight: 600; font-size: 16px;">${drive.jobRole}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Package</p>
-                      <p style="margin: 0; color: #059669; font-weight: 600; font-size: 16px;">${drive.package}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Location</p>
-                      <p style="margin: 0; color: #111827; font-weight: 500; font-size: 16px;">${drive.location}</p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px; margin-bottom: 10px;">
-                      <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Deadline</p>
-                      <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 16px;">${new Date(drive.registrationDeadline).toLocaleDateString('en-GB')}</p>
-                    </div>
-                  </div>
-                  
-                  <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
-                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Description</p>
-                    <div style="font-size: 14px; color: #4b5563; white-space: pre-wrap; line-height: 1.5;">${drive.description}</div>
-                  </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://cc.satyapage.in/drives" style="display: inline-block; background-color: #d97706; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.4); transition: background-color 0.2s;">
-                    View Details & Apply
-                  </a>
-                  <p style="margin-top: 15px; font-size: 13px; color: #9ca3af;">Clicking above will take you to the Campus Collab portal.</p>
-                </div>
-              </div>
-              
-              <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                <p style="font-size: 12px; color: #6b7280; margin: 0;">&copy; ${new Date().getFullYear()} Campus Collab Placement Cell. All rights reserved.</p>
-              </div>
-            </div>
-          `
+          html: generateEmailHtml(student, drive)
         };
-
-        // Log individual send attempt (silent failure to prevent crashing the loop)
-        return transporter.sendMail(mailOptions).catch(err => console.error(`Failed to send email to ${student.email}:`, err.message));
+        return transporter.sendMail(mailOptions)
+          .then(() => { successCount++; })
+          .catch(err => {
+            failCount++;
+            console.error(`SMTP failed for ${student.email}:`, err.message);
+          });
       });
 
       await Promise.all(emailPromises);
-
-      console.log(`Emails sent successfully to ${eligibleStudents.length} students.`);
-    } else {
-      // Mock mode if no credentials
-      console.log(`[MOCK EMAIL SENDING] Credentials missing. Would have sent to: ${eligibleStudents.map(s => s.email).join(', ')}`);
     }
 
+    // 3. Mock mode if everything else failed or was missing
+    if (deliveryMethod === 'none' || (successCount === 0 && failCount === 0)) {
+      console.log(`[MOCK EMAIL SENDING] No working credentials. Would have sent to: ${eligibleStudents.map(s => s.email).join(', ')}`);
+      deliveryMethod = 'mock';
+      successCount = eligibleStudents.length;
+    }
+
+    console.log(`Final Delivery Stats: ${successCount} sent, ${failCount} failed using ${deliveryMethod}`);
+
     res.json({
-      success: true,
-      message: `Emails queued for ${eligibleStudents.length} eligible students`
+      success: successCount > 0,
+      delivered: successCount,
+      failed: failCount,
+      method: deliveryMethod,
+      message: successCount > 0 
+        ? `Emails sent to ${successCount} students.` 
+        : `Failed to send emails. Check server logs.`
     });
 
   } catch (error) {
-    console.error('Error sending emails:', error);
-    res.status(500).json({ success: false, message: 'Failed to send emails' });
+    console.error('Error in send-emails endpoint:', error);
+    res.status(500).json({ success: false, message: 'Internal server error processing emails' });
   }
 });
 

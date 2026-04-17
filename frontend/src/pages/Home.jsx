@@ -1058,7 +1058,7 @@ const Home = () => {
       </section>
 
       {/* Quick Actions for Students */}
-      {isAuthenticated && user?.role === 'student' && (
+      {/* {isAuthenticated && user?.role === 'student' && (
         <section className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
@@ -1137,7 +1137,7 @@ const Home = () => {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
 
       {/* Footer CTA */}
