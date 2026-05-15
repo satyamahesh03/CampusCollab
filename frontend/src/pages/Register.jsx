@@ -63,9 +63,10 @@ const Register = () => {
     }
   };
 
-  // Validate email domain
-  const validateEmailDomain = (email) => {
-    return email.toLowerCase().endsWith('@mvgrce.edu.in');
+  // Validate email format
+  const validateEmailFormat = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   // Handle sending OTP
@@ -79,16 +80,15 @@ const Register = () => {
         message: 'Please enter your email address',
       });
       return;
-    }
-
-    if (!validateEmailDomain(formData.email)) {
+    }    if (!validateEmailFormat(formData.email)) {
       addNotification({
         type: 'error',
-        title: 'Invalid Email Domain',
-        message: 'Only college mails are accepted',
+        title: 'Invalid Email Format',
+        message: 'Please enter a valid email address',
       });
       return;
     }
+
 
     setSendingOTP(true);
     try {
@@ -260,30 +260,31 @@ const Register = () => {
                     value={formData.email}
                     onChange={handleChange}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !otpSent && formData.email && validateEmailDomain(formData.email) && !sendingOTP) {
+                      if (e.key === 'Enter' && !otpSent && formData.email && validateEmailFormat(formData.email) && !sendingOTP) {
                         e.preventDefault();
                         handleSendOTP(e);
                       }
                     }}
                     required
                     disabled={otpSent}
-                    className={`w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${formData.email && !validateEmailDomain(formData.email)
-                      ? 'border-red-300 focus:ring-red-500'
-                      : formData.email && validateEmailDomain(formData.email)
+                    className={`w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
+                      formData.email && !validateEmailFormat(formData.email)
+                        ? 'border-red-300 focus:ring-red-500'
+                        : formData.email && validateEmailFormat(formData.email)
                         ? 'border-green-300 focus:ring-green-500'
                         : 'border-gray-200'
-                      } ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="your.email@mvgrce.edu.in"
+                    } ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    placeholder="your.email@example.com"
                   />
                 </div>
-                {formData.email && !validateEmailDomain(formData.email) && (
+                {formData.email && !validateEmailFormat(formData.email) && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    Only college mails are accepted
+                    Please enter a valid email address
                   </p>
                 )}
-                {formData.email && validateEmailDomain(formData.email) && !otpSent && (
+                {formData.email && validateEmailFormat(formData.email) && !otpSent && (
                   <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
-                    <CheckCircle size={12} /> Valid email domain
+                    <CheckCircle size={12} /> Valid email format
                   </p>
                 )}
                 {otpSent && (
@@ -299,7 +300,7 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={handleSendOTP}
-                    disabled={sendingOTP || !formData.email || !validateEmailDomain(formData.email)}
+                    disabled={sendingOTP || !formData.email || !validateEmailFormat(formData.email)}
                     className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {sendingOTP ? (

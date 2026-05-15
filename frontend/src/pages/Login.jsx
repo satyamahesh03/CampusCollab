@@ -43,9 +43,10 @@ const Login = () => {
     if (errorMessage) setErrorMessage('');
   };
 
-  // Validate email domain
-  const validateEmailDomain = (email) => {
-    return email.toLowerCase().endsWith('@mvgrce.edu.in');
+  // Validate email format
+  const validateEmailFormat = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   // Handle forgot password - Send OTP
@@ -61,17 +62,14 @@ const Login = () => {
       return;
     }
 
-    /* 
-    // Validation removed to let backend handle checks
-    if (!validateEmailDomain(forgotEmail)) {
+    if (!validateEmailFormat(forgotEmail)) {
       addNotification({
         type: 'error',
-        title: 'Invalid Email Domain',
-        message: 'Only college mails (@mvgrce.edu.in) are accepted',
+        title: 'Invalid Email Format',
+        message: 'Please enter a valid email address',
       });
       return;
-    } 
-    */
+    }
 
     setSendingOTP(true);
     try {
@@ -277,7 +275,7 @@ const Login = () => {
                   required
                   autoComplete="username"
                   className="w-full pl-10 pr-4 py-3 border border-amber-200/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm"
-                  placeholder="your.email@mvgrce.edu.in"
+                  placeholder="your.email@example.com"
                 />
               </div>
             </div>
@@ -451,33 +449,36 @@ const Login = () => {
                           value={forgotEmail}
                           onChange={(e) => setForgotEmail(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' && forgotEmail && validateEmailDomain(forgotEmail) && !sendingOTP) {
+                            if (e.key === 'Enter' && forgotEmail && validateEmailFormat(forgotEmail) && !sendingOTP) {
                               e.preventDefault();
                               handleSendResetOTP(e);
                             }
                           }}
                           required
-                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${forgotEmail && !validateEmailDomain(forgotEmail)
-                            ? 'border-red-300 focus:ring-red-500'
-                            : forgotEmail && validateEmailDomain(forgotEmail)
+                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200 bg-white/60 backdrop-blur-sm ${
+                            forgotEmail && !validateEmailFormat(forgotEmail)
+                              ? 'border-red-300 focus:ring-red-500'
+                              : forgotEmail && validateEmailFormat(forgotEmail)
                               ? 'border-green-300 focus:ring-green-500'
                               : 'border-amber-200/50'
-                            }`}
-                          placeholder="your.email@mvgrce.edu.in"
+                          }`}
+                          placeholder="your.email@example.com"
                         />
                       </div>
-                      {forgotEmail && !validateEmailDomain(forgotEmail) && (
-                        <p className="text-red-500 text-xs mt-1">Only college mails are accepted</p>
+                      {forgotEmail && !validateEmailFormat(forgotEmail) && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          Please enter a valid email address
+                        </p>
                       )}
-                      {forgotEmail && validateEmailDomain(forgotEmail) && (
+                      {forgotEmail && validateEmailFormat(forgotEmail) && (
                         <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
-                          <CheckCircle size={12} /> Valid email domain
+                          <CheckCircle size={12} /> Valid email format
                         </p>
                       )}
                     </div>
                     <button
                       type="submit"
-                      disabled={sendingOTP || !forgotEmail || !validateEmailDomain(forgotEmail)}
+                      disabled={sendingOTP || !forgotEmail || !validateEmailFormat(forgotEmail)}
                       className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-3 rounded-xl hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                     >
                       {sendingOTP ? (

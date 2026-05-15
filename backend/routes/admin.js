@@ -889,5 +889,125 @@ router.put('/course-links/:id/hide', protect, authorize('admin'), async (req, re
   }
 });
 
-module.exports = router;
+// @route   POST /api/admin/send-email
+// @desc    Send an email manually to a specific person or group
+// @access  Private (Admin)
+router.post('/send-email', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { targetType = 'single', to, departments = [], years = [], subject, message } = req.body;
 
+    if (!subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide subject and message'
+      });
+    }
+
+    if (targetType === 'single' && !to) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide recipient email for single target'
+      });
+    }
+
+    if (targetType === 'group' && departments.length === 0 && years.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select at least one department or year for a group target'
+      });
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'RESEND_API_KEY is not configured on the server'
+      });
+    }
+
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromAddress = process.env.FROM_EMAIL || 'noreply@cc.satyapage.in';
+
+    // Strip HTML for the plain text version
+    const plainText = message.replace(/<[^>]+>/g, '');
+    const textMessage = `${plainText}\n\n---\nThis is a computer-generated email. Please do not reply to this message.`;
+    
+    // Support basic markdown for bold and italic (optional, just in case)
+    const parsedMessage = message
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      .replace(/_(.*?)_/g, '<em>$1</em>');
+
+    const formattedMessage = `
+      <div style="font-family: Verdana, sans-serif; margin-bottom: 30px;">${parsedMessage}</div>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+      <p style="color: #6b7280; font-size: 12px; font-family: Verdana, sans-serif; margin: 0; text-align: center;">
+        This is a computer-generated email. No need to reply to this message.
+      </p>
+    `;
+
+    let recipients = [];
+
+    if (targetType === 'single') {
+      recipients.push(to);
+    } else if (targetType === 'group') {
+      let query = { role: 'student' };
+      if (departments && departments.length > 0) query.department = { $in: departments };
+      if (years && years.length > 0) query.year = { $in: years };
+
+      const users = await User.find(query).select('email');
+      recipients = users.map(u => u.email);
+
+      if (recipients.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No students found matching the selected criteria'
+        });
+      }
+    }
+
+    // Process in batches of 50 to respect rate limits
+    const BATCH_SIZE = 50;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
+      const emailPayloads = batch.map(email => ({
+        from: fromAddress,
+        to: email,
+        subject: subject,
+        text: textMessage,
+        html: formattedMessage,
+      }));
+
+      try {
+        const { data, error } = await resend.batch.send(emailPayloads);
+        if (error) {
+          console.error('Resend batch error:', error);
+          failCount += batch.length;
+        } else {
+          successCount += batch.length;
+        }
+      } catch (err) {
+        console.error('Resend batch exception:', err);
+        failCount += batch.length;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Emails sent successfully to ${successCount} recipients${failCount > 0 ? ` (${failCount} failed)` : ''}`,
+      data: { successCount, failCount }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error sending email'
+    });
+  }
+});
+
+module.exports = router;

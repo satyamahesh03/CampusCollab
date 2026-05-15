@@ -200,6 +200,7 @@ export const adminAPI = {
   getCourseLinks: (params) => api.get('/admin/content/course-links', { params }),
   warnUser: (id) => api.put(`/admin/reports/${id}/warn`),
   acceptContent: (id) => api.put(`/admin/reports/${id}/accept`),
+  sendEmail: (data) => api.post('/admin/send-email', data),
 };
 
 export default api;

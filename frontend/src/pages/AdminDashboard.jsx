@@ -3,11 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { adminAPI } from '../utils/api';
 import { useGlobal } from '../context/GlobalContext';
 import Loading from '../components/Loading';
-import { FaUsers, FaProjectDiagram, FaFlag, FaBan, FaCheck, FaTimes, FaChevronDown, FaChevronRight, FaEye, FaEyeSlash, FaSearch } from 'react-icons/fa';
+import { FaUsers, FaProjectDiagram, FaFlag, FaBan, FaCheck, FaTimes, FaChevronDown, FaChevronRight, FaEye, FaEyeSlash, FaSearch, FaEnvelope, FaPaperPlane } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { formatRelativeTime, getStatusColor, formatDate, departments, years } from '../utils/helpers';
-
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [reports, setReports] = useState([]);
@@ -27,6 +28,8 @@ const AdminDashboard = () => {
   const [contentSearch, setContentSearch] = useState(''); // Search query for content
   const [userSearch, setUserSearch] = useState(''); // Search query for users
   const [userFilters, setUserFilters] = useState({ dept: '', year: '' }); // Filters for users
+  const [emailData, setEmailData] = useState({ targetType: 'single', to: '', departments: [], years: [], subject: '', message: '' });
+  const [emailSending, setEmailSending] = useState(false);
   const { addNotification } = useGlobal();
   const navigate = useNavigate();
 
@@ -143,6 +146,30 @@ const AdminDashboard = () => {
       addNotification({ type: 'success', message: 'Content restored and user notified' });
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to accept content' });
+    }
+  };
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    if (emailData.targetType === 'single' && !emailData.to) {
+      return addNotification({ type: 'error', message: 'Please provide a recipient email' });
+    }
+    if (emailData.targetType === 'group' && emailData.departments.length === 0 && emailData.years.length === 0) {
+      return addNotification({ type: 'error', message: 'Please select at least one department or year' });
+    }
+    if (!emailData.subject || !emailData.message) {
+      return addNotification({ type: 'error', message: 'Please fill all fields' });
+    }
+
+    setEmailSending(true);
+    try {
+      const res = await adminAPI.sendEmail(emailData);
+      addNotification({ type: 'success', message: res.message || 'Email sent successfully!' });
+      setEmailData({ targetType: 'single', to: '', departments: [], years: [], subject: '', message: '' });
+    } catch (error) {
+      addNotification({ type: 'error', message: error.message || 'Failed to send email' });
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -278,6 +305,12 @@ const AdminDashboard = () => {
             className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'users' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
           >
             Users
+          </button>
+          <button
+            onClick={() => navigate('/admin/emails')}
+            className={`whitespace-nowrap flex-1 px-4 py-2 rounded-md font-medium transition text-sm ${activeTab === 'emails' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-600 hover:bg-amber-100'}`}
+          >
+            Send Email
           </button>
         </div>
 
@@ -1288,6 +1321,185 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Emails Tab */}
+        {activeTab === 'emails' && (
+          <div className="space-y-4 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-amber-100 text-amber-600 rounded-xl shadow-inner">
+                <FaEnvelope className="text-xl sm:text-2xl" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Compose Email</h2>
+                <p className="text-sm text-gray-500 font-medium">Send a direct message to any student, faculty, or external email address.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden relative">
+              {/* Decorative top border */}
+              <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500"></div>
+
+              <form onSubmit={handleSendEmail} className="flex flex-col">
+                {/* Header section containing To and Subject */}
+                <div className="bg-gray-50/50 p-6 space-y-4 border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <label className="text-sm font-semibold text-gray-700 sm:w-20 shrink-0">Target:</label>
+                    <div className="relative flex-1 flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="targetType"
+                          value="single"
+                          checked={emailData.targetType === 'single'}
+                          onChange={() => setEmailData({ ...emailData, targetType: 'single' })}
+                          className="text-amber-500 focus:ring-amber-500"
+                        />
+                        <span className="text-sm">Single User</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="targetType"
+                          value="group"
+                          checked={emailData.targetType === 'group'}
+                          onChange={() => setEmailData({ ...emailData, targetType: 'group', to: '' })}
+                          className="text-amber-500 focus:ring-amber-500"
+                        />
+                        <span className="text-sm">Student Group</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {emailData.targetType === 'single' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <label htmlFor="toEmail" className="text-sm font-semibold text-gray-700 sm:w-20 shrink-0">To:</label>
+                      <div className="relative flex-1">
+                        <input
+                          type="email"
+                          id="toEmail"
+                          required={emailData.targetType === 'single'}
+                          placeholder="Recipient email address (e.g. user@gmail.com)"
+                          value={emailData.to}
+                          onChange={(e) => setEmailData({ ...emailData, to: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-6">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-gray-700">Departments (select one or more):</label>
+                        <div className="flex flex-wrap gap-3">
+                          {departments.map(dept => (
+                            <label key={dept} className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 border border-gray-200 rounded-lg text-sm hover:border-amber-300 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={emailData.departments.includes(dept)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEmailData({ ...emailData, departments: [...emailData.departments, dept] });
+                                  } else {
+                                    setEmailData({ ...emailData, departments: emailData.departments.filter(d => d !== dept) });
+                                  }
+                                }}
+                                className="text-amber-500 focus:ring-amber-500 rounded"
+                              />
+                              {dept}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-gray-700">Years (select one or more):</label>
+                        <div className="flex flex-wrap gap-3">
+                          {years.map(yr => (
+                            <label key={yr} className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 border border-gray-200 rounded-lg text-sm hover:border-amber-300 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={emailData.years.includes(yr)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEmailData({ ...emailData, years: [...emailData.years, yr] });
+                                  } else {
+                                    setEmailData({ ...emailData, years: emailData.years.filter(y => y !== yr) });
+                                  }
+                                }}
+                                className="text-amber-500 focus:ring-amber-500 rounded"
+                              />
+                              Year {yr}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <label htmlFor="subject" className="text-sm font-semibold text-gray-700 sm:w-20 shrink-0">Subject:</label>
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        id="subject"
+                        required
+                        placeholder="What is this regarding?"
+                        value={emailData.subject}
+                        onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm shadow-sm font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message Body */}
+                <div className="bg-white flex-1 relative pb-12 sm:pb-16">
+                  <ReactQuill
+                    theme="snow"
+                    value={emailData.message}
+                    onChange={(content) => setEmailData({ ...emailData, message: content })}
+                    className="h-48 sm:h-64"
+                    placeholder="Type your message here..."
+                    modules={{
+                      toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        ['clean']
+                      ]
+                    }}
+                  />
+                </div>
+
+                {/* Footer / Actions */}
+                <div className="bg-gray-50 p-4 sm:p-5 border-t border-gray-100 flex items-center justify-between">
+                  <div className="text-xs text-gray-500 flex items-center gap-2 hidden sm:flex">
+                    {/* <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span> */}
+                    {/* Ready to send via Campus Collab */}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={emailSending}
+                    className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${emailSending
+                      ? 'bg-amber-400 cursor-not-allowed scale-95'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 hover:shadow-lg active:scale-95'
+                      }`}
+                  >
+                    {emailSending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaPaperPlane className="text-sm" />
+                        <span>Send Mail</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

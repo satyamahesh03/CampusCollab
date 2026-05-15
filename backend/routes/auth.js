@@ -6,10 +6,17 @@ const OTP = require('../models/OTP');
 const { getSignedJwtToken, protect } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
+const rateLimit = require('express-rate-limit');
 
-// Email domain validation - only allow @mvgrce.edu.in
-const ALLOWED_EMAIL_DOMAIN = '@mvgrce.edu.in';
-
+// Rate limiter for OTP requests
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Limit each IP to 3 OTP requests per window
+  message: {
+    success: false,
+    message: 'Too many OTP requests from this IP, please try again after 15 minutes'
+  }
+});
 // Send email using Resend API (recommended for cloud hosting)
 const sendEmailViaResend = async (to, subject, html, from) => {
   if (!process.env.RESEND_API_KEY) {
@@ -114,20 +121,14 @@ const sendEmailWithTimeout = (transporter, mailOptions, timeoutMs = 15000) => {
 // @route   POST /api/auth/send-otp
 // @desc    Send OTP to email for registration
 // @access  Public
-router.post('/send-otp', [
+router.post('/send-otp', otpLimiter, [
   body('email').isEmail()
 ], async (req, res) => {
   try {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Validate email domain
-    if (!normalizedEmail.endsWith(ALLOWED_EMAIL_DOMAIN)) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`
-      });
-    }
+
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -334,13 +335,7 @@ router.post('/register', [
     const { name, email, password, role, department, year, skills, facultyCode } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Validate email domain
-    if (!normalizedEmail.endsWith(ALLOWED_EMAIL_DOMAIN)) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`
-      });
-    }
+
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -761,13 +756,7 @@ router.post('/forgot-password', [
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Validate email domain
-    if (!normalizedEmail.endsWith(ALLOWED_EMAIL_DOMAIN)) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`
-      });
-    }
+
 
     // Check if user exists
     const user = await User.findOne({ email: normalizedEmail });
